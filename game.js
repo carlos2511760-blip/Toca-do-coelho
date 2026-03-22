@@ -51,8 +51,8 @@ function dist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
 class Particle { constructor(x, y, col, spd, sz, life) { this.x = x; this.y = y; this.vx = (Math.random() - .5) * spd; this.vy = (Math.random() - .5) * spd; this.color = col; this.size = sz; this.life = life; this.maxLife = life; } update(dt) { this.x += this.vx; this.y += this.vy; this.life -= dt * 60; return this.life > 0; } draw(c) { c.fillStyle = this.color; c.globalAlpha = Math.max(0, this.life / this.maxLife); c.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size); c.globalAlpha = 1; } }
 function boom(x, y, col, n) { for (let i = 0; i < n; i++)particles.push(new Particle(x, y, col, 8, Math.random() * 4 + 2, Math.random() * 20 + 10)); }
 
-// PICKUP (gold bag, etc)
-class Pickup { constructor(x, y, type, value) { this.x = x; this.y = y; this.type = type; this.value = value; this.radius = 12; this.bobT = 0; } update(dt) { this.bobT += dt * 3; } draw(c) { let by = this.y + Math.sin(this.bobT) * 5; c.font = '22px VT323'; c.textAlign = 'center'; if (this.type === 'gold') c.fillText('💰', this.x, by); } }
+// PICKUP (gold bag, exit, etc)
+class Pickup { constructor(x, y, type, value) { this.x = x; this.y = y; this.type = type; this.value = value; this.radius = type === 'exit' ? 20 : 12; this.bobT = 0; } update(dt) { this.bobT += dt * 3; } draw(c) { let by = this.y + Math.sin(this.bobT) * 5; c.font = '22px VT323'; c.textAlign = 'center'; if (this.type === 'gold') c.fillText('💰', this.x, by); else if (this.type === 'exit') { c.fillStyle = '#9b59b6'; c.fillRect(this.x - 15, by - 15, 30, 30); c.fillStyle = '#fff'; c.fillText('SAÍDA', this.x, by + 7); } } }
 
 // ICEBERG
 class Iceberg { constructor(x, y) { this.x = x; this.y = y; this.w = 50; this.h = 60; this.hp = 10; this.timer = 15; } update(dt) { this.timer -= dt; return this.timer > 0 && this.hp > 0; } draw(c) { c.fillStyle = '#a8e6cf'; c.fillRect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h); c.strokeStyle = '#55efc4'; c.lineWidth = 2; c.strokeRect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h); } }
@@ -79,8 +79,8 @@ class Player extends Actor {
 class Enemy extends Actor {
     constructor(x, y, type, bossIdx) {
         let hp, spd, col, r, bd;
-        if (type === 'minion') { hp = 2; spd = 2; col = '#ff4757'; r = 15; }
-        else if (type === 'miniboss') { hp = 15; spd = 2.5; col = '#ff6348'; r = 25; }
+        if (type === 'minion') { hp = 2 + (mapLevel - 1) * 1.5; spd = 2 + (mapLevel - 1) * 0.2; col = '#ff4757'; r = 15; }
+        else if (type === 'miniboss') { hp = 15 + (mapLevel - 1) * 10; spd = 2.5 + (mapLevel - 1) * 0.3; col = '#ff6348'; r = 25; }
         else if (type === 'boss') {
             bd = BOSS_DEFS[bossIdx || 0];
             hp = 80 + mapLevel * 20;
@@ -102,20 +102,124 @@ class Enemy extends Actor {
     draw(c) { c.fillStyle = (this.invTimer > 0) ? '#fff' : this.color; if (this.stunTimer > 0) { c.fillStyle = '#f1c40f'; } if (this.slowTimer > 0) { c.strokeStyle = '#74b9ff'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, this.y, this.radius + 5, 0, Math.PI * 2); c.stroke(); } c.beginPath(); if (this.type === 'boss') { let sp = 8; for (let i = 0; i < sp * 2; i++) { let r2 = (i % 2 === 0) ? this.radius : this.radius + 15; let a = (i / (sp * 2)) * Math.PI * 2 + this.stateT; c.lineTo(this.x + Math.cos(a) * r2, this.y + Math.sin(a) * r2); } c.fill(); c.fillStyle = this.bossDef.eyeColor; c.beginPath(); c.arc(this.x, this.y, this.radius / 2, 0, Math.PI * 2); c.fill(); } else { c.rect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2); c.fill(); c.strokeStyle = '#000'; c.lineWidth = 2; c.strokeRect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2); } }
 }
 
-// ROOM SYSTEM
+// ROOM SYSTEM (DUNGEON MAP)
 class RoomSystem {
-    constructor() { this.roomsCleared = 0; this.generateRoom('spawn'); }
-    generateRoom(type) { this.type = type; this.isCleared = false; this.doors = []; this._hadMiniboss = false; enemies = []; projectiles = []; particles = []; pickups = []; icebergs = []; let cx = 400, cy = 300; if (type === 'spawn') { this.isCleared = true; this.doors.push({ x: cx - 40, y: 0, w: 80, h: WALL, side: 'N' }, { x: cx - 40, y: 600 - WALL, w: 80, h: WALL, side: 'S' }, { x: 800 - WALL, y: cy - 40, w: WALL, h: 80, side: 'E' }); roomCounter.innerText = 'Sala Segura'; roomCounter.style.color = '#a4b0be'; } else if (type === 'shop') { this.isCleared = true; this.doors.push({ x: cx - 40, y: 600 - WALL, w: 80, h: WALL, side: 'S' }); roomCounter.innerText = 'Loja'; roomCounter.style.color = '#feca57'; gameState = 'SHOP'; openShop(); } else { if (mapLevel > MAX_LEVELS) { gameState = 'VICTORY'; switchScreen('victory'); return; } if (this.roomsCleared >= 3) { this.type = 'boss'; let bi = Math.floor(Math.random() * BOSS_DEFS.length); enemies.push(new Enemy(cx, cy, 'boss', bi)); roomCounter.innerText = `Nível ${mapLevel} - ${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; } else { roomCounter.innerText = `Nível ${mapLevel} - Batalha ${this.roomsCleared + 1}/3`; roomCounter.style.color = '#e0e0e0'; let isMB = (Math.random() < 0.3) && this.roomsCleared > 0; if (isMB) { enemies.push(new Enemy(cx, cy, 'miniboss')); enemies.push(new Enemy(cx - 100, cy, 'minion')); enemies.push(new Enemy(cx + 100, cy, 'minion')); roomCounter.innerText += ' (Mini-Chefe)'; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; } else { let mc = 3 + mapLevel + Math.floor(Math.random() * 3); for (let i = 0; i < mc; i++)enemies.push(new Enemy(WALL + 50 + Math.random() * (700 - WALL * 2), WALL + 50 + Math.random() * (500 - WALL * 2), 'minion')); } } } }
+    constructor() {
+        this.rooms = {}; this.currentX = 0; this.currentY = 0;
+        this.generateMap();
+        this.enterRoom(0, 0);
+    }
+    generateMap() {
+        this.rooms["0,0"] = { type: 'spawn', x: 0, y: 0, cleared: true };
+        let roomsCreated = 1, queue = [{ x: 0, y: 0 }];
+        const addRoom = (x, y) => {
+            if (this.rooms[`${x},${y}`]) return false;
+            this.rooms[`${x},${y}`] = { type: 'battle', x, y, cleared: false };
+            roomsCreated++; queue.push({ x, y }); return true;
+        };
+        while (roomsCreated < 15) {
+            if (queue.length === 0) break;
+            let idx = Math.floor(Math.random() * queue.length), curr = queue[idx];
+            let dirs = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }].sort(() => Math.random() - 0.5);
+            let added = false;
+            for (let d of dirs) {
+                if (Math.random() < 0.55 && addRoom(curr.x + d.dx, curr.y + d.dy)) { added = true; break; }
+            }
+            if (!added) queue.splice(idx, 1);
+        }
+        let roomList = Object.values(this.rooms).filter(r => r.type !== 'spawn').sort((a, b) => (b.x ** 2 + b.y ** 2) - (a.x ** 2 + a.y ** 2));
+        if (roomList.length >= 5) {
+            roomList[0].type = 'boss'; roomList[1].type = 'exit';
+            roomList[2].type = 'miniboss'; roomList[3].type = 'miniboss'; roomList[4].type = 'miniboss';
+        } else {
+            for (let r of roomList) r.type = 'miniboss';
+            if (roomList[0]) roomList[0].type = 'boss';
+            if (roomList[1]) roomList[1].type = 'exit';
+        }
+    }
+    enterRoom(x, y) {
+        this.currentX = x; this.currentY = y;
+        let rd = this.rooms[`${x},${y}`];
+        this.type = rd.type; this.isCleared = rd.cleared; this.doors = []; this._hadMiniboss = false;
+        enemies = []; projectiles = []; particles = []; pickups = []; icebergs = [];
+        let cx = 400, cy = 300;
+        if (this.rooms[`${x},${y - 1}`]) this.doors.push({ x: cx - 40, y: 0, w: 80, h: Math.max(30, WALL), side: 'N', toType: this.rooms[`${x},${y - 1}`].type });
+        if (this.rooms[`${x},${y + 1}`]) this.doors.push({ x: cx - 40, y: 600 - WALL, w: 80, h: Math.max(30, WALL), side: 'S', toType: this.rooms[`${x},${y + 1}`].type });
+        if (this.rooms[`${x - 1},${y}`]) this.doors.push({ x: 0, y: cy - 40, w: WALL, h: 80, side: 'W', toType: this.rooms[`${x - 1},${y}`].type });
+        if (this.rooms[`${x + 1},${y}`]) this.doors.push({ x: 800 - WALL, y: cy - 40, w: WALL, h: 80, side: 'E', toType: this.rooms[`${x + 1},${y}`].type });
+        if (this.type === 'spawn') { roomCounter.innerText = `Nível ${mapLevel} - Início`; roomCounter.style.color = '#a4b0be'; }
+        else if (this.type === 'shop') { roomCounter.innerText = 'Loja'; roomCounter.style.color = '#feca57'; gameState = 'SHOP'; openShop(); }
+        else if (this.type === 'exit') { roomCounter.innerText = 'Saída - Próx Andar'; roomCounter.style.color = '#9b59b6'; this.isCleared = true; pickups.push(new Pickup(cx, cy, 'exit', 0)); }
+        else if (!this.isCleared) {
+            if (this.type === 'boss') { let bi = Math.floor(Math.random() * BOSS_DEFS.length); enemies.push(new Enemy(cx, cy, 'boss', bi)); roomCounter.innerText = `Nível ${mapLevel} - ${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; }
+            else if (this.type === 'miniboss') { enemies.push(new Enemy(cx, cy, 'miniboss'), new Enemy(cx - 100, cy, 'minion'), new Enemy(cx + 100, cy, 'minion')); roomCounter.innerText = `Nível ${mapLevel} - Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; }
+            else { let mc = 3 + mapLevel + Math.floor(Math.random() * 3); for (let i = 0; i < mc; i++)enemies.push(new Enemy(WALL + 50 + Math.random() * (700 - WALL * 2), WALL + 50 + Math.random() * (500 - WALL * 2), 'minion')); roomCounter.innerText = `Nível ${mapLevel} - Batalha`; roomCounter.style.color = '#e0e0e0'; }
+        } else { roomCounter.innerText = `Nível ${mapLevel} - Limpo`; roomCounter.style.color = '#7f8fa6'; }
+    }
     update(dt) {
-        if (!this.isCleared && enemies.length === 0 && this.type !== 'spawn' && this.type !== 'shop') { this.isCleared = true; this.roomsCleared++; if (this._hadMiniboss) { let gv = 10 + Math.floor(Math.random() * 15); pickups.push(new Pickup(400, 300, 'gold', gv)); } if (this.type === 'boss') { bossHealthContainer.style.display = 'none'; let gv = 30 + Math.floor(Math.random() * 20); pickups.push(new Pickup(400, 300, 'gold', gv)); mapLevel++; this.roomsCleared = 0; if (mapLevel > MAX_LEVELS) { gameState = 'VICTORY'; switchScreen('victory'); return; } } let cx = 400, cy = 300; this.doors = []; let isBossNext = this.roomsCleared >= 3; let nd = this.type === 'boss' ? 1 : Math.floor(Math.random() * 2) + 2; let dirs = ['N', 'S', 'E', 'W'].sort(() => 0.5 - Math.random()); for (let i = 0; i < nd; i++) { let s = dirs[i]; if (s === 'N') this.doors.push({ x: cx - 40, y: 0, w: 80, h: WALL, side: 'N', isBoss: isBossNext }); if (s === 'S') this.doors.push({ x: cx - 40, y: 600 - WALL, w: 80, h: WALL, side: 'S', isBoss: isBossNext }); if (s === 'E') this.doors.push({ x: 800 - WALL, y: cy - 40, w: WALL, h: 80, side: 'E', isBoss: isBossNext }); if (s === 'W') this.doors.push({ x: 0, y: cy - 40, w: WALL, h: 80, side: 'W', isBoss: isBossNext }); } }// Pickups
-        for (let i = pickups.length - 1; i >= 0; i--) { pickups[i].update(dt); if (dist(player.x, player.y, pickups[i].x, pickups[i].y) < player.radius + pickups[i].radius) { if (pickups[i].type === 'gold') { player.gold += pickups[i].value; goldCounter.innerText = player.gold; boom(pickups[i].x, pickups[i].y, '#feca57', 10); } pickups.splice(i, 1); } }// Doors
-        if (this.isCleared && player) { for (let d of this.doors) { if (player.x + player.radius + 10 > d.x && player.x - player.radius - 10 < d.x + d.w && player.y + player.radius + 10 > d.y && player.y - player.radius - 10 < d.y + d.h) { this.transition(d.side); break; } } }
+        if (!this.isCleared && enemies.length === 0 && this.type !== 'spawn' && this.type !== 'shop' && this.type !== 'exit') {
+            this.isCleared = true; this.rooms[`${this.currentX},${this.currentY}`].cleared = true;
+            if (this._hadMiniboss) pickups.push(new Pickup(400, 300, 'gold', 10 + Math.floor(Math.random() * 15)));
+            if (this.type === 'boss') {
+                bossHealthContainer.style.display = 'none'; pickups.push(new Pickup(400, 300, 'gold', 30 + Math.floor(Math.random() * 20)));
+                this.rooms[`${this.currentX},${this.currentY}`].type = 'shop'; this.enterRoom(this.currentX, this.currentY); return;
+            }
+        }
+        for (let i = pickups.length - 1; i >= 0; i--) {
+            pickups[i].update(dt);
+            if (dist(player.x, player.y, pickups[i].x, pickups[i].y) < player.radius + pickups[i].radius) {
+                if (pickups[i].type === 'gold') { player.gold += pickups[i].value; goldCounter.innerText = player.gold; boom(pickups[i].x, pickups[i].y, '#feca57', 10); pickups.splice(i, 1); }
+                else if (pickups[i].type === 'exit') {
+                    mapLevel++; if (mapLevel > MAX_LEVELS) { gameState = 'VICTORY'; switchScreen('victory'); return; } else { currentRoom = new RoomSystem(); return; }
+                }
+            }
+        }
+        if (this.isCleared && player) {
+            for (let d of this.doors) { if (player.x + player.radius + 10 > d.x && player.x - player.radius - 10 < d.x + d.w && player.y + player.radius + 10 > d.y && player.y - player.radius - 10 < d.y + d.h) { this.transition(d.side); break; } }
+        }
     }
     transition(s) {
-        let cx = 400, cy = 300; if (s === 'N') { player.x = cx; player.y = 600 - WALL - player.radius - 20; } else if (s === 'S') { player.x = cx; player.y = WALL + player.radius + 20; } else if (s === 'E') { player.x = WALL + player.radius + 20; player.y = cy; } else if (s === 'W') { player.x = 800 - WALL - player.radius - 20; player.y = cy; }
-        let wasShop = this.type === 'shop'; let wasBoss = this.type === 'boss'; if (wasBoss) { this.generateRoom('shop'); } else if (wasShop) { this.generateRoom('battle'); } else { this.generateRoom('battle'); }
+        let cx = 400, cy = 300, tx = this.currentX, ty = this.currentY;
+        if (s === 'N') { player.x = cx; player.y = 600 - WALL - player.radius - 20; ty--; }
+        else if (s === 'S') { player.x = cx; player.y = WALL + player.radius + 20; ty++; }
+        else if (s === 'E') { player.x = WALL + player.radius + 20; player.y = cy; tx++; }
+        else if (s === 'W') { player.x = 800 - WALL - player.radius - 20; player.y = cy; tx--; }
+        this.enterRoom(tx, ty);
     }
-    draw(c) { c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : '#1e2029'; if (this.type === 'spawn') c.fillStyle = '#1e2922'; c.fillRect(0, 0, 800, 600); c.fillStyle = '#2f3542'; c.fillRect(0, 0, 800, WALL); c.fillRect(0, 600 - WALL, 800, WALL); c.fillRect(0, 0, WALL, 600); c.fillRect(800 - WALL, 0, WALL, 600); if (this.type === 'shop' && this.isCleared) { c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; c.fillText('🏪 Pressione qualquer porta para sair', 400, 300); } if (this.isCleared) { for (let d of this.doors) { c.fillStyle = d.isBoss ? '#ff4757' : '#2ed573'; c.fillRect(d.x, d.y, d.w, d.h); if (d.isBoss) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let tx = d.x + d.w / 2, ty = d.y + d.h / 2 + 5; c.fillText('BOSS', tx, ty); } } } else if (this.type !== 'spawn' && this.type !== 'shop') { c.fillStyle = '#ff4757'; c.font = '20px VT323'; c.textAlign = 'center'; c.fillText('BLOQUEADO', 400, WALL - 10); } pickups.forEach(p => p.draw(c)); icebergs.forEach(ib => ib.draw(c)); }
+    draw(c) {
+        c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : this.type === 'exit' ? '#23153c' : '#1e2029';
+        if (this.type === 'spawn') c.fillStyle = '#1e2922';
+        c.fillRect(0, 0, 800, 600); c.fillStyle = '#2f3542'; c.fillRect(0, 0, 800, WALL); c.fillRect(0, 600 - WALL, 800, WALL); c.fillRect(0, 0, WALL, 600); c.fillRect(800 - WALL, 0, WALL, 600);
+        if (this.type === 'shop' && this.isCleared) { c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; c.fillText('🏪 Portas estão abertas', 400, 300); }
+        if (this.isCleared) {
+            for (let d of this.doors) {
+                let rClr = this.rooms[d.side === 'N' ? `${this.currentX},${this.currentY - 1}` : d.side === 'S' ? `${this.currentX},${this.currentY + 1}` : d.side === 'E' ? `${this.currentX + 1},${this.currentY}` : `${this.currentX - 1},${this.currentY}`].cleared;
+                c.fillStyle = rClr ? '#2ed573' : d.toType === 'boss' ? '#ff4757' : d.toType === 'exit' ? '#9b59b6' : d.toType === 'miniboss' ? '#ffa502' : '#2ed573';
+                c.fillRect(d.x, d.y, d.w, d.h);
+                if (!rClr && (d.toType === 'boss' || d.toType === 'exit' || d.toType === 'miniboss')) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? 'BOSS' : d.toType === 'exit' ? 'SAIDA' : 'MINI'; c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
+            }
+        } else if (this.type !== 'spawn' && this.type !== 'shop' && this.type !== 'exit') {
+            c.fillStyle = '#ff4757'; c.font = '20px VT323'; c.textAlign = 'center'; c.fillText('BLOQUEADO', 400, WALL + 20);
+        }
+        pickups.forEach(p => p.draw(c)); icebergs.forEach(ib => ib.draw(c));
+        this.drawMinimap(c);
+    }
+    drawMinimap(c) {
+        c.save(); c.translate(680, 80); let s = 6, ms = 15;
+        c.globalAlpha = 0.5; c.fillStyle = '#000'; c.fillRect(-50, -50, 100, 100); c.globalAlpha = 1;
+        c.strokeStyle = '#576574'; c.lineWidth = 2;
+        Object.values(this.rooms).forEach(r => {
+            let cx = (r.x - this.currentX) * ms, cy = (r.y - this.currentY) * ms;
+            if (this.rooms[`${r.x + 1},${r.y}`]) { c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + ms, cy); c.stroke(); }
+            if (this.rooms[`${r.x},${r.y + 1}`]) { c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx, cy + ms); c.stroke(); }
+        });
+        Object.values(this.rooms).forEach(r => {
+            let cx = (r.x - this.currentX) * ms, cy = (r.y - this.currentY) * ms;
+            c.fillStyle = (r.x === this.currentX && r.y === this.currentY) ? '#fff' : r.cleared ? '#1dd1a1' : r.type === 'exit' ? '#9b59b6' : r.type === 'shop' ? '#feca57' : r.type === 'boss' ? '#ff4757' : r.type === 'miniboss' ? '#ffa502' : '#c8d6e5';
+            if (r.type === 'exit' || Math.hypot(r.x - this.currentX, r.y - this.currentY) < 3) c.fillRect(cx - s / 2, cy - s / 2, s, s);
+        });
+        c.restore();
+    }
 }
 
 // SHOP
@@ -128,6 +232,6 @@ function startGame() { gameState = 'PLAYING'; switchScreen('hud'); mapLevel = 1;
 function updateHUD() { if (!player) return; let p = Math.max(0, (player.hp / player.maxHp) * 100); healthBar.style.width = p + '%'; healthBar.style.backgroundColor = p < 30 ? '#ff4757' : 'var(--health)'; }
 function triggerGameOver() { gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; }
 
-function checkCollisions() { for (let i = projectiles.length - 1; i >= 0; i--) { let p = projectiles[i]; if (p.isPlayerObj) { for (let j = enemies.length - 1; j >= 0; j--) { let e = enemies[j]; if (dist(p.x, p.y, e.x, e.y) < p.radius + e.radius) { e.takeDamage(p.damage); if (p.weaponType === 'fire') { e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); } if (p.weaponType === 'taser') e.stunTimer = 2; if (p.weaponType === 'ice') e.slowTimer = 3; boom(p.x, p.y, p.color, 3); if (e.hp <= 0) { enemies.splice(j, 1); if (player.charType === 3 && Math.random() < 0.25) { player.hp = Math.min(player.maxHp, player.hp + 1); updateHUD(); boom(player.x, player.y, '#2ed573', 10); } } p.active = false; break; } } } else { if (!player.isJumping && player.flyT <= 0) { if (dist(p.x, p.y, player.x, player.y) < p.radius + player.radius * 0.8) { if (p.weaponType === 'ice') player.slowTimer = 2; player.takeDamage(p.damage); p.active = false; } } } if (!p.active) projectiles.splice(i, 1); } if (player && !player.isJumping && player.flyT <= 0) { for (let e of enemies) { if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 5) { player.takeDamage(1); let dx = player.x - e.x, dy = player.y - e.y, mg = Math.hypot(dx, dy); if (mg > 0) { player.x += dx / mg * 20; player.y += dy / mg * 20; } } } } }
+function checkCollisions() { for (let i = projectiles.length - 1; i >= 0; i--) { let p = projectiles[i]; if (p.isPlayerObj) { for (let j = enemies.length - 1; j >= 0; j--) { let e = enemies[j]; if (dist(p.x, p.y, e.x, e.y) < p.radius + e.radius) { e.takeDamage(p.damage); if (p.weaponType === 'fire') { e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); } if (p.weaponType === 'taser') e.stunTimer = 2; if (p.weaponType === 'ice') e.slowTimer = 3; boom(p.x, p.y, p.color, 3); if (e.hp <= 0) { enemies.splice(j, 1); if (player.charType === 3 && Math.random() < 0.25) { player.hp = Math.min(player.maxHp, player.hp + 1); updateHUD(); boom(player.x, player.y, '#2ed573', 10); } } p.active = false; break; } } } else { if (!player.isJumping && player.flyT <= 0) { if (dist(p.x, p.y, player.x, player.y) < p.radius + player.radius * 0.8) { if (p.weaponType === 'ice') player.slowTimer = 2; player.takeDamage(p.damage + (mapLevel - 1) * 0.5); p.active = false; } } } if (!p.active) projectiles.splice(i, 1); } if (player && !player.isJumping && player.flyT <= 0) { for (let e of enemies) { if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 5) { player.takeDamage(1 + (mapLevel - 1) * 0.5); let dx = player.x - e.x, dy = player.y - e.y, mg = Math.hypot(dx, dy); if (mg > 0) { player.x += dx / mg * 20; player.y += dy / mg * 20; } } } } }
 
 function gameLoop(ts) { if (gameState !== 'PLAYING') return; let dt = (ts - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = ts; player.update(dt); currentRoom.update(dt); enemies.forEach(e => e.update(dt)); projectiles.forEach(p => p.update(dt)); particles = particles.filter(p => p.update(dt)); icebergs = icebergs.filter(ib => ib.update(dt)); checkCollisions(); ctx.clearRect(0, 0, 800, 600); currentRoom.draw(ctx); enemies.forEach(e => e.draw(ctx)); projectiles.forEach(p => p.draw(ctx)); particles.forEach(p => p.draw(ctx)); player.draw(ctx); requestAnimationFrame(gameLoop); }
