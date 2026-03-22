@@ -185,7 +185,9 @@ class RoomSystem {
         this.currentX = x; this.currentY = y;
         let rd = this.rooms[`${x},${y}`];
         this.type = rd.type; this.isCleared = rd.cleared; this.doors = []; this._hadMiniboss = false;
-        enemies = []; projectiles = []; particles = []; pickups = []; icebergs = [];
+        enemies = []; projectiles = []; particles = []; icebergs = [];
+        if (!rd.visited) { rd.pickups = []; rd.visited = true; }
+        pickups = rd.pickups;
         let cx = 400, cy = 300;
         if (this.rooms[`${x},${y - 1}`]) this.doors.push({ x: cx - 40, y: 0, w: 80, h: Math.max(30, WALL), side: 'N', toType: this.rooms[`${x},${y - 1}`].type });
         if (this.rooms[`${x},${y + 1}`]) this.doors.push({ x: cx - 40, y: 600 - WALL, w: 80, h: Math.max(30, WALL), side: 'S', toType: this.rooms[`${x},${y + 1}`].type });
@@ -193,9 +195,9 @@ class RoomSystem {
         if (this.rooms[`${x + 1},${y}`]) this.doors.push({ x: 800 - WALL, y: cy - 40, w: WALL, h: 80, side: 'E', toType: this.rooms[`${x + 1},${y}`].type });
         if (this.type === 'spawn') { roomCounter.innerText = `Início`; roomCounter.style.color = '#a4b0be'; }
         else if (this.type === 'shop') { roomCounter.innerText = 'Loja'; roomCounter.style.color = '#feca57'; gameState = 'SHOP'; openShop(); }
-        else if (this.type === 'exit') { roomCounter.innerText = 'Saída - Próx Andar'; roomCounter.style.color = '#9b59b6'; this.isCleared = true; pickups.push(new Pickup(cx, cy, 'exit', 0)); }
-        else if (this.type === 'treasure') { roomCounter.innerText = 'Sala do Tesouro'; roomCounter.style.color = '#f1c40f'; this.isCleared = true; pickups.push(new Pickup(cx - 30, cy, 'gold', 50)); pickups.push(new Pickup(cx + 30, cy, 'gold', 50)); pickups.push(new Pickup(cx, cy + 30, 'heart', Math.floor(Math.random() * 2) + 1)); }
-        else if (this.type === 'npc') { roomCounter.innerText = 'Anjo Guardião'; roomCounter.style.color = '#3498db'; this.isCleared = true; pickups.push(new Pickup(cx, cy, 'buff', 0)); }
+        else if (this.type === 'exit') { roomCounter.innerText = 'Saída - Próx Andar'; roomCounter.style.color = '#9b59b6'; this.isCleared = true; if (!rd.looted) { pickups.push(new Pickup(cx, cy, 'exit', 0)); rd.looted = true; } }
+        else if (this.type === 'treasure') { roomCounter.innerText = 'Sala do Tesouro'; roomCounter.style.color = '#f1c40f'; this.isCleared = true; if (!rd.looted) { pickups.push(new Pickup(cx - 30, cy, 'gold', 50)); pickups.push(new Pickup(cx + 30, cy, 'gold', 50)); pickups.push(new Pickup(cx, cy + 30, 'heart', Math.floor(Math.random() * 2) + 1)); rd.looted = true; } }
+        else if (this.type === 'npc') { roomCounter.innerText = 'Anjo Guardião'; roomCounter.style.color = '#3498db'; this.isCleared = true; if (!rd.looted) { pickups.push(new Pickup(cx, cy, 'buff', 0)); rd.looted = true; } }
         else if (!this.isCleared) {
             this.spawnTimer = 2; this.pendingEnemies = [];
             if (this.type === 'boss') { let bi = Math.floor(Math.random() * BOSS_DEFS.length); this.pendingEnemies.push(new Enemy(cx, cy, 'boss', bi)); roomCounter.innerText = `${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; }
