@@ -23,9 +23,21 @@ const shopItemsEl = document.getElementById('shop-items');
 const shopGoldEl = document.getElementById('shop-gold-amount');
 const shopCloseBtn = document.getElementById('shop-close-btn');
 
+const floorCounterEl = document.getElementById('floor-counter');
+const gameTimerEl = document.getElementById('game-timer');
+const goFinalTimeEl = document.getElementById('go-final-time');
+const goBestTimeEl = document.getElementById('go-best-time');
+const vicFinalTimeEl = document.getElementById('vic-final-time');
+const vicBestTimeEl = document.getElementById('vic-best-time');
+
 let gameState = 'MENU';
 let selectedChar = 0;
 let lastTime = 0;
+let gameTime = 0;
+let screenShakeT = 0, screenShakeM = 0;
+
+function shake(t, m) { screenShakeT = t; screenShakeM = m; }
+function formatTime(s) { let m = Math.floor(s / 60); let sm = Math.floor(s % 60); return `${m < 10 ? '0' : ''}${m}:${sm < 10 ? '0' : ''}${sm}`; }
 let player, enemies = [], projectiles = [], particles = [], pickups = [], icebergs = [];
 let currentRoom, mapLevel = 1;
 const MAX_LEVELS = 5;
@@ -53,10 +65,10 @@ function dist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
 
 // PARTICLES
 class Particle { constructor(x, y, col, spd, sz, life) { this.x = x; this.y = y; this.vx = (Math.random() - .5) * spd; this.vy = (Math.random() - .5) * spd; this.color = col; this.size = sz; this.life = life; this.maxLife = life; } update(dt) { this.x += this.vx; this.y += this.vy; this.life -= dt * 60; return this.life > 0; } draw(c) { c.fillStyle = this.color; c.globalAlpha = Math.max(0, this.life / this.maxLife); c.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size); c.globalAlpha = 1; } }
-function boom(x, y, col, n) { for (let i = 0; i < n; i++)particles.push(new Particle(x, y, col, 8, Math.random() * 4 + 2, Math.random() * 20 + 10)); }
+function boom(x, y, col, n) { if (n >= 20) shake(0.15, n / 5); for (let i = 0; i < n; i++)particles.push(new Particle(x, y, col, 8, Math.random() * 4 + 2, Math.random() * 20 + 10)); }
 
 // PICKUP (gold bag, exit, etc)
-class Pickup { constructor(x, y, type, value) { this.x = x; this.y = y; this.type = type; this.value = value; this.radius = type === 'exit' ? 20 : 12; this.bobT = 0; } update(dt) { this.bobT += dt * 3; } draw(c) { let by = this.y + Math.sin(this.bobT) * 5; c.font = '22px VT323'; c.textAlign = 'center'; if (this.type === 'gold') c.fillText('💰', this.x, by); else if (this.type === 'exit') { c.fillStyle = '#9b59b6'; c.fillRect(this.x - 15, by - 15, 30, 30); c.fillStyle = '#fff'; c.fillText('SAÍDA', this.x, by + 7); } } }
+class Pickup { constructor(x, y, type, value) { this.x = x; this.y = y; this.type = type; this.value = value; this.radius = type === 'exit' ? 20 : 12; this.bobT = 0; } update(dt) { this.bobT += dt * 3; } draw(c) { let by = this.y + Math.sin(this.bobT) * 5; c.font = '22px VT323'; c.textAlign = 'center'; if (this.type === 'gold') c.fillText('💰', this.x, by); else if (this.type === 'exit') { c.fillStyle = '#9b59b6'; c.fillRect(this.x - 15, by - 15, 30, 30); c.fillStyle = '#fff'; c.fillText('SAÍDA', this.x, by + 7); } else if (this.type === 'heart') c.fillText('❤️', this.x, by); else if (this.type === 'buff') c.fillText('🧚', this.x, by); } }
 
 // ICEBERG
 class Iceberg { constructor(x, y) { this.x = x; this.y = y; this.w = 50; this.h = 60; this.hp = 10; this.timer = 15; } update(dt) { this.timer -= dt; return this.timer > 0 && this.hp > 0; } draw(c) { c.fillStyle = '#a8e6cf'; c.fillRect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h); c.strokeStyle = '#55efc4'; c.lineWidth = 2; c.strokeRect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h); } }
@@ -92,7 +104,7 @@ class Player extends Actor {
     }
     useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 80; e.y += dy / d * 80; } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 4; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.takeDamage(5 * this.dmgMult); e.stunTimer = 1.5; } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 80, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) e.takeDamage(10 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 50); boom(this.x, this.y, '#f39c12', 30); } }
     shoot() { if (this.weaponCD > 0) return; let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy); if (!d) return; dx /= d; dy /= d; let col = '#feca57', spd = 10, rad = 5, wt = this.currentWeapon; if (wt === 'fire') { col = '#e74c3c'; rad = 7; } else if (wt === 'taser') { col = '#f1c40f'; spd = 12; } else if (wt === 'ice') { col = '#74b9ff'; rad = 6; } let p = new Projectile(this.x, this.y, dx, dy, spd, rad, col, true, wt); p.damage = this.dmgMult; projectiles.push(p); this.weaponCD = this.baseFireRate; }
-    takeDamage(a) { if (this.shieldT > 0 || this.flyT > 0 || this.ghostT > 0) return; super.takeDamage(a); this.noDamageT = 0; if (this.charType === 4 && this.hp > 0) this.invTimer = 1.0; if (this.charType === 8 && a > 0 && this.hp > 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 150) e.takeDamage(5 * this.dmgMult); }); boom(this.x, this.y, '#d35400', 35); } updateHUD(); if (this.hp <= 0) triggerGameOver(); }
+    takeDamage(a) { if (this.shieldT > 0 || this.flyT > 0 || this.ghostT > 0) return; super.takeDamage(a); shake(0.2, 5); this.noDamageT = 0; if (this.charType === 4 && this.hp > 0) this.invTimer = 1.0; if (this.charType === 8 && a > 0 && this.hp > 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 150) e.takeDamage(5 * this.dmgMult); }); boom(this.x, this.y, '#d35400', 35); } updateHUD(); if (this.hp <= 0) triggerGameOver(); }
     update(dt) { let dx = 0, dy = 0; if (keys['KeyW']) dy--; if (keys['KeyS']) dy++; if (keys['KeyA']) dx--; if (keys['KeyD']) dx++; if (dx && dy) { let l = Math.hypot(dx, dy); dx /= l; dy /= l; } this.vx = dx * this.speed; this.vy = dy * this.speed; if (this.flyT > 0) { this.isJumping = false; this.flyT -= dt; } this.updatePhysics(dt); if (this.charType === 6) { this.auraT += dt; if (this.auraT >= 1.0) { this.auraT = 0; enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 80) { e.takeDamage(2 * this.dmgMult); boom(e.x, e.y, '#2ecc71', 3); } }); } } if (this.charType === 7) { this.noDamageT += dt; if (this.noDamageT >= 8 && this.hp < this.maxHp) { this.noDamageT = 0; this.hp++; updateHUD(); boom(this.x, this.y, '#f1c40f', 10); } } if (this.weaponCD > 0) this.weaponCD -= dt; if (this.dashCD > 0) this.dashCD -= dt; if (this.shieldCD > 0) this.shieldCD -= dt; if (this.shieldT > 0) this.shieldT -= dt; if (this.burstCD > 0) this.burstCD -= dt; if (this.fearCD > 0) this.fearCD -= dt; if (this.fearT > 0) this.fearT -= dt; if (this.ghostT > 0) this.ghostT -= dt; if (this.ghostCD > 0) this.ghostCD -= dt; if (this.magicCD > 0) this.magicCD -= dt; if (this.toxicCD > 0) this.toxicCD -= dt; if (this.empCD > 0) this.empCD -= dt; if (this.fireCD > 0) this.fireCD -= dt; if (this.luckCD > 0) this.luckCD -= dt; if (this.skillCD > 0) this.skillCD -= dt; if (this.regenDur > 0) { this.regenDur -= dt; this.regenT -= dt; if (this.regenT <= 0) { this.hp = Math.min(this.maxHp, this.hp + 1); this.regenT = 5; updateHUD(); boom(this.x, this.y, '#2ed573', 5); } } if (mouse.down && this.weaponCD <= 0) this.shoot(); }
     draw(c) { if (this.isJumping) { c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.ellipse(this.x, this.y + 20, this.radius, this.radius / 2, 0, 0, Math.PI * 2); c.fill(); } c.fillStyle = (this.invTimer > 0 && Math.floor(this.invTimer * 20) % 2 === 0) ? '#fff' : this.color; let dY = this.y, dR = this.radius; if (this.flyT > 0) { dY -= 30; c.fillStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(this.x, this.y + 15, 12, 6, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = this.color; } else if (this.isJumping) { let jp = Math.sin((1 - this.jumpTimer / 0.8) * Math.PI); dY -= jp * 40; dR += jp * 5; } c.beginPath(); c.moveTo(this.x - dR / 2, dY - dR); c.lineTo(this.x - dR / 2, dY - dR - 15); c.lineTo(this.x - dR / 4, dY - dR); c.moveTo(this.x + dR / 2, dY - dR); c.lineTo(this.x + dR / 2, dY - dR - 15); c.lineTo(this.x + dR / 4, dY - dR); c.arc(this.x, dY, dR, 0, Math.PI * 2); c.fill(); if (this.shieldT > 0) { c.strokeStyle = '#48dbfb'; c.lineWidth = 3; c.beginPath(); c.arc(this.x, dY, dR + 8, 0, Math.PI * 2); c.stroke(); } if (this.fearT > 0) { c.strokeStyle = '#833471'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, dR + 5 + Math.sin(Date.now() / 100) * 15, 0, Math.PI * 2); c.stroke(); } let mx = mouse.x - this.x, my = mouse.y - this.y, mg = Math.hypot(mx, my); if (mg > 0) { c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(this.x + (mx / mg) * dR, dY + (my / mg) * dR); c.lineTo(this.x + (mx / mg) * (dR + 20), dY + (my / mg) * (dR + 20)); c.stroke(); } }
 }
@@ -152,7 +164,11 @@ class RoomSystem {
             if (!added) queue.splice(idx, 1);
         }
         let roomList = Object.values(this.rooms).filter(r => r.type !== 'spawn').sort((a, b) => (b.x ** 2 + b.y ** 2) - (a.x ** 2 + a.y ** 2));
-        if (roomList.length >= 5) {
+        if (roomList.length >= 7) {
+            roomList[0].type = 'boss'; roomList[1].type = 'exit';
+            roomList[2].type = 'miniboss'; roomList[3].type = 'miniboss'; roomList[4].type = 'miniboss';
+            roomList[5].type = 'treasure'; roomList[6].type = 'npc';
+        } else if (roomList.length >= 5) {
             roomList[0].type = 'boss'; roomList[1].type = 'exit';
             roomList[2].type = 'miniboss'; roomList[3].type = 'miniboss'; roomList[4].type = 'miniboss';
         } else {
@@ -171,15 +187,17 @@ class RoomSystem {
         if (this.rooms[`${x},${y + 1}`]) this.doors.push({ x: cx - 40, y: 600 - WALL, w: 80, h: Math.max(30, WALL), side: 'S', toType: this.rooms[`${x},${y + 1}`].type });
         if (this.rooms[`${x - 1},${y}`]) this.doors.push({ x: 0, y: cy - 40, w: WALL, h: 80, side: 'W', toType: this.rooms[`${x - 1},${y}`].type });
         if (this.rooms[`${x + 1},${y}`]) this.doors.push({ x: 800 - WALL, y: cy - 40, w: WALL, h: 80, side: 'E', toType: this.rooms[`${x + 1},${y}`].type });
-        if (this.type === 'spawn') { roomCounter.innerText = `Nível ${mapLevel} - Início`; roomCounter.style.color = '#a4b0be'; }
+        if (this.type === 'spawn') { roomCounter.innerText = `Início`; roomCounter.style.color = '#a4b0be'; }
         else if (this.type === 'shop') { roomCounter.innerText = 'Loja'; roomCounter.style.color = '#feca57'; gameState = 'SHOP'; openShop(); }
         else if (this.type === 'exit') { roomCounter.innerText = 'Saída - Próx Andar'; roomCounter.style.color = '#9b59b6'; this.isCleared = true; pickups.push(new Pickup(cx, cy, 'exit', 0)); }
+        else if (this.type === 'treasure') { roomCounter.innerText = 'Sala do Tesouro'; roomCounter.style.color = '#f1c40f'; this.isCleared = true; pickups.push(new Pickup(cx - 30, cy, 'gold', 50)); pickups.push(new Pickup(cx + 30, cy, 'gold', 50)); pickups.push(new Pickup(cx, cy + 30, 'heart', Math.floor(Math.random() * 2) + 1)); }
+        else if (this.type === 'npc') { roomCounter.innerText = 'Anjo Guardião'; roomCounter.style.color = '#3498db'; this.isCleared = true; pickups.push(new Pickup(cx, cy, 'buff', 0)); }
         else if (!this.isCleared) {
             this.spawnTimer = 2; this.pendingEnemies = [];
-            if (this.type === 'boss') { let bi = Math.floor(Math.random() * BOSS_DEFS.length); this.pendingEnemies.push(new Enemy(cx, cy, 'boss', bi)); roomCounter.innerText = `Nível ${mapLevel} - ${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; }
-            else if (this.type === 'miniboss') { this.pendingEnemies.push(new Enemy(cx, cy, 'miniboss'), new Enemy(cx - 100, cy, 'minion'), new Enemy(cx + 100, cy, 'minion')); roomCounter.innerText = `Nível ${mapLevel} - Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; }
-            else { let mc = 3 + mapLevel + Math.floor(Math.random() * 3); for (let i = 0; i < mc; i++)this.pendingEnemies.push(new Enemy(WALL + 50 + Math.random() * (700 - WALL * 2), WALL + 50 + Math.random() * (500 - WALL * 2), 'minion')); roomCounter.innerText = `Nível ${mapLevel} - Batalha`; roomCounter.style.color = '#e0e0e0'; }
-        } else { roomCounter.innerText = `Nível ${mapLevel} - Limpo`; roomCounter.style.color = '#7f8fa6'; }
+            if (this.type === 'boss') { let bi = Math.floor(Math.random() * BOSS_DEFS.length); this.pendingEnemies.push(new Enemy(cx, cy, 'boss', bi)); roomCounter.innerText = `${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; }
+            else if (this.type === 'miniboss') { this.pendingEnemies.push(new Enemy(cx, cy, 'miniboss'), new Enemy(cx - 100, cy, 'minion'), new Enemy(cx + 100, cy, 'minion')); roomCounter.innerText = `Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; }
+            else { let mc = 3 + mapLevel + Math.floor(Math.random() * 3); for (let i = 0; i < mc; i++)this.pendingEnemies.push(new Enemy(WALL + 50 + Math.random() * (700 - WALL * 2), WALL + 50 + Math.random() * (500 - WALL * 2), 'minion')); roomCounter.innerText = `Batalha`; roomCounter.style.color = '#e0e0e0'; }
+        } else { roomCounter.innerText = `Limpo`; roomCounter.style.color = '#7f8fa6'; }
     }
     update(dt) {
         if (this.spawnTimer > 0) {
@@ -189,7 +207,7 @@ class RoomSystem {
                 this.pendingEnemies = [];
                 enemies.forEach(e => boom(e.x, e.y, '#fff', 15));
             }
-        } else if (!this.isCleared && enemies.length === 0 && this.type !== 'spawn' && this.type !== 'shop' && this.type !== 'exit') {
+        } else if (!this.isCleared && enemies.length === 0 && !['spawn', 'shop', 'exit', 'treasure', 'npc'].includes(this.type)) {
             this.isCleared = true; this.rooms[`${this.currentX},${this.currentY}`].cleared = true;
             if (this._hadMiniboss) pickups.push(new Pickup(400, 300, 'gold', 10 + Math.floor(Math.random() * 15)));
             if (this.type === 'boss') {
@@ -201,8 +219,16 @@ class RoomSystem {
             pickups[i].update(dt);
             if (dist(player.x, player.y, pickups[i].x, pickups[i].y) < player.radius + pickups[i].radius) {
                 if (pickups[i].type === 'gold') { let v = pickups[i].value; if (player.charType === 9) v = Math.ceil(v * 1.5); player.gold += v; goldCounter.innerText = player.gold; boom(pickups[i].x, pickups[i].y, '#feca57', 10); pickups.splice(i, 1); }
+                else if (pickups[i].type === 'heart') { player.hp = Math.min(player.maxHp, player.hp + pickups[i].value); updateHUD(); boom(pickups[i].x, pickups[i].y, '#ff4757', 15); pickups.splice(i, 1); }
+                else if (pickups[i].type === 'buff') { player.dmgMult += 0.2; boom(pickups[i].x, pickups[i].y, '#3498db', 30); pickups.splice(i, 1); }
                 else if (pickups[i].type === 'exit') {
-                    mapLevel++; if (mapLevel > MAX_LEVELS) { gameState = 'VICTORY'; switchScreen('victory'); return; } else { currentRoom = new RoomSystem(); return; }
+                    mapLevel++; if (mapLevel > MAX_LEVELS) {
+                        gameState = 'VICTORY'; switchScreen('victory');
+                        let bvt = parseFloat(localStorage.getItem('toca_vic_time') || 999999);
+                        if (gameTime < bvt) { localStorage.setItem('toca_vic_time', gameTime.toString()); bvt = gameTime; }
+                        vicFinalTimeEl.innerText = `Tempo Total: ${formatTime(gameTime)}`; vicBestTimeEl.innerText = `Melhor Tempo: ${formatTime(bvt)}`;
+                        return;
+                    } else { floorCounterEl.innerText = mapLevel; currentRoom = new RoomSystem(); return; }
                 }
             }
         }
@@ -218,24 +244,26 @@ class RoomSystem {
         else if (s === 'W') { player.x = 800 - WALL - player.radius - 20; player.y = cy; tx--; }
         this.enterRoom(tx, ty);
     }
-    draw(c) {
-        c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : this.type === 'exit' ? '#23153c' : '#1e2029';
+    drawBase(c) {
+        c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : this.type === 'exit' ? '#23153c' : this.type === 'treasure' ? '#332918' : this.type === 'npc' ? '#103340' : '#1e2029';
         if (this.type === 'spawn') c.fillStyle = '#1e2922';
         c.fillRect(0, 0, 800, 600); c.fillStyle = '#2f3542'; c.fillRect(0, 0, 800, WALL); c.fillRect(0, 600 - WALL, 800, WALL); c.fillRect(0, 0, WALL, 600); c.fillRect(800 - WALL, 0, WALL, 600);
         if (this.type === 'shop' && this.isCleared) { c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; c.fillText('🏪 Portas estão abertas', 400, 300); }
         if (this.isCleared) {
             for (let d of this.doors) {
                 let rClr = this.rooms[d.side === 'N' ? `${this.currentX},${this.currentY - 1}` : d.side === 'S' ? `${this.currentX},${this.currentY + 1}` : d.side === 'E' ? `${this.currentX + 1},${this.currentY}` : `${this.currentX - 1},${this.currentY}`].cleared;
-                c.fillStyle = rClr ? '#2ed573' : d.toType === 'boss' ? '#ff4757' : d.toType === 'exit' ? '#9b59b6' : d.toType === 'miniboss' ? '#ffa502' : '#2ed573';
+                c.fillStyle = rClr ? '#2ed573' : d.toType === 'boss' ? '#ff4757' : d.toType === 'exit' ? '#9b59b6' : d.toType === 'miniboss' ? '#ffa502' : d.toType === 'treasure' ? '#f1c40f' : d.toType === 'npc' ? '#3498db' : '#2ed573';
                 c.fillRect(d.x, d.y, d.w, d.h);
-                if (!rClr && (d.toType === 'boss' || d.toType === 'exit' || d.toType === 'miniboss')) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? 'BOSS' : d.toType === 'exit' ? 'SAIDA' : 'MINI'; c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
+                if (!rClr && ['boss', 'exit', 'miniboss', 'treasure', 'npc'].includes(d.toType)) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? 'BOSS' : d.toType === 'exit' ? 'SAIDA' : d.toType === 'treasure' ? 'BAU' : d.toType === 'npc' ? 'NPC' : 'MINI'; c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
             }
-        } else if (this.type !== 'spawn' && this.type !== 'shop' && this.type !== 'exit') {
+        } else if (!['spawn', 'shop', 'exit', 'treasure', 'npc'].includes(this.type)) {
             let txt = this.spawnTimer > 0 ? `PREPARE-SE: ${Math.ceil(this.spawnTimer)}s` : 'BLOQUEADO';
             let col = this.spawnTimer > 0 ? '#feca57' : '#ff4757';
             c.fillStyle = col; c.font = '20px VT323'; c.textAlign = 'center'; c.fillText(txt, 400, WALL + 20);
         }
         pickups.forEach(p => p.draw(c)); icebergs.forEach(ib => ib.draw(c));
+    }
+    drawUI(c) {
         this.drawMinimap(c);
     }
     drawMinimap(c) {
@@ -262,11 +290,11 @@ function buyItem(item, el) { if (player.gold < item.price) return; player.gold -
 function closeShop() { switchScreen('hud'); gameState = 'PLAYING'; lastTime = performance.now(); requestAnimationFrame(gameLoop); }
 
 // MAIN
-function startGame() { gameState = 'PLAYING'; switchScreen('hud'); mapLevel = 1; player = new Player(400, 300, selectedChar); currentRoom = new RoomSystem(); bossHealthContainer.style.display = 'none'; goldCounter.innerText = '0'; weaponNameEl.innerText = 'Padrão'; abilityNameEl.innerText = '-'; skillCdEl.innerText = ''; updateHUD(); lastTime = performance.now(); requestAnimationFrame(gameLoop); }
+function startGame() { gameState = 'PLAYING'; switchScreen('hud'); mapLevel = 1; floorCounterEl.innerText = mapLevel; gameTime = 0; player = new Player(400, 300, selectedChar); currentRoom = new RoomSystem(); bossHealthContainer.style.display = 'none'; goldCounter.innerText = '0'; weaponNameEl.innerText = 'Padrão'; abilityNameEl.innerText = '-'; skillCdEl.innerText = ''; updateHUD(); lastTime = performance.now(); requestAnimationFrame(gameLoop); }
 function updateHUD() { if (!player) return; let p = Math.max(0, (player.hp / player.maxHp) * 100); healthBar.style.width = p + '%'; healthBar.style.backgroundColor = p < 30 ? '#ff4757' : 'var(--health)'; }
 function updateCooldowns() { if (!player) return; let icd = player.getInnateCD(); if (icd > 0) { charAbilityCdEl.innerText = `${Math.ceil(icd)}s`; charAbilityCdEl.style.color = '#ff4757'; } else { charAbilityCdEl.innerText = 'PRONTO'; charAbilityCdEl.style.color = '#2ed573'; } if (player.activeSkill) { if (player.skillCD > 0) { skillCdEl.innerText = `(${Math.ceil(player.skillCD)}s)`; skillCdEl.style.color = '#ff4757'; } else { skillCdEl.innerText = '(PRONTO)'; skillCdEl.style.color = '#2ed573'; } } }
-function triggerGameOver() { gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; }
+function triggerGameOver() { gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; let bt = parseFloat(localStorage.getItem('toca_surv_time') || 0); if (gameTime > bt) { localStorage.setItem('toca_surv_time', gameTime.toString()); bt = gameTime; } goFinalTimeEl.innerText = `Tempo Sobrevivido: ${formatTime(gameTime)}`; goBestTimeEl.innerText = `Melhor Sobrevivência: ${formatTime(bt)}`; }
 
 function checkCollisions() { for (let i = projectiles.length - 1; i >= 0; i--) { let p = projectiles[i]; if (p.isPlayerObj) { for (let j = enemies.length - 1; j >= 0; j--) { let e = enemies[j]; if (dist(p.x, p.y, e.x, e.y) < p.radius + e.radius) { e.takeDamage(p.damage); if (p.weaponType === 'fire') { e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); } if (p.weaponType === 'taser') e.stunTimer = 2; if (p.weaponType === 'ice') e.slowTimer = 3; boom(p.x, p.y, p.color, 3); if (e.hp <= 0) { enemies.splice(j, 1); if (player.charType === 3 && Math.random() < 0.25) { player.hp = Math.min(player.maxHp, player.hp + 1); updateHUD(); boom(player.x, player.y, '#2ed573', 10); } } p.active = false; break; } } } else { if (!player.isJumping && player.flyT <= 0) { if (dist(p.x, p.y, player.x, player.y) < p.radius + player.radius * 0.8) { if (p.weaponType === 'ice') player.slowTimer = 2; player.takeDamage(p.damage + (mapLevel - 1) * 0.5); p.active = false; } } } if (!p.active) projectiles.splice(i, 1); } if (player && !player.isJumping && player.flyT <= 0) { for (let e of enemies) { if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 5) { player.takeDamage(1 + (mapLevel - 1) * 0.5); let dx = player.x - e.x, dy = player.y - e.y, mg = Math.hypot(dx, dy); if (mg > 0) { player.x += dx / mg * 20; player.y += dy / mg * 20; } } } } }
 
-function gameLoop(ts) { if (gameState !== 'PLAYING') return; let dt = (ts - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = ts; player.update(dt); currentRoom.update(dt); enemies.forEach(e => e.update(dt)); projectiles.forEach(p => p.update(dt)); particles = particles.filter(p => p.update(dt)); icebergs = icebergs.filter(ib => ib.update(dt)); checkCollisions(); updateCooldowns(); ctx.clearRect(0, 0, 800, 600); currentRoom.draw(ctx); enemies.forEach(e => e.draw(ctx)); projectiles.forEach(p => p.draw(ctx)); particles.forEach(p => p.draw(ctx)); player.draw(ctx); requestAnimationFrame(gameLoop); }
+function gameLoop(ts) { if (gameState !== 'PLAYING') return; let dt = (ts - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = ts; gameTime += dt; gameTimerEl.innerText = formatTime(gameTime); player.update(dt); currentRoom.update(dt); enemies.forEach(e => e.update(dt)); projectiles.forEach(p => p.update(dt)); particles = particles.filter(p => p.update(dt)); icebergs = icebergs.filter(ib => ib.update(dt)); checkCollisions(); updateCooldowns(); ctx.clearRect(0, 0, 800, 600); ctx.save(); if (screenShakeT > 0) { ctx.translate((Math.random() - .5) * screenShakeM, (Math.random() - .5) * screenShakeM); screenShakeT -= dt; } currentRoom.drawBase(ctx); enemies.forEach(e => e.draw(ctx)); projectiles.forEach(p => p.draw(ctx)); particles.forEach(p => p.draw(ctx)); player.draw(ctx); ctx.restore(); ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(10, 10, 15, 0.85)'; ctx.fillRect(0, 0, 800, 600); ctx.globalCompositeOperation = 'destination-out'; let drawLight = (X, Y, R, int) => { let g = ctx.createRadialGradient(X, Y, 0, X, Y, R); g.addColorStop(0, `rgba(0,0,0,${int})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X, Y, R, 0, Math.PI * 2); ctx.fill(); }; drawLight(player.x, player.y, 250, 1); projectiles.forEach(p => drawLight(p.x, p.y, p.radius * 8, 0.7)); particles.forEach(p => drawLight(p.x, p.y, p.size * 6, 0.5)); enemies.forEach(e => { if (['boss', 'miniboss'].includes(e.type)) drawLight(e.x, e.y, e.radius * 4, 0.5); }); icebergs.forEach(i => drawLight(i.x, i.y, 80, 0.4)); pickups.forEach(p => drawLight(p.x, p.y, 80, 0.5)); if (['shop', 'treasure', 'spawn', 'npc'].includes(currentRoom.type)) drawLight(400, 300, 450, 0.6); ctx.globalCompositeOperation = 'source-over'; currentRoom.drawUI(ctx); requestAnimationFrame(gameLoop); }
