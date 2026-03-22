@@ -214,17 +214,28 @@ class Actor {
 
 class Player extends Actor {
     constructor(x, y, charType) {
-        let maxHp = charType === 1 ? 8 : 5; // Tanque tem mais HP
-        let speed = charType === 0 ? 5 : 3.5; // Veloz tem mais speed
-        super(x, y, 15, '#e0e0e0', maxHp, speed);
+        let maxHp = 5;
+        let speed = 4;
+        let color = '#e0e0e0';
+
+        if (charType === 0) { speed = 5.5; color = '#00d2d3'; } // Veloz
+        else if (charType === 1) { maxHp = 8; speed = 3.5; color = '#ff9f43'; } // Tanque
+        else if (charType === 2) { maxHp = 4; speed = 4.5; color = '#ff4757'; } // Atirador
+        else if (charType === 3) { maxHp = 5; speed = 4.2; color = '#833471'; } // Vampiro
+
+        super(x, y, 15, color, maxHp, speed);
         this.charType = charType;
+
         this.dashCooldown = 0;
         this.shieldTimer = 0;
         this.shieldCooldown = 0;
-        this.weaponCooldown = 0;
 
-        // Cores personalizadas baseadas na escolha
-        this.color = charType === 0 ? '#00d2d3' : '#ff9f43';
+        this.burstCooldown = 0;
+        this.fearTimer = 0;
+        this.fearCooldown = 0;
+
+        this.baseWeaponCooldown = charType === 2 ? 0.12 : 0.25; // Atirador atira rapido
+        this.weaponCooldown = 0;
     }
 
     jump() {
@@ -257,6 +268,22 @@ class Player extends Actor {
                 this.shieldTimer = 3.0;
                 this.shieldCooldown = 8.0;
             }
+        } else if (this.charType === 2) { // Rajada
+            if (this.burstCooldown <= 0) {
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        this.weaponCooldown = 0; // zera o cooldown pra atirar já
+                        if (gameState === 'PLAYING') this.shoot();
+                    }, i * 80);
+                }
+                this.burstCooldown = 4.0;
+            }
+        } else if (this.charType === 3) { // Medo
+            if (this.fearCooldown <= 0) {
+                this.fearTimer = 2.0;
+                this.fearCooldown = 8.0;
+                spawnExplosion(this.x, this.y, '#833471', 30);
+            }
         }
     }
 
@@ -272,7 +299,7 @@ class Player extends Actor {
         const dirY = dy / dist;
 
         projectiles.push(new Projectile(this.x, this.y, dirX, dirY, 10, 5, '#feca57', true));
-        this.weaponCooldown = 0.2; // taxa de tiro
+        this.weaponCooldown = this.baseWeaponCooldown; // taxa de tiro
     }
 
     takeDamage(amount) {
@@ -310,6 +337,9 @@ class Player extends Actor {
         if (this.dashCooldown > 0) this.dashCooldown -= dt;
         if (this.shieldCooldown > 0) this.shieldCooldown -= dt;
         if (this.shieldTimer > 0) this.shieldTimer -= dt;
+        if (this.burstCooldown > 0) this.burstCooldown -= dt;
+        if (this.fearCooldown > 0) this.fearCooldown -= dt;
+        if (this.fearTimer > 0) this.fearTimer -= dt;
 
         // Auto-fire while holding mouse
         if (mouse.down && this.weaponCooldown <= 0) {
@@ -349,12 +379,19 @@ class Player extends Actor {
         ctx.arc(this.x, drawY, drawRad, 0, Math.PI * 2);
         ctx.fill();
 
-        // Escudo
+        // Escudo ou Medo (indicadores visuais)
         if (this.shieldTimer > 0) {
             ctx.strokeStyle = '#48dbfb';
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.arc(this.x, drawY, drawRad + 8, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        if (this.fearTimer > 0) {
+            ctx.strokeStyle = '#833471';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(this.x, drawY, drawRad + 5 + Math.sin(Date.now() / 100) * 15, 0, Math.PI * 2);
             ctx.stroke();
         }
 
@@ -411,17 +448,29 @@ class Enemy extends Actor {
             this.vx = dx * this.speed;
             this.vy = dy * this.speed;
 
-            // Período de tiro
-            this.fireCooldown -= dt;
-            if (this.fireCooldown <= 0 && dist < 300) {
-                projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false));
-                this.fireCooldown = 1.5 + Math.random();
+            // Foge e não atira (Medo)
+            if (player.fearTimer > 0 && dist < 150) {
+                this.vx = -dx * this.speed * 1.5;
+                this.vy = -dy * this.speed * 1.5;
+            } else {
+                // Período de tiro
+                this.fireCooldown -= dt;
+                if (this.fireCooldown <= 0 && dist < 300) {
+                    projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false));
+                    this.fireCooldown = 1.5 + Math.random();
+                }
             }
         }
         else if (this.type === 'miniboss') {
             // Persegue
             this.vx = dx * this.speed;
             this.vy = dy * this.speed;
+
+            // Foge (Medo)
+            if (player.fearTimer > 0 && dist < 200) {
+                this.vx = -dx * this.speed * 1.5;
+                this.vy = -dy * this.speed * 1.5;
+            }
 
             this.fireCooldown -= dt;
             if (this.fireCooldown <= 0) {
@@ -722,7 +771,14 @@ function checkCollisions() {
                 if (distance(p.x, p.y, e.x, e.y) < p.radius + e.radius) {
                     e.takeDamage(p.damage);
                     spawnExplosion(p.x, p.y, p.color, 3);
-                    if (e.hp <= 0) enemies.splice(j, 1);
+                    if (e.hp <= 0) {
+                        enemies.splice(j, 1);
+                        if (player.charType === 3 && Math.random() < 0.25) { // 25% de chance de curar 1 hp no Vampiro
+                            player.hp = Math.min(player.maxHp, player.hp + 1);
+                            updateHealthBar();
+                            spawnExplosion(player.x, player.y, '#2ed573', 10);
+                        }
+                    }
                     p.active = false;
                     break;
                 }
