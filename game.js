@@ -271,7 +271,7 @@ class RoomSystem {
         this.drawMinimap(c);
     }
     drawMinimap(c) {
-        c.save(); c.translate(680, 80); let s = 6, ms = 15;
+        c.save(); c.translate(700, 480); let s = 6, ms = 15;
         c.globalAlpha = 0.5; c.fillStyle = '#000'; c.fillRect(-50, -50, 100, 100); c.globalAlpha = 1;
         c.strokeStyle = '#576574'; c.lineWidth = 2;
         Object.values(this.rooms).forEach(r => {
