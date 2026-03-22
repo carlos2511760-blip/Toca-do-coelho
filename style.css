@@ -170,15 +170,27 @@ button:hover {
     font-size: 1.3rem;
 }
 
-.hud-left,
-.hud-right {
+.hud-left {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 5px;
 }
 
 .hud-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
+}
+
+.hud-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-end;
 }
 
 .health-container {
