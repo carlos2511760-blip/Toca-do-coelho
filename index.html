@@ -13,8 +13,8 @@
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
 
-        <!-- UI -->
         <div id="ui-layer">
+            <!-- MENU PRINCIPAL -->
             <div id="main-menu" class="screen active">
                 <h1 class="title">Toca do Coelho</h1>
                 <p class="subtitle">Desça até o fundo da toca...</p>
@@ -48,25 +48,49 @@
                 <button id="start-btn">Iniciar Exploração</button>
             </div>
 
+            <!-- HUD -->
             <div id="hud" class="screen">
                 <div class="top-bar">
-                    <div class="health-container">
-                        <div id="health-bar"></div>
+                    <div class="hud-left">
+                        <div class="health-container">
+                            <div id="health-bar"></div>
+                        </div>
+                        <div class="gold-display">🪙 <span id="gold-counter">0</span></div>
                     </div>
-                    <div class="room-info">Sala: <span id="room-counter">Spawn</span></div>
+                    <div class="hud-center">
+                        <div class="room-info">Sala: <span id="room-counter">Spawn</span></div>
+                    </div>
+                    <div class="hud-right">
+                        <div class="weapon-display">🔫 <span id="weapon-name">Padrão</span></div>
+                        <div class="ability-display">⚡ <span id="ability-name">-</span></div>
+                    </div>
                 </div>
                 <div id="boss-health-container" style="display: none;">
                     <div id="boss-name">Chefe</div>
-                    <div id="boss-health-bar"></div>
+                    <div class="boss-bar-bg">
+                        <div id="boss-health-bar"></div>
+                    </div>
                 </div>
             </div>
 
+            <!-- LOJA -->
+            <div id="shop-screen" class="screen">
+                <h2 class="shop-title">🏪 Loja da Toca</h2>
+                <p class="shop-gold">Seu Ouro: 🪙 <span id="shop-gold-amount">0</span></p>
+                <div class="shop-items" id="shop-items">
+                    <!-- Itens gerados dinamicamente -->
+                </div>
+                <button id="shop-close-btn">Continuar Explorando</button>
+            </div>
+
+            <!-- GAME OVER -->
             <div id="game-over" class="screen">
                 <h1 class="title" style="color: #ff3333;">Fim da Linha</h1>
                 <p>Você foi derrotado nas masmorras.</p>
                 <button id="restart-btn">Tentar Novamente</button>
             </div>
 
+            <!-- VITÓRIA -->
             <div id="victory" class="screen">
                 <h1 class="title" style="color: #33ff33;">Vitória!</h1>
                 <p>Você sobreviveu à Toca do Coelho!</p>
@@ -75,6 +99,7 @@
         </div>
     </div>
 
+    <script src="items.js"></script>
     <script src="game.js"></script>
 </body>
 
