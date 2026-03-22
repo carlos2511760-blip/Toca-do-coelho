@@ -34,9 +34,11 @@ const mouse = { x: 0, y: 0, down: false };
 // INPUT
 window.addEventListener('keydown', e => { keys[e.code] = true; if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE'].includes(e.code)) e.preventDefault(); if (e.code === 'Space' && gameState === 'PLAYING' && player) player.jump(); if (e.code === 'KeyQ' && gameState === 'PLAYING' && player) player.useAbility(); if (e.code === 'KeyE' && gameState === 'PLAYING' && player) player.useSkill(); });
 window.addEventListener('keyup', e => keys[e.code] = false);
+window.addEventListener('blur', () => { for (let k in keys) keys[k] = false; mouse.down = false; });
+document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * (canvas.width / r.width); mouse.y = (e.clientY - r.top) * (canvas.height / r.height); });
-document.addEventListener('mousedown', e => { mouse.down = true; });
-document.addEventListener('mouseup', e => { mouse.down = false; if (player && gameState === 'PLAYING') player.shoot(); });
+document.addEventListener('mousedown', e => { if (e.button === 0) mouse.down = true; });
+document.addEventListener('mouseup', e => { if (e.button === 0) { mouse.down = false; if (player && gameState === 'PLAYING') player.shoot(); } });
 charCards.forEach(c => c.addEventListener('click', () => { charCards.forEach(x => x.classList.remove('selected')); c.classList.add('selected'); selectedChar = parseInt(c.dataset.char); }));
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', returnToMenu);
