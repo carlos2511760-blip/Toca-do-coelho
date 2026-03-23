@@ -151,13 +151,17 @@ class RoomSystem {
             this.rooms[`${x},${y}`] = { type: 'battle', x, y, cleared: false };
             roomsCreated++; queue.push({ x, y }); return true;
         };
-        while (roomsCreated < 15) {
+        let needed = 12 + mapLevel * 2;
+        while (roomsCreated < needed) {
             if (queue.length === 0) break;
             let idx = Math.floor(Math.random() * queue.length), curr = queue[idx];
             let dirs = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }].sort(() => Math.random() - 0.5);
             let added = false;
             for (let d of dirs) {
-                if (Math.random() < 0.55 && addRoom(curr.x + d.dx, curr.y + d.dy)) { added = true; break; }
+                let nx = curr.x + d.dx, ny = curr.y + d.dy;
+                if (!this.rooms[`${nx},${ny}`]) {
+                    if (addRoom(nx, ny)) { added = true; break; }
+                }
             }
             if (!added) queue.splice(idx, 1);
         }
