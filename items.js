@@ -10,12 +10,12 @@ const ITEM_CATALOG = {
 
     // --- ARMAS ---
     weapon_fire: { name: 'Cajado de Fogo', desc: 'Dispara bolas de fogo que queimam', type: 'weapon', weaponId: 'fire', price: 50, rarity: 'rare', weight: 15, emoji: '🔥' },
-    weapon_taser: { name: 'Arma de Raio', desc: 'Raios que paralisam inimigos 2s', type: 'weapon', weaponId: 'taser', price: 55, rarity: 'rare', weight: 15, emoji: '⚡' },
+    weapon_taser: { name: 'Arma de Raio', desc: 'Raios paralisam (menos em chefes)', type: 'weapon', weaponId: 'taser', price: 55, rarity: 'rare', weight: 15, emoji: '⚡' },
     weapon_ice: { name: 'Cetro de Gelo', desc: 'Projéteis que deixam inimigos lentos', type: 'weapon', weaponId: 'ice', price: 45, rarity: 'uncommon', weight: 18, emoji: '❄️' },
 
     // --- BUFFS ---
-    buff_strength: { name: 'Poção de Força', desc: 'Dano +50% permanente', type: 'buff', buffId: 'strength', price: 40, rarity: 'uncommon', weight: 20, emoji: '💪' },
-    buff_speed: { name: 'Poção de Velocidade', desc: 'Velocidade +30% permanente', type: 'buff', buffId: 'speed', price: 35, rarity: 'uncommon', weight: 20, emoji: '👟' },
+    buff_strength: { name: 'Poção de Força', desc: 'Dano +25% permanente', type: 'buff', buffId: 'strength', price: 40, rarity: 'uncommon', weight: 20, emoji: '💪' },
+    buff_speed: { name: 'Poção de Velocidade', desc: 'Velocidade +15% permanente', type: 'buff', buffId: 'speed', price: 35, rarity: 'uncommon', weight: 20, emoji: '👟' },
 
     // --- HABILIDADES ATIVAS (tecla E) ---
     skill_gravity: { name: 'Gravidade', desc: 'Puxa todos os inimigos ao centro', type: 'skill', skillId: 'gravity', price: 65, rarity: 'epic', weight: 10, emoji: '🌀' },
