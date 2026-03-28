@@ -47,6 +47,7 @@
                         <button class="tab-btn" data-tab="tab-video">🖥️ Vídeo</button>
                         <button class="tab-btn" data-tab="tab-controls">🎮 Controles</button>
                         <button class="tab-btn" data-tab="tab-access">🌐 Acessibilidade</button>
+                        <button class="tab-btn" data-tab="tab-cheats" style="color:#fffa65; border-color:#fffa65;">💀 Cheats</button>
                     </div>
 
                     <!-- ÁUDIO -->
@@ -133,6 +134,23 @@
                             <input type="range" id="set-hud-size" min="80" max="150" value="100">
                             <span class="range-val" id="set-hud-size-val">100%</span>
                         </div>
+                    </div>
+
+                    <!-- CHEATS -->
+                    <div class="tab-content" id="tab-cheats">
+                        <div class="setting-row">
+                            <label>Brilho Total (Full Bright)</label>
+                            <button id="btn-cheat-bright" class="toggle-btn">Ativar</button>
+                        </div>
+                        <div class="setting-row">
+                            <label>Modo Voo (God Mode)</label>
+                            <button id="btn-cheat-fly" class="toggle-btn">Ativar</button>
+                        </div>
+                        <div class="setting-row">
+                            <label>Ouro Infinito</label>
+                            <button id="btn-cheat-gold" class="menu-btn" style="min-width:100px; padding:4px 10px; font-size:1rem;">+999 Ouro</button>
+                        </div>
+                        <p class="hint-text" style="color:#fffa65;">⚠️ O uso de cheats desativa recordes nesta sessão.</p>
                     </div>
 
                     <button id="btn-settings-back" class="menu-btn back-btn">← Voltar</button>
