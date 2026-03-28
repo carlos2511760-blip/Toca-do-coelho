@@ -79,7 +79,17 @@ const keys = {};
 const mouse = { x: 0, y: 0, down: false };
 
 // SCREEN MANAGEMENT
-function switchScreen(id) { Object.values(screens).forEach(s => s.classList.remove('active')); if (id && screens[id]) screens[id].classList.add('active'); }
+function switchScreen(id) { 
+    Object.values(screens).forEach(s => s.classList.remove('active')); 
+    if (id && screens[id]) screens[id].classList.add('active'); 
+    
+    // Controle de visibilidade dos botões mobile
+    const mCtrls = document.getElementById('mobile-controls');
+    if (mCtrls) {
+        if (id === 'hud') mCtrls.style.display = 'block';
+        else mCtrls.style.display = 'none';
+    }
+}
 
 function returnToMenu() { gameState = 'MENU'; switchScreen('titleScreen'); }
 
@@ -141,15 +151,20 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// Sincronizar toque para mira no mobile
+// Sincronizar toque para mira e TIRO no mobile
 window.addEventListener('touchstart', (e) => {
-    if (e.target.id === 'gameCanvas') {
+    if (e.target.id === 'gameCanvas' && gameState === 'PLAYING') {
         const r = canvas.getBoundingClientRect();
         const t = e.touches[0];
         mouse.x = (t.clientX - r.left) * (canvas.width / r.width);
         mouse.y = (t.clientY - r.top) * (canvas.height / r.height);
+        mouse.down = true;
+        if (player) player.shoot();
     }
 }, { passive: false });
+window.addEventListener('touchend', (e) => {
+    if (e.target.id === 'gameCanvas') mouse.down = false;
+});
 
 // ---------- MOBILE INPUTS ----------
 (function initMobile() {
@@ -227,7 +242,9 @@ window.addEventListener('touchstart', (e) => {
 
     setupBtn('btn-m-jump', () => { if (player) player.jump(); });
     setupBtn('btn-m-ability', () => { if (player) player.useAbility(); });
-    setupBtn('btn-m-shoot', () => { mouse.down = true; if (player) player.shoot(); }, () => { mouse.down = false; });
+    
+    // Tiro removido do botão fixo para ser no toque da tela por pedido do user
+    
     setupBtn('btn-m-pause', () => {
         if (gameState === 'PLAYING') { gameState = 'PAUSED'; switchScreen('pause'); }
         else if (gameState === 'PAUSED') { gameState = 'PLAYING'; switchScreen('hud'); }
@@ -290,6 +307,20 @@ diffCards.forEach(c => c.addEventListener('click', () => {
     c.classList.add('selected');
     selectedDiff = c.dataset.diff;
 }));
+
+// ===== MOBILE SETTINGS SYNC =====
+const updateMobileStyles = () => {
+    const size = document.getElementById('set-m-size').value;
+    const joyX = document.getElementById('set-m-joy-x').value;
+    document.documentElement.style.setProperty('--m-size', size / 100);
+    document.documentElement.style.setProperty('--m-joy-x', joyX + 'px');
+    document.getElementById('set-m-size-val').innerText = size + '%';
+    document.getElementById('set-m-joy-x-val').innerText = joyX + 'px';
+};
+['set-m-size', 'set-m-joy-x'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateMobileStyles);
+});
 
 // ===== REWARD CARDS (NPC) =====
 document.querySelectorAll('.reward-card').forEach(card => {
