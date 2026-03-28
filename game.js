@@ -152,16 +152,38 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // Sincronizar toque para mira e TIRO no mobile
+const updateMobileAim = (e) => {
+    if (gameState !== 'PLAYING') return;
+    const r = canvas.getBoundingClientRect();
+    // Procurar por um toque que NÃO seja o do joystick (se houver mais de um)
+    let touch = null;
+    for (let i = 0; i < e.touches.length; i++) {
+        if (e.touches[i].target.id === 'gameCanvas') {
+            touch = e.touches[i];
+            break;
+        }
+    }
+    if (!touch && e.changedTouches) touch = e.changedTouches[0];
+    if (touch) {
+        mouse.x = (touch.clientX - r.left) * (canvas.width / r.width);
+        mouse.y = (touch.clientY - r.top) * (canvas.height / r.height);
+    }
+};
+
 window.addEventListener('touchstart', (e) => {
     if (e.target.id === 'gameCanvas' && gameState === 'PLAYING') {
-        const r = canvas.getBoundingClientRect();
-        const t = e.touches[0];
-        mouse.x = (t.clientX - r.left) * (canvas.width / r.width);
-        mouse.y = (t.clientY - r.top) * (canvas.height / r.height);
+        updateMobileAim(e);
         mouse.down = true;
         if (player) player.shoot();
     }
 }, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+    if (e.target.id === 'gameCanvas' && gameState === 'PLAYING') {
+        updateMobileAim(e);
+    }
+}, { passive: false });
+
 window.addEventListener('touchend', (e) => {
     if (e.target.id === 'gameCanvas') mouse.down = false;
 });

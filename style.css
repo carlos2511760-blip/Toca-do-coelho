@@ -47,7 +47,8 @@ body {
     border: 4px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 71, 87, 0.1);
-    image-rendering: pixelated;
+    image-rendering: auto;
+    overflow: hidden;
 }
 
 canvas {
@@ -726,19 +727,24 @@ button:hover {
     #game-container { transform: scale(0.9); }
 }
 
-@media (max-width: 850px), (max-height: 600px) {
+@media (max-width: 1024px), (max-height: 600px) {
     #game-container {
-        width: 100vmin;
-        height: 75vmin;
-        max-width: 100vw;
-        max-height: 100vh;
+        width: 100vw;
+        height: 100vh;
         border: none;
         border-radius: 0;
+        background: black;
     }
-    .title { font-size: 2.2rem; }
-    .menu-btn { font-size: 1.2rem; min-width: 180px; padding: 6px 15px; }
-    .char-card { width: 120px; padding: 4px 6px; }
-    .diff-card { min-width: 90px; }
+    
+    canvas {
+        width: 100%;
+        height: 100%;
+        object-fit: fill; 
+    }
+
+    .title { font-size: 3.2rem; margin-bottom: 30px; }
+    .title-buttons { gap: 15px; }
+    .menu-btn { font-size: 1.4rem; padding: 15px 30px; }
 }
 
 /* ========== REWARD SCREEN (NPC) ========== */
