@@ -7,8 +7,18 @@ const lightCanvas = document.createElement('canvas');
 lightCanvas.width = 800; lightCanvas.height = 600;
 const lightCtx = lightCanvas.getContext('2d');
 
-// UI
-const screens = { mainMenu: document.getElementById('main-menu'), hud: document.getElementById('hud'), gameOver: document.getElementById('game-over'), victory: document.getElementById('victory'), shop: document.getElementById('shop-screen') };
+// UI - All screens
+const screens = {
+    titleScreen: document.getElementById('title-screen'),
+    mainMenu: document.getElementById('main-menu'),
+    hud: document.getElementById('hud'),
+    gameOver: document.getElementById('game-over'),
+    victory: document.getElementById('victory'),
+    shop: document.getElementById('shop-screen'),
+    settings: document.getElementById('settings-screen'),
+    manual: document.getElementById('manual-screen'),
+    pause: document.getElementById('pause-screen')
+};
 const startBtn = document.getElementById('start-btn');
 const charCards = document.querySelectorAll('.char-card');
 const healthBar = document.getElementById('health-bar');
@@ -36,9 +46,22 @@ const vicBestTimeEl = document.getElementById('vic-best-time');
 
 let gameState = 'MENU';
 let selectedChar = 0;
+let selectedDiff = 'normal';
 let lastTime = 0;
 let gameTime = 0;
 let screenShakeT = 0, screenShakeM = 0;
+let prevScreenBeforeSettings = 'titleScreen';
+let lightingEnabled = true;
+
+// DIFFICULTY MODIFIERS
+const DIFF_MODS = {
+    easy:      { hpBonus: 3, enemyHpMult: 0.7, enemySpdMult: 0.85, enemyDmgMult: 0.7, label: '🌿 Fácil' },
+    normal:    { hpBonus: 0, enemyHpMult: 1.0, enemySpdMult: 1.0,  enemyDmgMult: 1.0, label: '⚔️ Normal' },
+    hard:      { hpBonus: -1, enemyHpMult: 1.5, enemySpdMult: 1.15, enemyDmgMult: 1.3, label: '🔥 Difícil' },
+    nightmare: { hpBonus: -2, enemyHpMult: 2.0, enemySpdMult: 1.3,  enemyDmgMult: 1.6, label: '💀 Pesadelo' }
+};
+
+function getDiff() { return DIFF_MODS[selectedDiff] || DIFF_MODS.normal; }
 
 function shake(t, m) { screenShakeT = t; screenShakeM = m; }
 function formatTime(s) { let m = Math.floor(s / 60); let sm = Math.floor(s % 60); return `${m < 10 ? '0' : ''}${m}:${sm < 10 ? '0' : ''}${sm}`; }
@@ -49,8 +72,110 @@ const WALL = 40;
 const keys = {};
 const mouse = { x: 0, y: 0, down: false };
 
-// INPUT
-window.addEventListener('keydown', e => { keys[e.code] = true; if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE'].includes(e.code)) e.preventDefault(); if (e.code === 'Space' && gameState === 'PLAYING' && player) player.jump(); if (e.code === 'KeyQ' && gameState === 'PLAYING' && player) player.useAbility(); if (e.code === 'KeyE' && gameState === 'PLAYING' && player) player.useSkill(); });
+// SCREEN MANAGEMENT
+function switchScreen(id) { Object.values(screens).forEach(s => s.classList.remove('active')); if (id && screens[id]) screens[id].classList.add('active'); }
+
+function returnToMenu() { gameState = 'MENU'; switchScreen('titleScreen'); }
+
+function dist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
+
+// ===== TITLE SCREEN BUTTONS =====
+document.getElementById('btn-play').addEventListener('click', () => switchScreen('mainMenu'));
+document.getElementById('btn-manual').addEventListener('click', () => switchScreen('manual'));
+document.getElementById('btn-settings').addEventListener('click', () => { prevScreenBeforeSettings = 'titleScreen'; switchScreen('settings'); });
+document.getElementById('btn-settings-back').addEventListener('click', () => switchScreen(prevScreenBeforeSettings));
+document.getElementById('btn-manual-back').addEventListener('click', () => switchScreen('titleScreen'));
+document.getElementById('btn-back-title').addEventListener('click', () => switchScreen('titleScreen'));
+
+// ===== PAUSE SYSTEM =====
+document.getElementById('btn-resume').addEventListener('click', resumeGame);
+document.getElementById('btn-pause-settings').addEventListener('click', () => { prevScreenBeforeSettings = 'pause'; switchScreen('settings'); });
+document.getElementById('btn-restart').addEventListener('click', () => { switchScreen('mainMenu'); gameState = 'MENU'; });
+document.getElementById('btn-quit').addEventListener('click', () => { gameState = 'MENU'; switchScreen('titleScreen'); });
+
+function pauseGame() {
+    if (gameState !== 'PLAYING') return;
+    gameState = 'PAUSED';
+    document.getElementById('pause-level').innerText = mapLevel;
+    document.getElementById('pause-time').innerText = formatTime(gameTime);
+    switchScreen('pause');
+}
+
+function resumeGame() {
+    if (gameState !== 'PAUSED') return;
+    gameState = 'PLAYING';
+    switchScreen('hud');
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+// ===== SETTINGS TABS =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+});
+
+// Volume sliders
+['vol-master', 'vol-music', 'vol-sfx', 'set-hud-size'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => {
+        const valEl = document.getElementById(id + '-val');
+        if (valEl) valEl.innerText = el.value + '%';
+    });
+});
+
+// Fullscreen toggle
+document.getElementById('btn-fullscreen').addEventListener('click', function() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        this.innerText = 'Desativar';
+    } else {
+        document.exitFullscreen();
+        this.innerText = 'Ativar';
+    }
+});
+
+// Lighting toggle
+document.getElementById('btn-lighting').addEventListener('click', function() {
+    lightingEnabled = !lightingEnabled;
+    this.innerText = lightingEnabled ? 'Ligado' : 'Desligado';
+    this.classList.toggle('on', lightingEnabled);
+});
+
+// Colorblind filter
+document.getElementById('set-colorblind').addEventListener('change', function() {
+    const v = this.value;
+    const gc = document.getElementById('game-container');
+    gc.style.filter = '';
+    if (v === 'protanopia') gc.style.filter = 'saturate(0.8) hue-rotate(-20deg)';
+    else if (v === 'deuteranopia') gc.style.filter = 'saturate(0.7) hue-rotate(30deg)';
+    else if (v === 'tritanopia') gc.style.filter = 'saturate(0.8) hue-rotate(60deg)';
+});
+
+// ===== DIFFICULTY CARDS =====
+const diffCards = document.querySelectorAll('.diff-card');
+diffCards.forEach(c => c.addEventListener('click', () => {
+    diffCards.forEach(x => x.classList.remove('selected'));
+    c.classList.add('selected');
+    selectedDiff = c.dataset.diff;
+}));
+
+// ===== INPUT =====
+window.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE'].includes(e.code)) e.preventDefault();
+    if (e.code === 'Space' && gameState === 'PLAYING' && player) player.jump();
+    if (e.code === 'KeyQ' && gameState === 'PLAYING' && player) player.useAbility();
+    if (e.code === 'KeyE' && gameState === 'PLAYING' && player) player.useSkill();
+    if (e.code === 'Escape') {
+        if (gameState === 'PLAYING') pauseGame();
+        else if (gameState === 'PAUSED') resumeGame();
+    }
+});
 window.addEventListener('keyup', e => keys[e.code] = false);
 window.addEventListener('blur', () => { for (let k in keys) keys[k] = false; mouse.down = false; });
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -62,10 +187,6 @@ startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', returnToMenu);
 victoryBtn.addEventListener('click', returnToMenu);
 shopCloseBtn.addEventListener('click', closeShop);
-
-function switchScreen(id) { Object.values(screens).forEach(s => s.classList.remove('active')); if (id) screens[id].classList.add('active'); }
-function returnToMenu() { gameState = 'MENU'; switchScreen('mainMenu'); }
-function dist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
 
 // PARTICLES
 class Particle { constructor(x, y, col, spd, sz, life) { this.x = x; this.y = y; this.vx = (Math.random() - .5) * spd; this.vy = (Math.random() - .5) * spd; this.color = col; this.size = sz; this.life = life; this.maxLife = life; } update(dt) { this.x += this.vx; this.y += this.vy; this.life -= dt * 60; return this.life > 0; } draw(c) { c.fillStyle = this.color; c.globalAlpha = Math.max(0, this.life / this.maxLife); c.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size); c.globalAlpha = 1; } }
@@ -88,7 +209,7 @@ class Actor { constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.
 
 // PLAYER
 class Player extends Actor {
-    constructor(x, y, ct) { let hp = 5, spd = 4, col = '#e0e0e0'; if (ct === 0) { spd = 5.5; col = '#00d2d3'; } else if (ct === 1) { hp = 8; spd = 3.5; col = '#ff9f43'; } else if (ct === 2) { hp = 4; spd = 4.5; col = '#ff4757'; } else if (ct === 3) { hp = 5; spd = 4.2; col = '#833471'; } else if (ct === 4) { hp = 4; spd = 4.8; col = '#7f8fa6'; } else if (ct === 5) { hp = 4; spd = 4.0; col = '#2980b9'; } else if (ct === 6) { hp = 6; spd = 3.5; col = '#2ecc71'; } else if (ct === 7) { hp = 7; spd = 3.0; col = '#f1c40f'; } else if (ct === 8) { hp = 5; spd = 4.0; col = '#d35400'; } else if (ct === 9) { hp = 5; spd = 4.2; col = '#f368e0'; } super(x, y, 15, col, hp, spd); this.charType = ct; this.dashCD = 0; this.shieldT = 0; this.shieldCD = 0; this.burstCD = 0; this.fearT = 0; this.fearCD = 0; this.ghostT = 0; this.ghostCD = 0; this.magicCD = 0; this.toxicCD = 0; this.empCD = 0; this.fireCD = 0; this.luckCD = 0; this.baseFireRate = ct === 2 ? 0.12 : 0.25; this.weaponCD = 0; this.gold = ct === 5 ? 30 : 0; this.currentWeapon = 'normal'; this.activeSkill = null; this.skillCD = 0; this.dmgMult = 1; this.regenT = 0; this.regenDur = 0; this.flyT = 0; this.noDamageT = 0; this.auraT = 0; this.burnTimer = 0; this.burnTick = 0; }
+    constructor(x, y, ct) { let hp = 5, spd = 4, col = '#e0e0e0'; if (ct === 0) { spd = 5.5; col = '#00d2d3'; } else if (ct === 1) { hp = 8; spd = 3.5; col = '#ff9f43'; } else if (ct === 2) { hp = 4; spd = 4.5; col = '#ff4757'; } else if (ct === 3) { hp = 5; spd = 4.2; col = '#833471'; } else if (ct === 4) { hp = 4; spd = 4.8; col = '#7f8fa6'; } else if (ct === 5) { hp = 4; spd = 4.0; col = '#2980b9'; } else if (ct === 6) { hp = 6; spd = 3.5; col = '#2ecc71'; } else if (ct === 7) { hp = 7; spd = 3.0; col = '#f1c40f'; } else if (ct === 8) { hp = 5; spd = 4.0; col = '#d35400'; } else if (ct === 9) { hp = 5; spd = 4.2; col = '#f368e0'; } hp = Math.max(1, hp + getDiff().hpBonus); super(x, y, 15, col, hp, spd); this.charType = ct; this.dashCD = 0; this.shieldT = 0; this.shieldCD = 0; this.burstCD = 0; this.fearT = 0; this.fearCD = 0; this.ghostT = 0; this.ghostCD = 0; this.magicCD = 0; this.toxicCD = 0; this.empCD = 0; this.fireCD = 0; this.luckCD = 0; this.baseFireRate = ct === 2 ? 0.12 : 0.25; this.weaponCD = 0; this.gold = ct === 5 ? 30 : 0; this.currentWeapon = 'normal'; this.activeSkill = null; this.skillCD = 0; this.dmgMult = 1; this.regenT = 0; this.regenDur = 0; this.flyT = 0; this.noDamageT = 0; this.auraT = 0; this.burnTimer = 0; this.burnTick = 0; }
     jump() { if (!this.isJumping && this.flyT <= 0) { this.isJumping = true; this.jumpTimer = 0.8; } }
     getInnateCD() { switch (this.charType) { case 0: return this.dashCD; case 1: return this.shieldCD; case 2: return this.burstCD; case 3: return this.fearCD; case 4: return this.ghostCD; case 5: return this.magicCD; case 6: return this.toxicCD; case 7: return this.empCD; case 8: return this.fireCD; case 9: return this.luckCD; default: return 0; } }
     useAbility() {
@@ -124,6 +245,8 @@ class Enemy extends Actor {
             col = bd.color;
             r = 40;
         }
+        hp = Math.ceil(hp * getDiff().enemyHpMult);
+        spd = spd * getDiff().enemySpdMult;
         super(x, y, r, col, hp, spd);
         this.type = type;
         this.mbType = mbTypeLocal;
@@ -304,4 +427,4 @@ function triggerGameOver() { gameState = 'GAMEOVER'; switchScreen('gameOver'); b
 
 function checkCollisions() { for (let i = projectiles.length - 1; i >= 0; i--) { let p = projectiles[i]; if (p.isPlayerObj) { for (let j = enemies.length - 1; j >= 0; j--) { let e = enemies[j]; if (dist(p.x, p.y, e.x, e.y) < p.radius + e.radius) { e.takeDamage(p.damage); if (p.weaponType === 'fire') { e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); } if (p.weaponType === 'taser') e.stunTimer = (e.type === 'boss') ? 0.2 : 1.5; if (p.weaponType === 'ice') e.slowTimer = (e.type === 'boss') ? 1.0 : 3.0; boom(p.x, p.y, p.color, 3); if (e.hp <= 0) { enemies.splice(j, 1); if (player.charType === 3 && Math.random() < 0.25) { player.hp = Math.min(player.maxHp, player.hp + 1); updateHUD(); boom(player.x, player.y, '#2ed573', 10); } } p.active = false; break; } } } else { if (!player.isJumping && player.flyT <= 0) { if (dist(p.x, p.y, player.x, player.y) < p.radius + player.radius * 0.8) { if (p.weaponType === 'ice') player.slowTimer = 2; else if (p.weaponType === 'hellfire') player.burnTimer = 10; player.takeDamage(p.damage + (mapLevel - 1) * 0.5); p.active = false; } } } if (!p.active) projectiles.splice(i, 1); } if (player && !player.isJumping && player.flyT <= 0) { for (let e of enemies) { if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 5) { player.takeDamage(1 + (mapLevel - 1) * 0.5); let dx = player.x - e.x, dy = player.y - e.y, mg = Math.hypot(dx, dy); if (mg > 0) { player.x += dx / mg * 20; player.y += dy / mg * 20; } } } } }
 
-function gameLoop(ts) { if (gameState !== 'PLAYING') return; let dt = (ts - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = ts; gameTime += dt; gameTimerEl.innerText = formatTime(gameTime); player.update(dt); currentRoom.update(dt); enemies.forEach(e => e.update(dt)); projectiles.forEach(p => p.update(dt)); particles = particles.filter(p => p.update(dt)); icebergs = icebergs.filter(ib => ib.update(dt)); warnings = warnings.filter(w => w.update(dt)); checkCollisions(); updateCooldowns(); ctx.clearRect(0, 0, 800, 600); ctx.save(); if (screenShakeT > 0) { ctx.translate((Math.random() - .5) * screenShakeM, (Math.random() - .5) * screenShakeM); screenShakeT -= dt; } currentRoom.drawBase(ctx); warnings.forEach(w => w.draw(ctx)); enemies.forEach(e => e.draw(ctx)); projectiles.forEach(p => p.draw(ctx)); particles.forEach(p => p.draw(ctx)); player.draw(ctx); ctx.restore(); lightCtx.globalCompositeOperation = 'source-over'; lightCtx.clearRect(0, 0, 800, 600); lightCtx.fillStyle = 'rgba(10, 10, 15, 0.88)'; lightCtx.fillRect(0, 0, 800, 600); lightCtx.globalCompositeOperation = 'destination-out'; let drawLight = (X, Y, R, int) => { let g = lightCtx.createRadialGradient(X, Y, 0, X, Y, R); g.addColorStop(0, `rgba(0,0,0,${int})`); g.addColorStop(1, 'rgba(0,0,0,0)'); lightCtx.fillStyle = g; lightCtx.beginPath(); lightCtx.arc(X, Y, R, 0, Math.PI * 2); lightCtx.fill(); }; drawLight(player.x, player.y, 250, 1); projectiles.forEach(p => drawLight(p.x, p.y, p.radius * 8, 0.7)); particles.forEach(p => drawLight(p.x, p.y, p.size * 6, 0.5)); enemies.forEach(e => { if (['boss', 'miniboss'].includes(e.type)) drawLight(e.x, e.y, e.radius * 5, 0.6); }); icebergs.forEach(i => drawLight(i.x, i.y, 80, 0.4)); pickups.forEach(p => drawLight(p.x, p.y, 90, 0.5)); warnings.forEach(w => drawLight(w.x, w.y, 100, 0.5)); if (['shop', 'treasure', 'spawn', 'npc'].includes(currentRoom.type)) drawLight(400, 300, 480, 0.6); lightCtx.globalCompositeOperation = 'source-over'; ctx.drawImage(lightCanvas, 0, 0); currentRoom.drawUI(ctx); requestAnimationFrame(gameLoop); }
+function gameLoop(ts) { if (gameState !== 'PLAYING') return; let dt = (ts - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = ts; gameTime += dt; gameTimerEl.innerText = formatTime(gameTime); player.update(dt); currentRoom.update(dt); enemies.forEach(e => e.update(dt)); projectiles.forEach(p => p.update(dt)); particles = particles.filter(p => p.update(dt)); icebergs = icebergs.filter(ib => ib.update(dt)); warnings = warnings.filter(w => w.update(dt)); checkCollisions(); updateCooldowns(); ctx.clearRect(0, 0, 800, 600); ctx.save(); if (screenShakeT > 0) { ctx.translate((Math.random() - .5) * screenShakeM, (Math.random() - .5) * screenShakeM); screenShakeT -= dt; } currentRoom.drawBase(ctx); warnings.forEach(w => w.draw(ctx)); enemies.forEach(e => e.draw(ctx)); projectiles.forEach(p => p.draw(ctx)); particles.forEach(p => p.draw(ctx)); player.draw(ctx); ctx.restore(); if (lightingEnabled) { lightCtx.globalCompositeOperation = 'source-over'; lightCtx.clearRect(0, 0, 800, 600); lightCtx.fillStyle = 'rgba(10, 10, 15, 0.88)'; lightCtx.fillRect(0, 0, 800, 600); lightCtx.globalCompositeOperation = 'destination-out'; let drawLight = (X, Y, R, int) => { let g = lightCtx.createRadialGradient(X, Y, 0, X, Y, R); g.addColorStop(0, `rgba(0,0,0,${int})`); g.addColorStop(1, 'rgba(0,0,0,0)'); lightCtx.fillStyle = g; lightCtx.beginPath(); lightCtx.arc(X, Y, R, 0, Math.PI * 2); lightCtx.fill(); }; drawLight(player.x, player.y, 250, 1); projectiles.forEach(p => drawLight(p.x, p.y, p.radius * 8, 0.7)); particles.forEach(p => drawLight(p.x, p.y, p.size * 6, 0.5)); enemies.forEach(e => { if (['boss', 'miniboss'].includes(e.type)) drawLight(e.x, e.y, e.radius * 5, 0.6); }); icebergs.forEach(i => drawLight(i.x, i.y, 80, 0.4)); pickups.forEach(p => drawLight(p.x, p.y, 90, 0.5)); warnings.forEach(w => drawLight(w.x, w.y, 100, 0.5)); if (['shop', 'treasure', 'spawn', 'npc'].includes(currentRoom.type)) drawLight(400, 300, 480, 0.6); lightCtx.globalCompositeOperation = 'source-over'; ctx.drawImage(lightCanvas, 0, 0); } currentRoom.drawUI(ctx); requestAnimationFrame(gameLoop); }

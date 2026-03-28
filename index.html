@@ -14,10 +14,201 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="ui-layer">
-            <!-- MENU PRINCIPAL -->
-            <div id="main-menu" class="screen active">
-                <h1 class="title">Toca do Coelho</h1>
-                <p class="subtitle">Desça até o fundo da toca...</p>
+
+            <!-- TELA TÍTULO -->
+            <div id="title-screen" class="screen active">
+                <div class="title-bg">
+                    <h1 class="title glow-text">🐰 Toca do Coelho</h1>
+                    <p class="subtitle flicker">Desça até o fundo da toca...</p>
+
+                    <div class="title-buttons">
+                        <button id="btn-play" class="menu-btn primary-btn">
+                            <span class="btn-icon">⚔️</span> Jogar
+                        </button>
+                        <button id="btn-manual" class="menu-btn">
+                            <span class="btn-icon">📖</span> Manual
+                        </button>
+                        <button id="btn-settings" class="menu-btn">
+                            <span class="btn-icon">⚙️</span> Configurações
+                        </button>
+                    </div>
+
+                    <p class="version-text">v2.0 — Pressione qualquer botão</p>
+                </div>
+            </div>
+
+            <!-- CONFIGURAÇÕES -->
+            <div id="settings-screen" class="screen">
+                <div class="settings-panel">
+                    <h2 class="panel-title">⚙️ Configurações</h2>
+
+                    <div class="settings-tabs">
+                        <button class="tab-btn active" data-tab="tab-audio">🔊 Áudio</button>
+                        <button class="tab-btn" data-tab="tab-video">🖥️ Vídeo</button>
+                        <button class="tab-btn" data-tab="tab-controls">🎮 Controles</button>
+                        <button class="tab-btn" data-tab="tab-access">🌐 Acessibilidade</button>
+                    </div>
+
+                    <!-- ÁUDIO -->
+                    <div class="tab-content active" id="tab-audio">
+                        <div class="setting-row">
+                            <label>Volume Geral</label>
+                            <input type="range" id="vol-master" min="0" max="100" value="80">
+                            <span class="range-val" id="vol-master-val">80%</span>
+                        </div>
+                        <div class="setting-row">
+                            <label>Música</label>
+                            <input type="range" id="vol-music" min="0" max="100" value="60">
+                            <span class="range-val" id="vol-music-val">60%</span>
+                        </div>
+                        <div class="setting-row">
+                            <label>Efeitos Sonoros</label>
+                            <input type="range" id="vol-sfx" min="0" max="100" value="80">
+                            <span class="range-val" id="vol-sfx-val">80%</span>
+                        </div>
+                    </div>
+
+                    <!-- VÍDEO -->
+                    <div class="tab-content" id="tab-video">
+                        <div class="setting-row">
+                            <label>Resolução</label>
+                            <select id="set-resolution">
+                                <option value="800x600">800 × 600</option>
+                                <option value="1024x768">1024 × 768</option>
+                                <option value="1280x720">1280 × 720 (HD)</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <label>Tela Cheia</label>
+                            <button id="btn-fullscreen" class="toggle-btn">Ativar</button>
+                        </div>
+                        <div class="setting-row">
+                            <label>Qualidade Gráfica</label>
+                            <select id="set-quality">
+                                <option value="low">Baixa</option>
+                                <option value="medium" selected>Média</option>
+                                <option value="high">Alta</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <label>Iluminação Dinâmica</label>
+                            <button id="btn-lighting" class="toggle-btn on">Ligado</button>
+                        </div>
+                    </div>
+
+                    <!-- CONTROLES -->
+                    <div class="tab-content" id="tab-controls">
+                        <div class="controls-grid">
+                            <div class="key-row"><span>Mover</span><kbd>W A S D</kbd></div>
+                            <div class="key-row"><span>Atirar</span><kbd>Clique Esq.</kbd></div>
+                            <div class="key-row"><span>Pular</span><kbd>Espaço</kbd></div>
+                            <div class="key-row"><span>Habilidade</span><kbd>Q</kbd></div>
+                            <div class="key-row"><span>Skill Extra</span><kbd>E</kbd></div>
+                            <div class="key-row"><span>Pausar</span><kbd>Esc</kbd></div>
+                        </div>
+                        <p class="hint-text">🎮 Suporte a Gamepad em breve</p>
+                    </div>
+
+                    <!-- ACESSIBILIDADE -->
+                    <div class="tab-content" id="tab-access">
+                        <div class="setting-row">
+                            <label>Idioma</label>
+                            <select id="set-language">
+                                <option value="pt" selected>Português</option>
+                                <option value="en">English</option>
+                                <option value="es">Español</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <label>Filtro Daltonismo</label>
+                            <select id="set-colorblind">
+                                <option value="none" selected>Nenhum</option>
+                                <option value="protanopia">Protanopia</option>
+                                <option value="deuteranopia">Deuteranopia</option>
+                                <option value="tritanopia">Tritanopia</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <label>Tamanho da HUD</label>
+                            <input type="range" id="set-hud-size" min="80" max="150" value="100">
+                            <span class="range-val" id="set-hud-size-val">100%</span>
+                        </div>
+                    </div>
+
+                    <button id="btn-settings-back" class="menu-btn back-btn">← Voltar</button>
+                </div>
+            </div>
+
+            <!-- MANUAL -->
+            <div id="manual-screen" class="screen">
+                <div class="manual-panel">
+                    <h2 class="panel-title">📖 Manual do Jogo</h2>
+                    <div class="manual-scroll">
+                        <div class="manual-section">
+                            <h3>🎯 Objetivo</h3>
+                            <p>Explore a toca, derrote inimigos e chefes em cada andar, colete ouro e itens, e sobreviva até escapar no 5º andar!</p>
+                        </div>
+                        <div class="manual-section">
+                            <h3>🕹️ Controles</h3>
+                            <p><strong>WASD</strong> — Mover | <strong>Mouse</strong> — Mirar e Atirar<br>
+                            <strong>Espaço</strong> — Pular (evita dano) | <strong>Q</strong> — Habilidade do Herói<br>
+                            <strong>E</strong> — Skill Extra (comprada na loja) | <strong>ESC</strong> — Pausar</p>
+                        </div>
+                        <div class="manual-section">
+                            <h3>🗺️ Mapa</h3>
+                            <p>O mapa é gerado aleatoriamente. Cada sala pode ser de batalha, mini-chefe, chefe, tesouro, NPC ou loja. O minimapa no canto inferior direito mostra as salas próximas.</p>
+                        </div>
+                        <div class="manual-section">
+                            <h3>🏪 Loja</h3>
+                            <p>Após derrotar cada chefe, uma loja aparece com 3 itens aleatórios. Use ouro para comprar curas, armas, buffs ou habilidades especiais.</p>
+                        </div>
+                        <div class="manual-section">
+                            <h3>⚔️ Armas</h3>
+                            <p>🔥 <strong>Cajado de Fogo</strong> — Queima inimigos<br>
+                            ⚡ <strong>Arma de Raio</strong> — Paralisa inimigos<br>
+                            ❄️ <strong>Cetro de Gelo</strong> — Desacelera inimigos</p>
+                        </div>
+                        <div class="manual-section">
+                            <h3>👹 Chefes</h3>
+                            <p>Cada andar tem um chefe com padrão de ataque único. O chefe final do 5º andar é o <strong>Colosso do Apocalipse</strong>, com chuva de meteoros e barreiras de pedra!</p>
+                        </div>
+                        <div class="manual-section">
+                            <h3>🎖️ Dificuldades</h3>
+                            <p><strong>Fácil</strong> — Mais vida, inimigos fracos<br>
+                            <strong>Normal</strong> — Experiência padrão<br>
+                            <strong>Difícil</strong> — Menos vida, inimigos fortes<br>
+                            <strong>Pesadelo</strong> — Para verdadeiros coelhos guerreiros!</p>
+                        </div>
+                    </div>
+                    <button id="btn-manual-back" class="menu-btn back-btn">← Voltar</button>
+                </div>
+            </div>
+
+            <!-- SELEÇÃO DE DIFICULDADE + PERSONAGEM (após clicar Jogar) -->
+            <div id="main-menu" class="screen">
+                <h2 class="panel-title">⚔️ Preparar Expedição</h2>
+
+                <div class="difficulty-selection">
+                    <h3>Dificuldade:</h3>
+                    <div class="diff-cards">
+                        <div class="diff-card" data-diff="easy">
+                            <h4>🌿 Fácil</h4>
+                            <p>+3 Vida, Inimigos -30%</p>
+                        </div>
+                        <div class="diff-card selected" data-diff="normal">
+                            <h4>⚔️ Normal</h4>
+                            <p>Experiência padrão</p>
+                        </div>
+                        <div class="diff-card" data-diff="hard">
+                            <h4>🔥 Difícil</h4>
+                            <p>-1 Vida, Inimigos +50%</p>
+                        </div>
+                        <div class="diff-card" data-diff="nightmare">
+                            <h4>💀 Pesadelo</h4>
+                            <p>-2 Vida, Inimigos +100%</p>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="character-selection">
                     <h3>Escolha seu Herói:</h3>
@@ -75,7 +266,10 @@
                     </div>
                 </div>
 
-                <button id="start-btn">Iniciar Exploração</button>
+                <div class="pre-game-buttons">
+                    <button id="btn-back-title" class="menu-btn back-btn">← Voltar</button>
+                    <button id="start-btn" class="menu-btn primary-btn">🚀 Iniciar Exploração</button>
+                </div>
             </div>
 
             <!-- HUD -->
@@ -108,13 +302,27 @@
                 </div>
             </div>
 
+            <!-- PAUSA -->
+            <div id="pause-screen" class="screen">
+                <div class="pause-panel">
+                    <h2 class="panel-title">⏸️ Pausado</h2>
+                    <div class="pause-info">
+                        <p>Nível: <span id="pause-level">1</span> | Tempo: <span id="pause-time">00:00</span></p>
+                    </div>
+                    <div class="pause-buttons">
+                        <button id="btn-resume" class="menu-btn primary-btn">▶️ Continuar</button>
+                        <button id="btn-pause-settings" class="menu-btn">⚙️ Configurações</button>
+                        <button id="btn-restart" class="menu-btn">🔄 Reiniciar</button>
+                        <button id="btn-quit" class="menu-btn danger-btn">🚪 Menu Principal</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- LOJA -->
             <div id="shop-screen" class="screen">
                 <h2 class="shop-title">🏪 Loja da Toca</h2>
                 <p class="shop-gold">Seu Ouro: 🪙 <span id="shop-gold-amount">0</span></p>
-                <div class="shop-items" id="shop-items">
-                    <!-- Itens gerados dinamicamente -->
-                </div>
+                <div class="shop-items" id="shop-items"></div>
                 <button id="shop-close-btn">Continuar Explorando</button>
             </div>
 
