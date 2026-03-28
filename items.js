@@ -25,13 +25,17 @@ const ITEM_CATALOG = {
     skill_explosion: { name: 'Explosão', desc: 'Mega explosão: dano massivo em área', type: 'skill', skillId: 'explosion', price: 80, rarity: 'legendary', weight: 5, emoji: '💥' },
 };
 
-// --- BOSSES (5 diferentes) ---
+// --- BOSSES (9 diferentes) ---
 const BOSS_DEFS = [
     { name: 'Olho Sombrio', color: '#1e272e', eyeColor: '#ff4757', pattern: 'circle', desc: 'Dispara círculos de projéteis' },
     { name: 'Dragão de Fogo', color: '#c0392b', eyeColor: '#f39c12', pattern: 'fire', desc: 'Rajadas de fogo em espiral' },
     { name: 'Golem de Gelo', color: '#2980b9', eyeColor: '#ecf0f1', pattern: 'ice', desc: 'Projéteis que desaceleram' },
     { name: 'Fantasma Elétrico', color: '#8e44ad', eyeColor: '#f1c40f', pattern: 'thunder', desc: 'Raios rápidos e teletransporte' },
     { name: 'Rei das Sombras', color: '#2c3e50', eyeColor: '#e74c3c', pattern: 'shadow', desc: 'Invoca capangas e ataca' },
+    { name: 'Vento Cortante', color: '#ecf0f1', eyeColor: '#3498db', pattern: 'wind', desc: 'Rajadas de vento ultra velozes' },
+    { name: 'Colmeia Tóxica', color: '#55efc4', eyeColor: '#00b894', pattern: 'toxic', desc: 'Névoa ácida e disparos lentos' },
+    { name: 'Núcleo Gravitacional', color: '#6c5ce7', eyeColor: '#a29bfe', pattern: 'gravity', desc: 'Puxa o jogador e distorce disparos' },
+    { name: 'Colosso do Apocalipse', color: '#c23616', eyeColor: '#fbc531', pattern: 'final_meteor', desc: 'Chuva de meteoros e barreiras' },
 ];
 
 function getRandomShopItems(count) {
