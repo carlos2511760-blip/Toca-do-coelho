@@ -12,6 +12,7 @@
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+        <div id="error-display"></div>
 
         <div id="ui-layer">
 
@@ -386,10 +387,26 @@
                 <h3 id="vic-best-time" style="color:#feca57; font-size:18px;">Melhor Tempo: --</h3>
                 <button id="victory-btn">Jogar Novamente</button>
             </div>
+
+            <!-- CONTROLES MOBILE -->
+            <div id="mobile-controls">
+                <div id="joystick-container">
+                    <div id="joystick-base">
+                        <div id="joystick-thumb"></div>
+                    </div>
+                </div>
+                <div id="action-zone">
+                    <button id="btn-m-jump" class="m-btn">🦘</button>
+                    <button id="btn-m-ability" class="m-btn">✨</button>
+                    <button id="btn-m-shoot" class="m-btn shoot-btn">🔫</button>
+                </div>
+                <button id="btn-m-pause" class="m-btn pause-btn">⏸</button>
+            </div>
         </div>
     </div>
 
     <script src="items.js"></script>
+    <script src="audio.js"></script>
     <script src="game.js"></script>
 </body>
 

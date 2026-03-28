@@ -56,6 +56,7 @@ let lightingEnabled = true;
 let goldMult = 1.0; 
 let fullBright = false, flyMode = false, cheatsUsed = false;
 let flashT = 0;
+let joystickPos = { x: 0, y: 0 }, joystickActive = false;
 
 // DIFFICULTY MODIFIERS
 const DIFF_MODS = {
@@ -130,8 +131,65 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (el) el.addEventListener('input', () => {
         const valEl = document.getElementById(id + '-val');
         if (valEl) valEl.innerText = el.value + '%';
+        if (typeof audio !== 'undefined') {
+            audio.updateVolumes(
+                document.getElementById('vol-master').value,
+                document.getElementById('vol-music').value,
+                document.getElementById('vol-sfx').value
+            );
+        }
     });
 });
+
+// ---------- MOBILE INPUTS ----------
+(function initMobile() {
+    const handleJoystick = (e) => {
+        const jBase = document.getElementById('joystick-base');
+        const jThumb = document.getElementById('joystick-thumb');
+        if (!jBase || !jThumb) return;
+        e.preventDefault();
+        const rect = jBase.getBoundingClientRect();
+        const touch = e.touches[0];
+        let dx = touch.clientX - (rect.left + rect.width / 2);
+        let dy = touch.clientY - (rect.top + rect.height / 2);
+        let d = Math.hypot(dx, dy);
+        let max = 60;
+        if (d > max) { dx = dx / d * max; dy = dy / d * max; }
+        joystickPos = { x: dx / max, y: dy / max };
+        jThumb.style.left = (50 + (dx / rect.width * 100)) + '%';
+        jThumb.style.top = (50 + (dy / rect.height * 100)) + '%';
+    };
+
+    const jBase = document.getElementById('joystick-base');
+    if (jBase) {
+        jBase.addEventListener('touchstart', (e) => { joystickActive = true; handleJoystick(e); }, { passive: false });
+        window.addEventListener('touchmove', (e) => { if (joystickActive) handleJoystick(e); }, { passive: false });
+        window.addEventListener('touchend', () => { 
+            joystickActive = false; joystickPos = { x: 0, y: 0 }; 
+            const jt = document.getElementById('joystick-thumb');
+            if (jt) { jt.style.left = '50%'; jt.style.top = '50%'; }
+        });
+    }
+
+    const mBtnHandler = (id, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
+    };
+
+    mBtnHandler('btn-m-jump', () => { if (player) player.jump(); });
+    mBtnHandler('btn-m-ability', () => { if (player) player.useAbility(); });
+    
+    const shootBtn = document.getElementById('btn-m-shoot');
+    if (shootBtn) {
+        shootBtn.addEventListener('touchstart', (e) => { e.preventDefault(); mouse.down = true; if (player) player.shoot(); }, { passive: false });
+        shootBtn.addEventListener('touchend', (e) => { e.preventDefault(); mouse.down = false; }, { passive: false });
+    }
+
+    mBtnHandler('btn-m-pause', () => {
+        if (gameState === 'PLAYING') { gameState = 'PAUSED'; switchScreen('pause'); }
+        else if (gameState === 'PAUSED') { gameState = 'PLAYING'; switchScreen('hud'); }
+    });
+})();
 
 // Fullscreen toggle
 document.getElementById('btn-fullscreen').addEventListener('click', function () {
@@ -243,7 +301,10 @@ shopCloseBtn.addEventListener('click', closeShop);
 
 // PARTICLES
 class Particle { constructor(x, y, col, spd, sz, life) { this.x = x; this.y = y; this.vx = (Math.random() - .5) * spd; this.vy = (Math.random() - .5) * spd; this.color = col; this.size = sz; this.life = life; this.maxLife = life; } update(dt) { this.x += this.vx; this.y += this.vy; this.life -= dt * 60; return this.life > 0; } draw(c) { c.fillStyle = this.color; c.globalAlpha = Math.max(0, this.life / this.maxLife); c.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size); c.globalAlpha = 1; } }
-function boom(x, y, col, n) { if (n >= 20) shake(0.15, n / 5); for (let i = 0; i < n; i++)particles.push(new Particle(x, y, col, 8, Math.random() * 4 + 2, Math.random() * 20 + 10)); }
+function boom(x, y, col, n) { 
+    if (n >= 20) { shake(0.15, n / 5); if (n > 30 && typeof audio !== 'undefined') audio.playHurt(); } 
+    for (let i = 0; i < n; i++) particles.push(new Particle(x, y, col, 8, Math.random() * 4 + 2, Math.random() * 20 + 10)); 
+}
 
 // PICKUP (gold bag, exit, etc)
 class Pickup { constructor(x, y, type, value) { this.x = x; this.y = y; this.type = type; this.value = value; this.radius = type === 'exit' ? 20 : 12; this.bobT = 0; } update(dt) { this.bobT += dt * 3; } draw(c) { let by = this.y + Math.sin(this.bobT) * 5; c.font = '22px VT323'; c.textAlign = 'center'; if (this.type === 'gold') c.fillText('💰', this.x, by); else if (this.type === 'exit') { c.fillStyle = '#9b59b6'; c.fillRect(this.x - 15, by - 15, 30, 30); c.fillStyle = '#fff'; c.fillText('SAÍDA', this.x, by + 7); } else if (this.type === 'heart') c.fillText('❤️', this.x, by); else if (this.type === 'buff') c.fillText('🧚', this.x, by); } }
@@ -258,12 +319,12 @@ class Iceberg { constructor(x, y, type) { this.x = x; this.y = y; this.w = 50; t
 class Projectile { constructor(x, y, vx, vy, spd, rad, col, isP, wType) { this.x = x; this.y = y; this.vx = vx * spd; this.vy = vy * spd; this.radius = rad; this.color = col; this.isPlayerObj = isP; this.damage = 1; this.active = true; this.weaponType = wType || 'normal'; } update(dt) { this.x += this.vx * (dt * 60); this.y += this.vy * (dt * 60); if (this.x < 0 || this.x > 800 || this.y < 0 || this.y > 600) this.active = false; for (let ib of icebergs) { if (this.x > ib.x - ib.w / 2 && this.x < ib.x + ib.w / 2 && this.y > ib.y - ib.h / 2 && this.y < ib.y + ib.h / 2) { ib.hp--; this.active = false; } } } draw(c) { c.fillStyle = this.color; c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill(); if (this.weaponType === 'fire') { c.fillStyle = 'rgba(255,165,0,0.4)'; c.beginPath(); c.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2); c.fill(); } if (this.weaponType === 'taser') { c.strokeStyle = '#f1c40f'; c.lineWidth = 1; c.beginPath(); c.moveTo(this.x - 5, this.y - 5); c.lineTo(this.x + 5, this.y + 5); c.stroke(); } if (this.weaponType === 'ice') { c.strokeStyle = '#74b9ff'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2); c.stroke(); } } }
 
 // ACTOR
-class Actor { constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; this.hp -= amt; this.invTimer = 0.5; if (this.hp <= 0 && this instanceof Enemy) boom(this.x, this.y, this.color, 15); } updatePhysics(dt) { if (this.stunTimer > 0) { this.stunTimer -= dt; this.vx = 0; this.vy = 0; } let sm = this.slowTimer > 0 ? 0.4 : 1; this.x += this.vx * sm * (dt * 60); this.y += this.vy * sm * (dt * 60); if (this.invTimer > 0) this.invTimer -= dt; if (this.isJumping) { this.jumpTimer -= dt; if (this.jumpTimer <= 0) this.isJumping = false; } if (this.slowTimer > 0) this.slowTimer -= dt; this.x = Math.max(WALL + this.radius, Math.min(800 - WALL - this.radius, this.x)); this.y = Math.max(WALL + this.radius, Math.min(600 - WALL - this.radius, this.y)); } }
+class Actor { constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; this.hp -= amt; this.invTimer = 0.5; if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); if (this.hp <= 0 && this instanceof Enemy) { boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); } } updatePhysics(dt) { if (this.stunTimer > 0) { this.stunTimer -= dt; this.vx = 0; this.vy = 0; } let sm = this.slowTimer > 0 ? 0.4 : 1; this.x += this.vx * sm * (dt * 60); this.y += this.vy * sm * (dt * 60); if (this.invTimer > 0) this.invTimer -= dt; if (this.isJumping) { this.jumpTimer -= dt; if (this.jumpTimer <= 0) this.isJumping = false; } if (this.slowTimer > 0) this.slowTimer -= dt; this.x = Math.max(WALL + this.radius, Math.min(800 - WALL - this.radius, this.x)); this.y = Math.max(WALL + this.radius, Math.min(600 - WALL - this.radius, this.y)); } }
 
 // PLAYER
 class Player extends Actor {
     constructor(x, y, ct) { let hp = 5, spd = 4, col = '#e0e0e0'; if (ct === 0) { spd = 5.5; col = '#00d2d3'; } else if (ct === 1) { hp = 8; spd = 3.5; col = '#ff9f43'; } else if (ct === 2) { hp = 4; spd = 4.5; col = '#ff4757'; } else if (ct === 3) { hp = 5; spd = 4.2; col = '#833471'; } else if (ct === 4) { hp = 4; spd = 4.8; col = '#7f8fa6'; } else if (ct === 5) { hp = 4; spd = 4.0; col = '#2980b9'; } else if (ct === 6) { hp = 6; spd = 3.5; col = '#2ecc71'; } else if (ct === 7) { hp = 7; spd = 3.0; col = '#f1c40f'; } else if (ct === 8) { hp = 5; spd = 4.0; col = '#d35400'; } else if (ct === 9) { hp = 5; spd = 4.2; col = '#f368e0'; } hp = Math.max(1, hp + getDiff().hpBonus); super(x, y, 15, col, hp, spd); this.charType = ct; this.dashCD = 0; this.shieldT = 0; this.shieldCD = 0; this.burstCD = 0; this.fearT = 0; this.fearCD = 0; this.ghostT = 0; this.ghostCD = 0; this.magicCD = 0; this.toxicCD = 0; this.empCD = 0; this.fireCD = 0; this.luckCD = 0; this.baseFireRate = ct === 2 ? 0.12 : 0.25; this.weaponCD = 0; this.gold = ct === 5 ? 30 : 0; this.currentWeapon = 'normal'; this.activeSkill = null; this.skillCD = 0; this.dmgMult = 1; this.regenT = 0; this.regenDur = 0; this.flyT = 0; this.noDamageT = 0; this.auraT = 0; this.burnTimer = 0; this.burnTick = 0; }
-    jump() { if (!this.isJumping && this.flyT <= 0) { this.isJumping = true; this.jumpTimer = 0.8; } }
+    jump() { if (!this.isJumping && this.flyT <= 0) { this.isJumping = true; this.jumpTimer = 0.8; if (typeof audio !== 'undefined') audio.playJump(); } }
     getInnateCD() { switch (this.charType) { case 0: return this.dashCD; case 1: return this.shieldCD; case 2: return this.burstCD; case 3: return this.fearCD; case 4: return this.ghostCD; case 5: return this.magicCD; case 6: return this.toxicCD; case 7: return this.empCD; case 8: return this.fireCD; case 9: return this.luckCD; default: return 0; } }
     useAbility() {
         if (this.charType === 0 && this.dashCD <= 0) { let dx = 0, dy = 0; if (keys['KeyW']) dy--; if (keys['KeyS']) dy++; if (keys['KeyA']) dx--; if (keys['KeyD']) dx++; if (!dx && !dy) return; let l = Math.hypot(dx, dy); this.x += dx / l * 100; this.y += dy / l * 100; this.dashCD = 2; boom(this.x, this.y, '#00d2d3', 10); }
@@ -278,9 +339,25 @@ class Player extends Actor {
         else if (this.charType === 9 && this.luckCD <= 0) { pickups.push(new Pickup(this.x + 30, this.y, 'gold', Math.floor(Math.random() * 20) + 5)); this.luckCD = 15; boom(this.x, this.y, '#f368e0', 15); }
     }
     useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 80; e.y += dy / d * 80; } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 4; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.takeDamage(5 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.3 : 1.5; } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 80, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) e.takeDamage(10 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 50); boom(this.x, this.y, '#f39c12', 30); } }
-    shoot() { if (this.weaponCD > 0) return; let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy); if (!d) return; dx /= d; dy /= d; let col = '#feca57', spd = 10, rad = 5, wt = this.currentWeapon; if (wt === 'fire') { col = '#e74c3c'; rad = 7; } else if (wt === 'taser') { col = '#f1c40f'; spd = 12; } else if (wt === 'ice') { col = '#74b9ff'; rad = 6; } let p = new Projectile(this.x, this.y, dx, dy, spd, rad, col, true, wt); p.damage = this.dmgMult; projectiles.push(p); this.weaponCD = this.baseFireRate; }
+    shoot() { if (this.weaponCD > 0) return; let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy); if (!d) return; dx /= d; dy /= d; let col = '#feca57', spd = 10, rad = 5, wt = this.currentWeapon; if (wt === 'fire') { col = '#e74c3c'; rad = 7; } else if (wt === 'taser') { col = '#f1c40f'; spd = 12; } else if (wt === 'ice') { col = '#74b9ff'; rad = 6; } let p = new Projectile(this.x, this.y, dx, dy, spd, rad, col, true, wt); p.damage = this.dmgMult; projectiles.push(p); this.weaponCD = this.baseFireRate; if (typeof audio !== 'undefined') audio.playShoot(); }
     takeDamage(a) { if (this.shieldT > 0 || this.flyT > 0 || this.ghostT > 0 || flyMode) return; super.takeDamage(a); shake(0.2, 5); flash(); this.noDamageT = 0; if (this.charType === 4 && this.hp > 0) this.invTimer = 1.0; if (this.charType === 8 && a > 0 && this.hp > 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 150) e.takeDamage(5 * this.dmgMult); }); boom(this.x, this.y, '#d35400', 35); } updateHUD(); if (this.hp <= 0 && !flyMode) triggerGameOver(); }
-    update(dt) { let dx = 0, dy = 0; if (keys['KeyW']) dy--; if (keys['KeyS']) dy++; if (keys['KeyA']) dx--; if (keys['KeyD']) dx++; if (dx && dy) { let l = Math.hypot(dx, dy); dx /= l; dy /= l; } this.vx = dx * this.speed; this.vy = dy * this.speed; if (this.flyT > 0 || flyMode) { this.isJumping = false; this.flyT -= dt; } this.updatePhysics(dt); if (this.charType === 6) { this.auraT += dt; if (this.auraT >= 1.0) { this.auraT = 0; enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 80) { e.takeDamage(2 * this.dmgMult); boom(e.x, e.y, '#2ecc71', 3); } }); } } if (this.charType === 7) { this.noDamageT += dt; if (this.noDamageT >= 8 && this.hp < this.maxHp) { this.noDamageT = 0; this.hp++; updateHUD(); boom(this.x, this.y, '#f1c40f', 10); } } if (this.weaponCD > 0) this.weaponCD -= dt; if (this.dashCD > 0) this.dashCD -= dt; if (this.shieldCD > 0) this.shieldCD -= dt; if (this.shieldT > 0) this.shieldT -= dt; if (this.burstCD > 0) this.burstCD -= dt; if (this.fearCD > 0) this.fearCD -= dt; if (this.fearT > 0) this.fearT -= dt; if (this.ghostT > 0) this.ghostT -= dt; if (this.ghostCD > 0) this.ghostCD -= dt; if (this.magicCD > 0) this.magicCD -= dt; if (this.toxicCD > 0) this.toxicCD -= dt; if (this.empCD > 0) this.empCD -= dt; if (this.fireCD > 0) this.fireCD -= dt; if (this.luckCD > 0) this.luckCD -= dt; if (this.skillCD > 0) this.skillCD -= dt; if (this.regenDur > 0) { this.regenDur -= dt; this.regenT -= dt; if (this.regenT <= 0) { this.hp = Math.min(this.maxHp, this.hp + 1); this.regenT = 5; updateHUD(); boom(this.x, this.y, '#2ed573', 5); } } if (this.burnTimer > 0) { this.burnTimer -= dt; this.burnTick += dt; if (this.burnTick >= 1) { this.burnTick = 0; this.hp -= 0.25; boom(this.x, this.y, '#e74c3c', 5); updateHUD(); if (this.hp <= 0 && !flyMode) triggerGameOver(); } } if (mouse.down && this.weaponCD <= 0) this.shoot(); }
+    update(dt) { 
+        let dx = 0, dy = 0; 
+        if (keys['KeyW']) dy--; if (keys['KeyS']) dy++; 
+        if (keys['KeyA']) dx--; if (keys['KeyD']) dx++; 
+        if (joystickActive) { dx = joystickPos.x; dy = joystickPos.y; }
+        else if (dx && dy) { let l = Math.hypot(dx, dy); dx /= l; dy /= l; } 
+        this.vx = dx * this.speed; this.vy = dy * this.speed; 
+        if (this.flyT > 0 && !flyMode) { this.isJumping = false; this.flyT -= dt; } 
+        else if (flyMode) this.isJumping = false; 
+        this.updatePhysics(dt);
+        if (this.charType === 6) { this.auraT += dt; if (this.auraT >= 1.0) { this.auraT = 0; enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 80) { e.takeDamage(2 * this.dmgMult); boom(e.x, e.y, '#2ecc71', 3); } }); } }
+        if (this.charType === 7) { this.noDamageT += dt; if (this.noDamageT >= 8 && this.hp < this.maxHp) { this.noDamageT = 0; this.hp++; updateHUD(); boom(this.x, this.y, '#f1c40f', 10); } }
+        if (this.weaponCD > 0) this.weaponCD -= dt; if (this.dashCD > 0) this.dashCD -= dt; if (this.shieldCD > 0) this.shieldCD -= dt; if (this.shieldT > 0) this.shieldT -= dt; if (this.burstCD > 0) this.burstCD -= dt; if (this.fearCD > 0) this.fearCD -= dt; if (this.fearT > 0) this.fearT -= dt; if (this.ghostT > 0) this.ghostT -= dt; if (this.ghostCD > 0) this.ghostCD -= dt; if (this.magicCD > 0) this.magicCD -= dt; if (this.toxicCD > 0) this.toxicCD -= dt; if (this.empCD > 0) this.empCD -= dt; if (this.fireCD > 0) this.fireCD -= dt; if (this.luckCD > 0) this.luckCD -= dt; if (this.skillCD > 0) this.skillCD -= dt;
+        if (this.regenDur > 0) { this.regenDur -= dt; this.regenT -= dt; if (this.regenT <= 0) { this.hp = Math.min(this.maxHp, this.hp + 1); this.regenT = 5; updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
+        if (this.burnTimer > 0) { this.burnTimer -= dt; this.burnTick += dt; if (this.burnTick >= 1) { this.burnTick = 0; this.hp -= 0.25; boom(this.x, this.y, '#e74c3c', 5); updateHUD(); if (this.hp <= 0 && !flyMode) triggerGameOver(); } }
+        if (mouse.down && this.weaponCD <= 0) this.shoot();
+    }
     draw(c) { if (this.isJumping) { c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.ellipse(this.x, this.y + 20, this.radius, this.radius / 2, 0, 0, Math.PI * 2); c.fill(); } c.fillStyle = (this.invTimer > 0 && Math.floor(this.invTimer * 20) % 2 === 0) ? '#fff' : this.color; let dY = this.y, dR = this.radius; if (this.flyT > 0) { dY -= 30; c.fillStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(this.x, this.y + 15, 12, 6, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = this.color; } else if (this.isJumping) { let jp = Math.sin((1 - this.jumpTimer / 0.8) * Math.PI); dY -= jp * 40; dR += jp * 5; } c.beginPath(); c.moveTo(this.x - dR / 2, dY - dR); c.lineTo(this.x - dR / 2, dY - dR - 15); c.lineTo(this.x - dR / 4, dY - dR); c.moveTo(this.x + dR / 2, dY - dR); c.lineTo(this.x + dR / 2, dY - dR - 15); c.lineTo(this.x + dR / 4, dY - dR); c.arc(this.x, dY, dR, 0, Math.PI * 2); c.fill(); if (this.shieldT > 0) { c.strokeStyle = '#48dbfb'; c.lineWidth = 3; c.beginPath(); c.arc(this.x, dY, dR + 8, 0, Math.PI * 2); c.stroke(); } if (this.fearT > 0) { c.strokeStyle = '#833471'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, dR + 5 + Math.sin(Date.now() / 100) * 15, 0, Math.PI * 2); c.stroke(); } let mx = mouse.x - this.x, my = mouse.y - this.y, mg = Math.hypot(mx, my); if (mg > 0) { c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(this.x + (mx / mg) * dR, dY + (my / mg) * dR); c.lineTo(this.x + (mx / mg) * (dR + 20), dY + (my / mg) * (dR + 20)); c.stroke(); } if (this.burnTimer > 0 && Math.random() < 0.3) { c.fillStyle = '#e74c3c'; c.beginPath(); c.arc(this.x + (Math.random() - 0.5) * 15, dY - 15 + (Math.random() - 0.5) * 15, 4, 0, Math.PI * 2); c.fill(); } }
 }
 
@@ -426,9 +503,9 @@ class RoomSystem {
         for (let i = pickups.length - 1; i >= 0; i--) {
             pickups[i].update(dt);
             if (dist(player.x, player.y, pickups[i].x, pickups[i].y) < player.radius + pickups[i].radius) {
-                if (pickups[i].type === 'gold') { let v = Math.round(pickups[i].value * goldMult); if (player.charType === 9) v = Math.ceil(v * 1.5); player.gold += v; goldCounter.innerText = player.gold; boom(pickups[i].x, pickups[i].y, '#feca57', 10); pickups.splice(i, 1); }
-                else if (pickups[i].type === 'heart') { player.hp = Math.min(player.maxHp, player.hp + pickups[i].value); updateHUD(); boom(pickups[i].x, pickups[i].y, '#ff4757', 15); pickups.splice(i, 1); }
-                else if (pickups[i].type === 'buff') { player.dmgMult += 0.2; boom(pickups[i].x, pickups[i].y, '#3498db', 30); pickups.splice(i, 1); }
+                if (pickups[i].type === 'gold') { let v = Math.round(pickups[i].value * goldMult); if (player.charType === 9) v = Math.ceil(v * 1.5); player.gold += v; goldCounter.innerText = player.gold; boom(pickups[i].x, pickups[i].y, '#feca57', 10); if (typeof audio !== 'undefined') audio.playCoin(); pickups.splice(i, 1); }
+                else if (pickups[i].type === 'heart') { player.hp = Math.min(player.maxHp, player.hp + pickups[i].value); updateHUD(); boom(pickups[i].x, pickups[i].y, '#ff4757', 15); if (typeof audio !== 'undefined') audio.playHeal(); pickups.splice(i, 1); }
+                else if (pickups[i].type === 'buff') { player.dmgMult += 0.2; boom(pickups[i].x, pickups[i].y, '#3498db', 30); if (typeof audio !== 'undefined') audio.playHeal(); pickups.splice(i, 1); }
                 else if (pickups[i].type === 'exit') {
                     mapLevel++; if (mapLevel > MAX_LEVELS) {
                         gameState = 'VICTORY'; switchScreen('victory');
