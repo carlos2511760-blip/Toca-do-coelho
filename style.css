@@ -840,9 +840,10 @@ button:hover {
     height: 100%;
     pointer-events: none;
     display: none;
-    z-index: 20;
+    z-index: 100;
     transform: scale(var(--m-size));
     transform-origin: bottom center;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 #joystick-container {
