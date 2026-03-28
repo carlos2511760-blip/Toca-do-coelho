@@ -730,3 +730,88 @@ button:hover {
     .char-card { width: 130px; padding: 6px 8px; }
     .diff-card { min-width: 100px; }
 }
+
+/* ========== REWARD SCREEN (NPC) ========== */
+.reward-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 20px;
+    background: rgba(16, 51, 64, 0.98);
+    border: 3px solid #3498db;
+    border-radius: 8px;
+    box-shadow: 0 0 60px rgba(52, 152, 219, 0.3);
+    max-width: 720px;
+    width: 92%;
+}
+
+.reward-subtitle {
+    font-size: 1.4rem;
+    color: #a4dff7;
+    margin-bottom: 6px;
+}
+
+.reward-cards {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.reward-card {
+    border: 3px solid #2980b9;
+    padding: 20px 16px;
+    width: 180px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(52, 152, 219, 0.08);
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.reward-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(52,152,219,0.15) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.reward-card:hover {
+    transform: translateY(-8px) scale(1.04);
+    border-color: #74b9ff;
+    box-shadow: 0 0 25px rgba(52, 152, 219, 0.5);
+}
+
+.reward-card:hover::before { opacity: 1; }
+
+.reward-card[data-reward="damage"] { border-color: #e74c3c; background: rgba(231,76,60,0.08); }
+.reward-card[data-reward="damage"]:hover { border-color: #ff6b81; box-shadow: 0 0 25px rgba(231,76,60,0.5); }
+
+.reward-card[data-reward="heal"] { border-color: #2ed573; background: rgba(46,213,115,0.08); }
+.reward-card[data-reward="heal"]:hover { border-color: #7bed9f; box-shadow: 0 0 25px rgba(46,213,115,0.5); }
+
+.reward-card[data-reward="gold"] { border-color: #feca57; background: rgba(254,202,87,0.08); }
+.reward-card[data-reward="gold"]:hover { border-color: #fed330; box-shadow: 0 0 25px rgba(254,202,87,0.5); }
+
+.reward-icon {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+    display: block;
+    filter: drop-shadow(0 0 10px currentColor);
+}
+
+.reward-card h3 {
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+    color: #ecf0f1;
+}
+
+.reward-card p {
+    font-size: 1.1rem;
+    color: #ced6e0;
+    line-height: 1.3;
+}

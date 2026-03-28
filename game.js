@@ -17,7 +17,8 @@ const screens = {
     shop: document.getElementById('shop-screen'),
     settings: document.getElementById('settings-screen'),
     manual: document.getElementById('manual-screen'),
-    pause: document.getElementById('pause-screen')
+    pause: document.getElementById('pause-screen'),
+    reward: document.getElementById('reward-screen')
 };
 const startBtn = document.getElementById('start-btn');
 const charCards = document.querySelectorAll('.char-card');
@@ -52,6 +53,7 @@ let gameTime = 0;
 let screenShakeT = 0, screenShakeM = 0;
 let prevScreenBeforeSettings = 'titleScreen';
 let lightingEnabled = true;
+let goldMult = 1.0; // global gold multiplier (NPC reward)
 
 // DIFFICULTY MODIFIERS
 const DIFF_MODS = {
@@ -163,6 +165,33 @@ diffCards.forEach(c => c.addEventListener('click', () => {
     c.classList.add('selected');
     selectedDiff = c.dataset.diff;
 }));
+
+// ===== REWARD CARDS (NPC) =====
+document.querySelectorAll('.reward-card').forEach(card => {
+    card.addEventListener('click', () => {
+        const r = card.dataset.reward;
+        if (r === 'damage') {
+            player.dmgMult += 0.2;
+            boom(player.x, player.y, '#e74c3c', 30);
+        } else if (r === 'heal') {
+            player.maxHp += 1;
+            player.hp = player.maxHp;
+            updateHUD();
+            boom(player.x, player.y, '#2ed573', 30);
+        } else if (r === 'gold') {
+            player.gold += Math.round(60 * goldMult);
+            goldCounter.innerText = player.gold;
+            goldMult += 0.25;
+            boom(player.x, player.y, '#feca57', 30);
+        }
+        switchScreen('hud');
+        gameState = 'PLAYING';
+        let rd = currentRoom.rooms[`${currentRoom.currentX},${currentRoom.currentY}`];
+        if (rd) rd.rewardTaken = true;
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    });
+});
 
 // ===== INPUT =====
 window.addEventListener('keydown', e => {
@@ -321,7 +350,21 @@ class RoomSystem {
         else if (this.type === 'shop') { roomCounter.innerText = 'Loja'; roomCounter.style.color = '#feca57'; if (!rd.shopVisited) { gameState = 'SHOP'; openShop(); } }
         else if (this.type === 'exit') { roomCounter.innerText = 'Saída - Próx Andar'; roomCounter.style.color = '#9b59b6'; this.isCleared = true; if (!rd.looted) { pickups.push(new Pickup(cx, cy, 'exit', 0)); rd.looted = true; } }
         else if (this.type === 'treasure') { roomCounter.innerText = 'Sala do Tesouro'; roomCounter.style.color = '#f1c40f'; this.isCleared = true; if (!rd.looted) { pickups.push(new Pickup(cx - 30, cy, 'gold', 50)); pickups.push(new Pickup(cx + 30, cy, 'gold', 50)); pickups.push(new Pickup(cx, cy + 30, 'heart', Math.floor(Math.random() * 2) + 1)); rd.looted = true; } }
-        else if (this.type === 'npc') { roomCounter.innerText = 'Anjo Guardião'; roomCounter.style.color = '#3498db'; this.isCleared = true; if (!rd.looted) { pickups.push(new Pickup(cx, cy, 'buff', 0)); rd.looted = true; } }
+        else if (this.type === 'npc') {
+            roomCounter.innerText = 'Anjo Guardião'; roomCounter.style.color = '#3498db';
+            if (rd.rewardTaken) {
+                // Already done, just mark cleared
+                this.isCleared = true;
+            } else if (!rd.npcSpawned) {
+                // Spawn the caged mini-boss
+                rd.npcSpawned = true;
+                rd.cleared = false;
+                this.isCleared = false;
+                this.spawnTimer = 2;
+                this.pendingEnemies = [new Enemy(cx, cy, 'miniboss')];
+                this._isNpcRoom = true;
+            }
+        }
         else if (!this.isCleared) {
             this.spawnTimer = 2; this.pendingEnemies = [];
             if (this.type === 'boss') { let bi; if (mapLevel >= MAX_LEVELS) { bi = BOSS_DEFS.findIndex(b => b.pattern === 'final_meteor'); if (bi === -1) bi = Math.floor(Math.random() * BOSS_DEFS.length); } else { let normalBosses = BOSS_DEFS.filter(b => b.pattern !== 'final_meteor'); let rBoss = normalBosses[Math.floor(Math.random() * normalBosses.length)]; bi = BOSS_DEFS.indexOf(rBoss); } this.pendingEnemies.push(new Enemy(cx, cy, 'boss', bi)); roomCounter.innerText = `${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; }
@@ -344,11 +387,18 @@ class RoomSystem {
                 bossHealthContainer.style.display = 'none'; pickups.push(new Pickup(400, 300, 'gold', 30 + Math.floor(Math.random() * 20)));
                 this.rooms[`${this.currentX},${this.currentY}`].type = 'shop'; this.enterRoom(this.currentX, this.currentY); return;
             }
+        } else if (this._isNpcRoom && !this.isCleared && enemies.length === 0 && this.spawnTimer <= 0) {
+            // NPC room mini-boss defeated — offer reward
+            this.isCleared = true;
+            this.rooms[`${this.currentX},${this.currentY}`].cleared = true;
+            this._isNpcRoom = false;
+            gameState = 'REWARD';
+            switchScreen('reward');
         }
         for (let i = pickups.length - 1; i >= 0; i--) {
             pickups[i].update(dt);
             if (dist(player.x, player.y, pickups[i].x, pickups[i].y) < player.radius + pickups[i].radius) {
-                if (pickups[i].type === 'gold') { let v = pickups[i].value; if (player.charType === 9) v = Math.ceil(v * 1.5); player.gold += v; goldCounter.innerText = player.gold; boom(pickups[i].x, pickups[i].y, '#feca57', 10); pickups.splice(i, 1); }
+                if (pickups[i].type === 'gold') { let v = Math.round(pickups[i].value * goldMult); if (player.charType === 9) v = Math.ceil(v * 1.5); player.gold += v; goldCounter.innerText = player.gold; boom(pickups[i].x, pickups[i].y, '#feca57', 10); pickups.splice(i, 1); }
                 else if (pickups[i].type === 'heart') { player.hp = Math.min(player.maxHp, player.hp + pickups[i].value); updateHUD(); boom(pickups[i].x, pickups[i].y, '#ff4757', 15); pickups.splice(i, 1); }
                 else if (pickups[i].type === 'buff') { player.dmgMult += 0.2; boom(pickups[i].x, pickups[i].y, '#3498db', 30); pickups.splice(i, 1); }
                 else if (pickups[i].type === 'exit') {
@@ -379,6 +429,22 @@ class RoomSystem {
         if (this.type === 'spawn') c.fillStyle = '#1e2922';
         c.fillRect(0, 0, 800, 600); c.fillStyle = '#2f3542'; c.fillRect(0, 0, 800, WALL); c.fillRect(0, 600 - WALL, 800, WALL); c.fillRect(0, 0, WALL, 600); c.fillRect(800 - WALL, 0, WALL, 600);
         if (this.type === 'shop' && this.isCleared) { c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; c.fillText('🏪 Portas estão abertas', 400, 300); }
+        // Draw NPC cage when mini-boss is alive
+        if (this.type === 'npc' && !this.isCleared && this.spawnTimer <= 0 && enemies.length > 0) {
+            c.strokeStyle = '#3498db'; c.lineWidth = 4;
+            let cageX = 400, cageY = 300, cageR = 60;
+            for (let i = 0; i < 8; i++) {
+                let a = (i / 8) * Math.PI * 2;
+                let bx = cageX + Math.cos(a) * cageR, by = cageY + Math.sin(a) * cageR;
+                c.beginPath(); c.moveTo(cageX + Math.cos(a) * (cageR - 20), cageY + Math.sin(a) * (cageR - 20));
+                c.lineTo(bx, by); c.stroke();
+            }
+            c.strokeStyle = 'rgba(52,152,219,0.4)'; c.lineWidth = 3;
+            c.beginPath(); c.arc(cageX, cageY, cageR, 0, Math.PI * 2); c.stroke();
+            c.fillStyle = 'rgba(52,152,219,0.06)'; c.beginPath(); c.arc(cageX, cageY, cageR, 0, Math.PI * 2); c.fill();
+            c.font = '20px VT323'; c.fillStyle = '#74b9ff'; c.textAlign = 'center';
+            c.fillText('🔒 Derrote o guardião para libertar o Anjo!', 400, WALL + 22);
+        }
         if (this.isCleared) {
             for (let d of this.doors) {
                 let rClr = this.rooms[d.side === 'N' ? `${this.currentX},${this.currentY - 1}` : d.side === 'S' ? `${this.currentX},${this.currentY + 1}` : d.side === 'E' ? `${this.currentX + 1},${this.currentY}` : `${this.currentX - 1},${this.currentY}`].cleared;
@@ -420,7 +486,7 @@ function buyItem(item, el) { if (player.gold < item.price) return; player.gold -
 function closeShop() { let rd = currentRoom.rooms[`${currentRoom.currentX},${currentRoom.currentY}`]; if (rd) rd.shopVisited = true; switchScreen('hud'); gameState = 'PLAYING'; lastTime = performance.now(); requestAnimationFrame(gameLoop); }
 
 // MAIN
-function startGame() { gameState = 'PLAYING'; switchScreen('hud'); mapLevel = 1; floorCounterEl.innerText = mapLevel; gameTime = 0; player = new Player(400, 300, selectedChar); currentRoom = new RoomSystem(); bossHealthContainer.style.display = 'none'; goldCounter.innerText = '0'; weaponNameEl.innerText = 'Padrão'; abilityNameEl.innerText = '-'; skillCdEl.innerText = ''; updateHUD(); lastTime = performance.now(); requestAnimationFrame(gameLoop); }
+function startGame() { gameState = 'PLAYING'; switchScreen('hud'); mapLevel = 1; floorCounterEl.innerText = mapLevel; gameTime = 0; goldMult = 1.0; player = new Player(400, 300, selectedChar); currentRoom = new RoomSystem(); bossHealthContainer.style.display = 'none'; goldCounter.innerText = '0'; weaponNameEl.innerText = 'Padrão'; abilityNameEl.innerText = '-'; skillCdEl.innerText = ''; updateHUD(); lastTime = performance.now(); requestAnimationFrame(gameLoop); }
 function updateHUD() { if (!player) return; let p = Math.max(0, (player.hp / player.maxHp) * 100); healthBar.style.width = p + '%'; healthBar.style.backgroundColor = p < 30 ? '#ff4757' : 'var(--health)'; }
 function updateCooldowns() { if (!player) return; let icd = player.getInnateCD(); if (icd > 0) { charAbilityCdEl.innerText = `${Math.ceil(icd)}s`; charAbilityCdEl.style.color = '#ff4757'; } else { charAbilityCdEl.innerText = 'PRONTO'; charAbilityCdEl.style.color = '#2ed573'; } if (player.activeSkill) { if (player.skillCD > 0) { skillCdEl.innerText = `(${Math.ceil(player.skillCD)}s)`; skillCdEl.style.color = '#ff4757'; } else { skillCdEl.innerText = '(PRONTO)'; skillCdEl.style.color = '#2ed573'; } } }
 function triggerGameOver() { gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; let bt = parseFloat(localStorage.getItem('toca_surv_time') || 0); if (gameTime > bt) { localStorage.setItem('toca_surv_time', gameTime.toString()); bt = gameTime; } goFinalTimeEl.innerText = `Tempo Sobrevivido: ${formatTime(gameTime)}`; goBestTimeEl.innerText = `Melhor Sobrevivência: ${formatTime(bt)}`; }
