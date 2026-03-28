@@ -141,51 +141,94 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
+// Sincronizar toque para mira no mobile
+window.addEventListener('touchstart', (e) => {
+    if (e.target.id === 'gameCanvas') {
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches[0];
+        mouse.x = (t.clientX - r.left) * (canvas.width / r.width);
+        mouse.y = (t.clientY - r.top) * (canvas.height / r.height);
+    }
+}, { passive: false });
+
 // ---------- MOBILE INPUTS ----------
 (function initMobile() {
-    const handleJoystick = (e) => {
-        const jBase = document.getElementById('joystick-base');
-        const jThumb = document.getElementById('joystick-thumb');
-        if (!jBase || !jThumb) return;
-        e.preventDefault();
-        const rect = jBase.getBoundingClientRect();
-        const touch = e.touches[0];
-        let dx = touch.clientX - (rect.left + rect.width / 2);
-        let dy = touch.clientY - (rect.top + rect.height / 2);
-        let d = Math.hypot(dx, dy);
-        let max = 60;
-        if (d > max) { dx = dx / d * max; dy = dy / d * max; }
-        joystickPos = { x: dx / max, y: dy / max };
-        jThumb.style.left = (50 + (dx / rect.width * 100)) + '%';
-        jThumb.style.top = (50 + (dy / rect.height * 100)) + '%';
-    };
-
+    let activeTouchId = null;
     const jBase = document.getElementById('joystick-base');
-    if (jBase) {
-        jBase.addEventListener('touchstart', (e) => { joystickActive = true; handleJoystick(e); }, { passive: false });
-        window.addEventListener('touchmove', (e) => { if (joystickActive) handleJoystick(e); }, { passive: false });
-        window.addEventListener('touchend', () => { 
-            joystickActive = false; joystickPos = { x: 0, y: 0 }; 
-            const jt = document.getElementById('joystick-thumb');
-            if (jt) { jt.style.left = '50%'; jt.style.top = '50%'; }
-        });
-    }
+    const jThumb = document.getElementById('joystick-thumb');
+    if (!jBase || !jThumb) return;
 
-    const mBtnHandler = (id, fn) => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
+    const moveJoystick = (clientX, clientY) => {
+        const rect = jBase.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let dx = clientX - centerX;
+        let dy = clientY - centerY;
+        let dist = Math.hypot(dx, dy);
+        let maxDist = rect.width / 2;
+        
+        if (dist > maxDist) {
+            dx = (dx / dist) * maxDist;
+            dy = (dy / dist) * maxDist;
+            dist = maxDist;
+        }
+
+        // Deadzone
+        if (dist < 5) {
+            joystickPos = { x: 0, y: 0 };
+        } else {
+            joystickPos = { x: dx / maxDist, y: dy / maxDist };
+        }
+
+        jThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     };
 
-    mBtnHandler('btn-m-jump', () => { if (player) player.jump(); });
-    mBtnHandler('btn-m-ability', () => { if (player) player.useAbility(); });
-    
-    const shootBtn = document.getElementById('btn-m-shoot');
-    if (shootBtn) {
-        shootBtn.addEventListener('touchstart', (e) => { e.preventDefault(); mouse.down = true; if (player) player.shoot(); }, { passive: false });
-        shootBtn.addEventListener('touchend', (e) => { e.preventDefault(); mouse.down = false; }, { passive: false });
-    }
+    jBase.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (activeTouchId !== null) return;
+        const touch = e.changedTouches[0];
+        activeTouchId = touch.identifier;
+        joystickActive = true;
+        moveJoystick(touch.clientX, touch.clientY);
+    }, { passive: false });
 
-    mBtnHandler('btn-m-pause', () => {
+    window.addEventListener('touchmove', (e) => {
+        if (!joystickActive) return;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === activeTouchId) {
+                moveJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                break;
+            }
+        }
+    }, { passive: false });
+
+    const endJoystick = (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === activeTouchId) {
+                activeTouchId = null;
+                joystickActive = false;
+                joystickPos = { x: 0, y: 0 };
+                jThumb.style.transform = 'translate(-50%, -50%)';
+                break;
+            }
+        }
+    };
+
+    window.addEventListener('touchend', endJoystick);
+    window.addEventListener('touchcancel', endJoystick);
+
+    // Botoes de Acao
+    const setupBtn = (id, start, end) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); start(); }, { passive: false });
+        if (end) el.addEventListener('touchend', (e) => { e.preventDefault(); end(); }, { passive: false });
+    };
+
+    setupBtn('btn-m-jump', () => { if (player) player.jump(); });
+    setupBtn('btn-m-ability', () => { if (player) player.useAbility(); });
+    setupBtn('btn-m-shoot', () => { mouse.down = true; if (player) player.shoot(); }, () => { mouse.down = false; });
+    setupBtn('btn-m-pause', () => {
         if (gameState === 'PLAYING') { gameState = 'PAUSED'; switchScreen('pause'); }
         else if (gameState === 'PAUSED') { gameState = 'PLAYING'; switchScreen('hud'); }
     });
