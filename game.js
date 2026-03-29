@@ -80,14 +80,18 @@ const keys = {};
 const mouse = { x: 0, y: 0, down: false };
 
 // SCREEN MANAGEMENT
+const isTouchDevice = () => {
+    return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0));
+};
+
 function switchScreen(id) { 
     Object.values(screens).forEach(s => s.classList.remove('active')); 
     if (id && screens[id]) screens[id].classList.add('active'); 
     
-    // Controle de visibilidade dos botões mobile
+    // Controle de visibilidade dos botões mobile - apenas em dispositivos touch
     const mCtrls = document.getElementById('mobile-controls');
     if (mCtrls) {
-        if (id === 'hud') mCtrls.style.display = 'block';
+        if (id === 'hud' && isTouchDevice()) mCtrls.style.display = 'block';
         else mCtrls.style.display = 'none';
     }
 }
@@ -265,6 +269,7 @@ window.addEventListener('touchend', (e) => {
 
     setupBtn('btn-m-jump', () => { if (player) player.jump(); });
     setupBtn('btn-m-ability', () => { if (player) player.useAbility(); });
+    setupBtn('btn-m-skill', () => { if (player) player.useSkill(); });
     
     // Tiro removido do botão fixo para ser no toque da tela por pedido do user
     
@@ -483,7 +488,15 @@ class Player extends Actor {
     jump() { if (!this.isJumping && this.flyT <= 0) { this.isJumping = true; this.jumpTimer = 0.8; if (typeof audio !== 'undefined') audio.playJump(); } }
     getInnateCD() { switch (this.charType) { case 0: return this.dashCD; case 1: return this.shieldCD; case 2: return this.burstCD; case 3: return this.fearCD; case 4: return this.ghostCD; case 5: return this.magicCD; case 6: return this.toxicCD; case 7: return this.empCD; case 8: return this.fireCD; case 9: return this.luckCD; default: return 0; } }
     useAbility() {
-        if (this.charType === 0 && this.dashCD <= 0) { let dx = 0, dy = 0; if (keys['KeyW']) dy--; if (keys['KeyS']) dy++; if (keys['KeyA']) dx--; if (keys['KeyD']) dx++; if (!dx && !dy) return; let l = Math.hypot(dx, dy); this.x += dx / l * 100; this.y += dy / l * 100; this.dashCD = 2; boom(this.x, this.y, '#00d2d3', 10); }
+        if (this.charType === 0 && this.dashCD <= 0) {
+            let dx = 0, dy = 0;
+            if (keys['KeyW']) dy--; if (keys['KeyS']) dy++; if (keys['KeyA']) dx--; if (keys['KeyD']) dx++;
+            if (joystickActive) { dx = joystickPos.x; dy = joystickPos.y; }
+            if (!dx && !dy) return;
+            let l = Math.hypot(dx, dy);
+            this.x += dx / l * 120; this.y += dy / l * 120;
+            this.dashCD = 2.5; boom(this.x, this.y, '#00d2d3', 15);
+        }
         else if (this.charType === 1 && this.shieldCD <= 0) { this.shieldT = 3; this.shieldCD = 8; }
         else if (this.charType === 2 && this.burstCD <= 0) { for (let i = 0; i < 3; i++)setTimeout(() => { this.weaponCD = 0; if (gameState === 'PLAYING') this.shoot(); }, i * 80); this.burstCD = 4; }
         else if (this.charType === 3 && this.fearCD <= 0) { this.fearT = 2; this.fearCD = 8; boom(this.x, this.y, '#833471', 30); }
@@ -774,8 +787,16 @@ function gameLoop(ts) {
     icebergs = icebergs.filter(ib => ib.update(dt)); 
     warnings = warnings.filter(w => w.update(dt)); 
     checkCollisions(); 
-    updateCooldowns(); 
-    ctx.clearRect(0, 0, 800, 600); 
+    updateCooldowns();
+    
+    // Atualizar visibilidade do botão de Skill Extra no mobile
+    const mSkillBtn = document.getElementById('btn-m-skill');
+    if (mSkillBtn && player) {
+        mSkillBtn.style.display = player.activeSkill ? 'flex' : 'none';
+        if (player.skillCD > 0) mSkillBtn.style.opacity = '0.5'; else mSkillBtn.style.opacity = '1';
+    }
+
+    ctx.clearRect(0, 0, 800, 600);
     ctx.save(); 
     if (screenShakeT > 0) { 
         ctx.translate((Math.random() - .5) * screenShakeM, (Math.random() - .5) * screenShakeM); 
