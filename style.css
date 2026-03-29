@@ -950,6 +950,24 @@ button:hover {
     border-color: white;
 }
 
+.m-btn.on-cd {
+    opacity: 0.6;
+    background: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+.m-btn.on-cd::after {
+    content: attr(data-cd) 's';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ff4757;
+    text-shadow: 2px 2px 0px #000;
+}
+
 .pause-btn {
     position: absolute;
     top: 15px;
