@@ -956,15 +956,32 @@ class RoomSystem {
                 rd.npcSpawned = true;
                 rd.cleared = false;
                 this.isCleared = false;
-                this.spawnTimer = 2;
-                this.pendingEnemies = [new Enemy(cx, cy, 'miniboss')];
+                this._pendingMinibossCount = 1;
+                this._pendingMinionCount = 0;
                 this._isNpcRoom = true;
             }
         }
         else if (!this.isCleared) {
             this.spawnTimer = 2; this.pendingEnemies = [];
-            if (this.type === 'boss') { let bi; if (mapLevel >= MAX_LEVELS) { bi = BOSS_DEFS.findIndex(b => b.pattern === 'final_meteor'); if (bi === -1) bi = Math.floor(Math.random() * BOSS_DEFS.length); } else { let normalBosses = BOSS_DEFS.filter(b => b.pattern !== 'final_meteor'); let rBoss = normalBosses[Math.floor(Math.random() * normalBosses.length)]; bi = BOSS_DEFS.indexOf(rBoss); } this.pendingEnemies.push(new Enemy(cx, cy, 'boss', bi)); roomCounter.innerText = `${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; }
-            else if (this.type === 'miniboss') { this.pendingEnemies.push(new Enemy(cx, cy, 'miniboss'), new Enemy(cx - 100, cy, 'minion'), new Enemy(cx + 100, cy, 'minion')); roomCounter.innerText = `Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; }
+            if (this.type === 'boss') { 
+                let bi; 
+                if (mapLevel >= MAX_LEVELS) { 
+                    bi = BOSS_DEFS.findIndex(b => b.pattern === 'final_meteor'); 
+                    if (bi === -1) bi = Math.floor(Math.random() * BOSS_DEFS.length); 
+                } else { 
+                    let normalBosses = BOSS_DEFS.filter(b => b.pattern !== 'final_meteor'); 
+                    let rBoss = normalBosses[Math.floor(Math.random() * normalBosses.length)]; 
+                    bi = BOSS_DEFS.indexOf(rBoss); 
+                } 
+                this.pendingEnemies.push(new Enemy(400, 300, 'boss', bi)); 
+                roomCounter.innerText = `${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; 
+                bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; 
+            }
+            else if (this.type === 'miniboss') { 
+                this._pendingMinibossCount = 1; 
+                this._pendingMinionCount = 2; 
+                roomCounter.innerText = `Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; 
+            }
             else { 
                 let mc = 3 + mapLevel + Math.floor(Math.random() * 3); 
                 this._pendingMinionCount = mc;
@@ -977,19 +994,30 @@ class RoomSystem {
         if (this.spawnTimer > 0) {
             this.spawnTimer -= dt;
             if (this.spawnTimer <= 0) {
-                // Se for sala de minions, gerar posições agora (player já está dentro da sala)
+                // Cálculo de posição segura para inimigos pendentes
+                if (this._pendingMinibossCount) {
+                    for(let i=0; i<this._pendingMinibossCount; i++){
+                        let ex, ey, att = 0, minDist = 300;
+                        do {
+                            ex = WALL + 100 + Math.random() * (600 - WALL*2);
+                            ey = WALL + 100 + Math.random() * (400 - WALL*2);
+                            att++; if(att > 50) minDist -= 2;
+                        } while(player && dist(player.x, player.y, ex, ey) < minDist && att < 100);
+                        this.pendingEnemies.push(new Enemy(ex, ey, 'miniboss'));
+                    }
+                    this._pendingMinibossCount = 0;
+                }
                 if (this._pendingMinionCount) {
-                    let mc = this._pendingMinionCount;
-                    this._pendingMinionCount = 0;
-                    for (let i = 0; i < mc; i++) {
-                        let ex, ey, attempts = 0;
+                    for (let i = 0; i < this._pendingMinionCount; i++) {
+                        let ex, ey, attempts = 0, minDist = 320;
                         do {
                             ex = WALL + 60 + Math.random() * (680 - WALL * 2);
                             ey = WALL + 60 + Math.random() * (480 - WALL * 2);
-                            attempts++;
-                        } while (player && dist(player.x, player.y, ex, ey) < 280 && attempts < 50);
+                            attempts++; if(attempts > 50) minDist -= 2;
+                        } while (player && dist(player.x, player.y, ex, ey) < minDist && attempts < 100);
                         this.pendingEnemies.push(new Enemy(ex, ey, 'minion'));
                     }
+                    this._pendingMinionCount = 0;
                 }
                 enemies = this.pendingEnemies;
                 this.pendingEnemies = [];
