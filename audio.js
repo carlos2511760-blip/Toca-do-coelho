@@ -15,6 +15,10 @@ class AudioManager {
         this.titleMusic.loop = true;
         this.titleMusic.volume = this.musicVol * this.masterVol;
         
+        this.gameMusic = new Audio('Musica/Musica jogo.mp3');
+        this.gameMusic.loop = true;
+        this.gameMusic.volume = this.musicVol * this.masterVol;
+        
         this.init();
     }
 
@@ -49,6 +53,9 @@ class AudioManager {
         if (this.titleMusic) {
             this.titleMusic.volume = this.musicVol * this.masterVol;
         }
+        if (this.gameMusic) {
+            this.gameMusic.volume = this.musicVol * this.masterVol;
+        }
     }
 
     playTitleMusic() {
@@ -60,8 +67,25 @@ class AudioManager {
     }
 
     stopTitleMusic() {
-        this.titleMusic.pause();
-        this.titleMusic.currentTime = 0;
+        if (this.titleMusic) {
+            this.titleMusic.pause();
+            this.titleMusic.currentTime = 0;
+        }
+    }
+
+    playGameMusic() {
+        if (this.gameMusic) {
+            this.gameMusic.play()
+                .then(() => console.log("Música de jogo tocando!"))
+                .catch(e => console.warn("Aguardando interação para tocar música do jogo:", e));
+        }
+    }
+
+    stopGameMusic() {
+        if (this.gameMusic) {
+            this.gameMusic.pause();
+            this.gameMusic.currentTime = 0;
+        }
     }
 
     playShoot() {

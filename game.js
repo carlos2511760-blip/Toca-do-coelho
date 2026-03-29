@@ -104,7 +104,10 @@ function returnToMenu() {
     if (typeof lightCtx !== 'undefined') lightCtx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Reiniciar música da capa ao voltar para o menu
-    if (typeof audio !== 'undefined') audio.playTitleMusic();
+    if (typeof audio !== 'undefined') {
+        audio.stopGameMusic();
+        audio.playTitleMusic();
+    }
     
     switchScreen('titleScreen'); 
 }
@@ -129,6 +132,7 @@ document.getElementById('btn-restart').addEventListener('click', () => {
     if (typeof lightCtx !== 'undefined') lightCtx.clearRect(0, 0, canvas.width, canvas.height);
     switchScreen('mainMenu'); 
     gameState = 'MENU'; 
+    if (typeof audio !== 'undefined') { audio.stopGameMusic(); audio.playTitleMusic(); }
 });
 document.getElementById('btn-quit').addEventListener('click', returnToMenu);
 
@@ -1274,7 +1278,10 @@ function closeShop() { let rd = currentRoom.rooms[`${currentRoom.currentX},${cur
 
 // MAIN
 function startGame() { 
-    if (typeof audio !== 'undefined') audio.stopTitleMusic();
+    if (typeof audio !== 'undefined') {
+        audio.stopTitleMusic();
+        audio.playGameMusic();
+    }
     document.body.style.backgroundImage = 'none'; // Limpa a capa para o jogo
     document.getElementById('game-container').classList.remove('menu-mode');
     gameState = 'PLAYING'; 
@@ -1351,7 +1358,7 @@ function updateCooldowns() {
         }
     }
 }
-function triggerGameOver() { if (flyMode) return; gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; if (!cheatsUsed) { let bt = parseFloat(localStorage.getItem('toca_surv_time') || 0); if (gameTime > bt) { localStorage.setItem('toca_surv_time', gameTime.toString()); bt = gameTime; } goFinalTimeEl.innerText = `Tempo Sobrevivido: ${formatTime(gameTime)}`; goBestTimeEl.innerText = `Melhor Sobrevivência: ${formatTime(bt)}`; } else { goFinalTimeEl.innerText = `Survive: ${formatTime(gameTime)} (Cheats)`; goBestTimeEl.innerText = "N/A"; } }
+function triggerGameOver() { if (flyMode) return; gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; if (typeof audio !== 'undefined') { audio.stopGameMusic(); audio.playTitleMusic(); } if (!cheatsUsed) { let bt = parseFloat(localStorage.getItem('toca_surv_time') || 0); if (gameTime > bt) { localStorage.setItem('toca_surv_time', gameTime.toString()); bt = gameTime; } goFinalTimeEl.innerText = `Tempo Sobrevivido: ${formatTime(gameTime)}`; goBestTimeEl.innerText = `Melhor Sobrevivência: ${formatTime(bt)}`; } else { goFinalTimeEl.innerText = `Survive: ${formatTime(gameTime)} (Cheats)`; goBestTimeEl.innerText = "N/A"; } }
 
 function checkCollisions() { 
     for (let i = projectiles.length - 1; i >= 0; i--) { 
