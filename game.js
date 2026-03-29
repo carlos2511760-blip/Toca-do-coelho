@@ -956,7 +956,9 @@ class RoomSystem {
                 rd.npcSpawned = true;
                 rd.cleared = false;
                 this.isCleared = false;
-                this._pendingMinibossCount = 1;
+                this.spawnTimer = 2;
+                this.pendingEnemies = [new Enemy(400, 300, 'miniboss')];
+                this._pendingMinibossCount = 0; 
                 this._pendingMinionCount = 0;
                 this._isNpcRoom = true;
             }
@@ -978,8 +980,9 @@ class RoomSystem {
                 bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; 
             }
             else if (this.type === 'miniboss') { 
-                this._pendingMinibossCount = 1; 
-                this._pendingMinionCount = 2; 
+                this.pendingEnemies.push(new Enemy(400, 300, 'miniboss'), new Enemy(320, 300, 'minion'), new Enemy(480, 300, 'minion'));
+                this._pendingMinibossCount = 0; 
+                this._pendingMinionCount = 0; 
                 roomCounter.innerText = `Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; 
             }
             else { 
@@ -1009,12 +1012,13 @@ class RoomSystem {
                 }
                 if (this._pendingMinionCount) {
                     for (let i = 0; i < this._pendingMinionCount; i++) {
-                        let ex, ey, attempts = 0, minDist = 320;
+                        let ex, ey, attempts = 0, minDist = 280, minSep = 100;
                         do {
                             ex = WALL + 60 + Math.random() * (680 - WALL * 2);
                             ey = WALL + 60 + Math.random() * (480 - WALL * 2);
-                            attempts++; if(attempts > 50) minDist -= 2;
-                        } while (player && dist(player.x, player.y, ex, ey) < minDist && attempts < 100);
+                            attempts++; 
+                            if(attempts > 40) { minDist -= 2; minSep -= 1; }
+                        } while ((player && dist(player.x, player.y, ex, ey) < minDist || this.pendingEnemies.some(pe => dist(pe.x, pe.y, ex, ey) < minSep)) && attempts < 100);
                         this.pendingEnemies.push(new Enemy(ex, ey, 'minion'));
                     }
                     this._pendingMinionCount = 0;
