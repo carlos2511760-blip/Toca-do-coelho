@@ -56,6 +56,12 @@ body {
     overflow: hidden;
 }
 
+#game-container.menu-mode {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
 canvas {
     display: block;
     width: 100%;
@@ -114,6 +120,7 @@ canvas {
     margin-bottom: 5px;
     text-transform: uppercase;
     letter-spacing: -2px;
+    text-align: center;
 }
 
 .glow-text {
@@ -129,6 +136,7 @@ canvas {
     font-size: 1.5rem;
     margin-bottom: 2rem;
     color: #a4b0be;
+    text-align: center;
 }
 
 .flicker {
@@ -151,6 +159,7 @@ canvas {
 .version-text {
     font-size: 1rem;
     color: #576574;
+    text-align: center;
 }
 
 /* ========== BUTTONS ========== */

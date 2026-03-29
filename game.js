@@ -99,6 +99,7 @@ function switchScreen(id) {
 function returnToMenu() { 
     gameState = 'MENU'; 
     document.body.style.backgroundImage = "url('./imagens/Capa.png')"; 
+    document.getElementById('game-container').classList.add('menu-mode');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (typeof lightCtx !== 'undefined') lightCtx.clearRect(0, 0, canvas.width, canvas.height);
     switchScreen('titleScreen'); 
@@ -119,6 +120,7 @@ document.getElementById('btn-resume').addEventListener('click', resumeGame);
 document.getElementById('btn-pause-settings').addEventListener('click', () => { prevScreenBeforeSettings = 'pause'; switchScreen('settings'); });
 document.getElementById('btn-restart').addEventListener('click', () => { 
     document.body.style.backgroundImage = "url('./imagens/Capa.png')"; 
+    document.getElementById('game-container').classList.add('menu-mode');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (typeof lightCtx !== 'undefined') lightCtx.clearRect(0, 0, canvas.width, canvas.height);
     switchScreen('mainMenu'); 
@@ -960,6 +962,7 @@ function closeShop() { let rd = currentRoom.rooms[`${currentRoom.currentX},${cur
 function startGame() { 
     if (typeof audio !== 'undefined') audio.stopTitleMusic();
     document.body.style.backgroundImage = 'none'; // Limpa a capa para o jogo
+    document.getElementById('game-container').classList.remove('menu-mode');
     gameState = 'PLAYING'; 
     switchScreen('hud'); 
     mapLevel = 1; 
