@@ -980,10 +980,7 @@ class RoomSystem {
                 rd.looted = true; 
             } 
         }
-        else if (this.type === 'forge') {
-            roomCounter.innerText = 'Forja Ancestral'; roomCounter.style.color = '#d35400'; this.isCleared = true;
-            if (!rd.looted) { pickups.push(new Pickup(cx, cy, 'buff', 1)); rd.looted = true; }
-        }
+
         else if (this.type === 'casino') {
             roomCounter.innerText = 'Cassino'; roomCounter.style.color = '#feca57'; this.isCleared = true;
             if (!rd.looted) { 
