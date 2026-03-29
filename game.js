@@ -1011,17 +1011,38 @@ class RoomSystem {
                     this._pendingMinibossCount = 0;
                 }
                 if (this._pendingMinionCount) {
-                    for (let i = 0; i < this._pendingMinionCount; i++) {
-                        let ex, ey, attempts = 0, minDist = 280, minSep = 100;
-                        do {
-                            ex = WALL + 60 + Math.random() * (680 - WALL * 2);
-                            ey = WALL + 60 + Math.random() * (480 - WALL * 2);
-                            attempts++; 
-                            if(attempts > 40) { minDist -= 2; minSep -= 1; }
-                        } while ((player && dist(player.x, player.y, ex, ey) < minDist || this.pendingEnemies.some(pe => dist(pe.x, pe.y, ex, ey) < minSep)) && attempts < 100);
-                        this.pendingEnemies.push(new Enemy(ex, ey, 'minion'));
-                    }
+                    let mc = this._pendingMinionCount;
                     this._pendingMinionCount = 0;
+                    // Grid-based candidates for natural spread
+                    let candidates = [];
+                    let cols = 8, rows = 6;
+                    for (let c = 0; c < cols; c++) {
+                        for (let r = 0; r < rows; r++) {
+                            candidates.push({
+                                x: WALL + 60 + (c / cols) * (680 - WALL * 2) + (Math.random() - 0.5) * 40,
+                                y: WALL + 60 + (r / rows) * (480 - WALL * 2) + (Math.random() - 0.5) * 40
+                            });
+                        }
+                    }
+                    candidates.sort(() => Math.random() - 0.5);
+                    let placed = 0;
+                    for (let cand of candidates) {
+                        if (placed >= mc) break;
+                        if (!player || dist(player.x, player.y, cand.x, cand.y) > 220) {
+                            this.pendingEnemies.push(new Enemy(cand.x, cand.y, 'minion'));
+                            placed++;
+                        }
+                    }
+                    if (placed < mc) {
+                        candidates.sort((a, b) => dist(player.x, player.y, b.x, b.y) - dist(player.x, player.y, a.x, a.y));
+                        for (let cand of candidates) {
+                            if (placed >= mc) break;
+                            if (!this.pendingEnemies.some(pe => pe.x === cand.x && pe.y === cand.y)) {
+                                this.pendingEnemies.push(new Enemy(cand.x, cand.y, 'minion'));
+                                placed++;
+                            }
+                        }
+                    }
                 }
                 enemies = this.pendingEnemies;
                 this.pendingEnemies = [];
