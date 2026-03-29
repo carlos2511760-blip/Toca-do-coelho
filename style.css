@@ -474,6 +474,13 @@ button:hover {
 }
 
 /* ========== CHARACTER SELECTION ========== */
+.size-cards { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+.size-card { background: rgba(0,0,0,0.4); border: 2px solid #2f3542; border-radius: 8px; padding: 10px; min-width: 90px; cursor: pointer; transition: 0.3s; text-align: center; flex: 1; max-width: 120px; }
+.size-card:hover { border-color: #feca57; transform: translateY(-3px); }
+.size-card.selected { border-color: #feca57; background: rgba(254,202,87,0.1); box-shadow: 0 0 15px rgba(254,202,87,0.2); }
+.size-card h4 { margin-bottom: 5px; color: #feca57; font-size: 1.1rem; }
+.size-card p { font-size: 0.8rem; color: #a4b0be; }
+
 .character-selection {
     margin-bottom: 10px;
     text-align: center;

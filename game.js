@@ -74,7 +74,7 @@ function flash() { flashT = 0.2; }
 function formatTime(s) { let m = Math.floor(s / 60); let sm = Math.floor(s % 60); return `${m < 10 ? '0' : ''}${m}:${sm < 10 ? '0' : ''}${sm}`; }
 let player, enemies = [], projectiles = [], particles = [], pickups = [], icebergs = [], warnings = [];
 let currentRoom, mapLevel = 1;
-const MAX_LEVELS = 5;
+let MAX_LEVELS = 5;
 const WALL = 40;
 const keys = {};
 const mouse = { x: 0, y: 0, down: false };
@@ -381,6 +381,13 @@ diffCards.forEach(c => c.addEventListener('click', () => {
     diffCards.forEach(x => x.classList.remove('selected'));
     c.classList.add('selected');
     selectedDiff = c.dataset.diff;
+}));
+
+// ===== SIZE SELECTION =====
+document.querySelectorAll('.size-card').forEach(c => c.addEventListener('click', () => {
+    document.querySelectorAll('.size-card').forEach(card => card.classList.remove('selected'));
+    c.classList.add('selected');
+    MAX_LEVELS = parseInt(c.dataset.size);
 }));
 
 // ===== MOBILE SETTINGS SYNC =====
