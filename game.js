@@ -967,15 +967,7 @@ class RoomSystem {
             else if (this.type === 'miniboss') { this.pendingEnemies.push(new Enemy(cx, cy, 'miniboss'), new Enemy(cx - 100, cy, 'minion'), new Enemy(cx + 100, cy, 'minion')); roomCounter.innerText = `Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; }
             else { 
                 let mc = 3 + mapLevel + Math.floor(Math.random() * 3); 
-                for (let i = 0; i < mc; i++) {
-                    let ex, ey, attempts = 0;
-                    do {
-                        ex = WALL + 50 + Math.random() * (700 - WALL * 2);
-                        ey = WALL + 50 + Math.random() * (500 - WALL * 2);
-                        attempts++;
-                    } while (player && dist(player.x, player.y, ex, ey) < 200 && attempts < 20);
-                    this.pendingEnemies.push(new Enemy(ex, ey, 'minion'));
-                }
+                this._pendingMinionCount = mc;
                 roomCounter.innerText = `Lobisomens`; 
                 roomCounter.style.color = '#e0e0e0'; 
             }
@@ -985,6 +977,20 @@ class RoomSystem {
         if (this.spawnTimer > 0) {
             this.spawnTimer -= dt;
             if (this.spawnTimer <= 0) {
+                // Se for sala de minions, gerar posições agora (player já está dentro da sala)
+                if (this._pendingMinionCount) {
+                    let mc = this._pendingMinionCount;
+                    this._pendingMinionCount = 0;
+                    for (let i = 0; i < mc; i++) {
+                        let ex, ey, attempts = 0;
+                        do {
+                            ex = WALL + 60 + Math.random() * (680 - WALL * 2);
+                            ey = WALL + 60 + Math.random() * (480 - WALL * 2);
+                            attempts++;
+                        } while (player && dist(player.x, player.y, ex, ey) < 280 && attempts < 50);
+                        this.pendingEnemies.push(new Enemy(ex, ey, 'minion'));
+                    }
+                }
                 enemies = this.pendingEnemies;
                 this.pendingEnemies = [];
                 enemies.forEach(e => boom(e.x, e.y, '#fff', 15));
