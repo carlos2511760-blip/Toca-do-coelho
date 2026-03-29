@@ -508,6 +508,31 @@
                 <button id="shop-close-btn">Continuar Explorando</button>
             </div>
 
+            <!-- CASSINO -->
+            <div id="casino-screen" class="screen">
+                <div class="casino-panel">
+                    <h2 class="panel-title" style="color:#feca57; font-size: 2.5rem; text-shadow: 0 0 10px #feca57;">🎰 Sala do Cassino</h2>
+                    <p style="font-size: 1.5rem; color: #ced6e0; margin-bottom: 20px;">Tente a sorte! Consiga três '1' para ganhar, ou quatro '1' para o Jackpot!</p>
+                    
+                    <div class="slot-machine">
+                        <div class="slot" id="slot-1">0</div>
+                        <div class="slot" id="slot-2">0</div>
+                        <div class="slot" id="slot-3">0</div>
+                        <div class="slot" id="slot-4">0</div>
+                    </div>
+                    
+                    <div class="casino-controls">
+                        <p style="font-size: 1.5rem; margin-bottom: 10px;">Custo: <span style="color:#feca57;">🪙 15 Ouro</span></p>
+                        <p style="font-size: 1.2rem; color: #a4b0be; margin-bottom: 15px;">Seu ouro atual: 🪙 <span id="casino-gold-display">0</span></p>
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <button id="btn-spin" class="menu-btn primary-btn" style="background-color: #feca57; color: #2f3640; border-color: #feca57;">Girar (15G)</button>
+                            <button id="btn-leave-casino" class="menu-btn danger-btn">Sair</button>
+                        </div>
+                        <p id="casino-result-msg" style="margin-top: 15px; font-size: 1.8rem; height: 30px;"></p>
+                    </div>
+                </div>
+            </div>
+
             <!-- GAME OVER -->
             <div id="game-over" class="screen">
                 <h1 class="title" style="color: #ff3333;">Fim da Linha</h1>

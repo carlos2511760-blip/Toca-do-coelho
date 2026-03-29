@@ -983,11 +983,9 @@ class RoomSystem {
 
         else if (this.type === 'casino') {
             roomCounter.innerText = 'Cassino'; roomCounter.style.color = '#feca57'; this.isCleared = true;
-            if (!rd.looted) { 
-                let rng = Math.random();
-                if(rng < 0.2) { pickups.push(new Pickup(cx, cy, 'gold', 250)); boom(cx, cy, '#feca57', 30); }
-                else if (rng > 0.6) { pickups.push(new Pickup(cx, cy, 'gold', 30)); }
-                rd.looted = true; 
+            if (!rd.casinoVisited) {
+                gameState = 'CASINO';
+                openCasino();
             }
         }
         else if (this.type === 'npc') {
@@ -1270,6 +1268,84 @@ function buyItem(item, el) { if (player.gold < item.price) return; player.gold -
         boom(player.x, player.y, '#3498db', 20);
     } }
 function closeShop() { let rd = currentRoom.rooms[`${currentRoom.currentX},${currentRoom.currentY}`]; if (rd) rd.shopVisited = true; switchScreen('hud'); gameState = 'PLAYING'; lastTime = performance.now(); requestAnimationFrame(gameLoop); }
+
+// CASINO
+let casinoSpinning = false;
+function openCasino() {
+    document.getElementById('casino-gold-display').innerText = player.gold;
+    document.getElementById('casino-result-msg').innerText = '';
+    document.getElementById('slot-1').innerText = '0';
+    document.getElementById('slot-2').innerText = '0';
+    document.getElementById('slot-3').innerText = '0';
+    document.getElementById('slot-4').innerText = '0';
+    switchScreen('casino-screen');
+}
+
+function closeCasino() {
+    if (casinoSpinning) return;
+    let rd = currentRoom.rooms[`${currentRoom.currentX},${currentRoom.currentY}`];
+    if (rd) rd.casinoVisited = true;
+    switchScreen('hud');
+    gameState = 'PLAYING';
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+document.getElementById('btn-leave-casino').addEventListener('click', closeCasino);
+document.getElementById('btn-spin').addEventListener('click', () => {
+    let cost = 15;
+    if (casinoSpinning || player.gold < cost) return;
+    player.gold -= cost;
+    goldCounter.innerText = player.gold;
+    document.getElementById('casino-gold-display').innerText = player.gold;
+    
+    casinoSpinning = true;
+    let slots = [
+        document.getElementById('slot-1'),
+        document.getElementById('slot-2'),
+        document.getElementById('slot-3'),
+        document.getElementById('slot-4')
+    ];
+    let msg = document.getElementById('casino-result-msg');
+    msg.innerText = '';
+    
+    slots.forEach(s => {
+        s.classList.add('spinning');
+        s.innerText = '?';
+    });
+    
+    setTimeout(() => {
+        slots.forEach(s => s.classList.remove('spinning'));
+        let results = [];
+        for (let i = 0; i < 4; i++) {
+            results.push(Math.random() < 0.35 ? '1' : '0'); 
+            slots[i].innerText = results[i];
+        }
+        
+        let count1 = results.filter(r => r === '1').length;
+        if (count1 === 4) {
+            msg.innerText = 'JACKPOT! 🎉 +250 Ouro!';
+            msg.style.color = '#2ed573';
+            player.gold += 250;
+            if (typeof audio !== 'undefined') { audio.playCoin(); setTimeout(() => audio.playCoin(), 200); setTimeout(() => audio.playCoin(), 400); }
+            boom(400, 300, '#feca57', 50);
+        } else if (count1 === 3) {
+            msg.innerText = 'VITÓRIA! 💰 +40 Ouro!';
+            msg.style.color = '#1dd1a1';
+            player.gold += 40;
+            if (typeof audio !== 'undefined') audio.playCoin();
+        } else {
+            msg.innerText = 'PERDEU! 😢 Tente novamente.';
+            msg.style.color = '#ff4757';
+            if (typeof audio !== 'undefined') audio.playHit();
+        }
+        
+        goldCounter.innerText = player.gold;
+        document.getElementById('casino-gold-display').innerText = player.gold;
+        casinoSpinning = false;
+        
+    }, 1500); 
+});
 
 // MAIN
 function startGame() { 
