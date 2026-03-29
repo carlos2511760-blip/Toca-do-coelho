@@ -20,18 +20,23 @@ class AudioManager {
 
     init() {
         const unlock = () => {
-            if (this.ctx) return;
+            // Se já inicializou ou tocou, ignorar
+            if (this.ctx && this.soundsEnabled) return;
+            
+            console.log("Tentando desbloquear áudio...");
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             this.soundsEnabled = true;
             
-            // Iniciar música do título no primeiro clique (browser policy)
+            // Força o play da música do título no primeiro clique
             this.playTitleMusic();
             
+            // Remover listeners após sucesso
             document.removeEventListener('click', unlock);
+            document.removeEventListener('touchstart', unlock);
             document.removeEventListener('keydown', unlock);
-            console.log("Áudio Contexto Inicializado");
         };
         document.addEventListener('click', unlock);
+        document.addEventListener('touchstart', unlock);
         document.addEventListener('keydown', unlock);
     }
 
@@ -47,7 +52,11 @@ class AudioManager {
     }
 
     playTitleMusic() {
-        this.titleMusic.play().catch(e => console.log("Erro ao tocar música:", e));
+        if (this.titleMusic) {
+            this.titleMusic.play()
+                .then(() => console.log("Música do título tocando!"))
+                .catch(e => console.warn("Aguardando interação para tocar música:", e));
+        }
     }
 
     stopTitleMusic() {

@@ -766,6 +766,7 @@ function closeShop() { let rd = currentRoom.rooms[`${currentRoom.currentX},${cur
 // MAIN
 function startGame() { 
     if (typeof audio !== 'undefined') audio.stopTitleMusic();
+    document.body.style.backgroundImage = 'none'; // Limpa a capa para o jogo
     gameState = 'PLAYING'; 
     switchScreen('hud'); 
     mapLevel = 1; 
