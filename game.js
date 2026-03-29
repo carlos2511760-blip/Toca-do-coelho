@@ -965,7 +965,20 @@ class RoomSystem {
             this.spawnTimer = 2; this.pendingEnemies = [];
             if (this.type === 'boss') { let bi; if (mapLevel >= MAX_LEVELS) { bi = BOSS_DEFS.findIndex(b => b.pattern === 'final_meteor'); if (bi === -1) bi = Math.floor(Math.random() * BOSS_DEFS.length); } else { let normalBosses = BOSS_DEFS.filter(b => b.pattern !== 'final_meteor'); let rBoss = normalBosses[Math.floor(Math.random() * normalBosses.length)]; bi = BOSS_DEFS.indexOf(rBoss); } this.pendingEnemies.push(new Enemy(cx, cy, 'boss', bi)); roomCounter.innerText = `${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757'; bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name; }
             else if (this.type === 'miniboss') { this.pendingEnemies.push(new Enemy(cx, cy, 'miniboss'), new Enemy(cx - 100, cy, 'minion'), new Enemy(cx + 100, cy, 'minion')); roomCounter.innerText = `Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true; }
-            else { let mc = 3 + mapLevel + Math.floor(Math.random() * 3); for (let i = 0; i < mc; i++)this.pendingEnemies.push(new Enemy(WALL + 50 + Math.random() * (700 - WALL * 2), WALL + 50 + Math.random() * (500 - WALL * 2), 'minion')); roomCounter.innerText = `Lobisomens`; roomCounter.style.color = '#e0e0e0'; }
+            else { 
+                let mc = 3 + mapLevel + Math.floor(Math.random() * 3); 
+                for (let i = 0; i < mc; i++) {
+                    let ex, ey, attempts = 0;
+                    do {
+                        ex = WALL + 50 + Math.random() * (700 - WALL * 2);
+                        ey = WALL + 50 + Math.random() * (500 - WALL * 2);
+                        attempts++;
+                    } while (player && dist(player.x, player.y, ex, ey) < 200 && attempts < 20);
+                    this.pendingEnemies.push(new Enemy(ex, ey, 'minion'));
+                }
+                roomCounter.innerText = `Lobisomens`; 
+                roomCounter.style.color = '#e0e0e0'; 
+            }
         } else { roomCounter.innerText = `Limpo`; roomCounter.style.color = '#7f8fa6'; }
     }
     update(dt) {
