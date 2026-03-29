@@ -96,7 +96,13 @@ function switchScreen(id) {
     }
 }
 
-function returnToMenu() { gameState = 'MENU'; switchScreen('titleScreen'); }
+function returnToMenu() { 
+    gameState = 'MENU'; 
+    document.body.style.backgroundImage = "url('./imagens/Capa.png')"; 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (typeof lightCtx !== 'undefined') lightCtx.clearRect(0, 0, canvas.width, canvas.height);
+    switchScreen('titleScreen'); 
+}
 
 function dist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
 
@@ -111,8 +117,14 @@ document.getElementById('btn-back-title').addEventListener('click', () => switch
 // ===== PAUSE SYSTEM =====
 document.getElementById('btn-resume').addEventListener('click', resumeGame);
 document.getElementById('btn-pause-settings').addEventListener('click', () => { prevScreenBeforeSettings = 'pause'; switchScreen('settings'); });
-document.getElementById('btn-restart').addEventListener('click', () => { switchScreen('mainMenu'); gameState = 'MENU'; });
-document.getElementById('btn-quit').addEventListener('click', () => { gameState = 'MENU'; switchScreen('titleScreen'); });
+document.getElementById('btn-restart').addEventListener('click', () => { 
+    document.body.style.backgroundImage = "url('./imagens/Capa.png')"; 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (typeof lightCtx !== 'undefined') lightCtx.clearRect(0, 0, canvas.width, canvas.height);
+    switchScreen('mainMenu'); 
+    gameState = 'MENU'; 
+});
+document.getElementById('btn-quit').addEventListener('click', returnToMenu);
 
 function pauseGame() {
     if (gameState !== 'PLAYING') return;
@@ -476,7 +488,49 @@ function boom(x, y, col, n) {
 class Pickup { constructor(x, y, type, value) { this.x = x; this.y = y; this.type = type; this.value = value; this.radius = type === 'exit' ? 20 : 12; this.bobT = 0; } update(dt) { this.bobT += dt * 3; } draw(c) { let by = this.y + Math.sin(this.bobT) * 5; c.font = '22px VT323'; c.textAlign = 'center'; if (this.type === 'gold') c.fillText('💰', this.x, by); else if (this.type === 'exit') { c.fillStyle = '#9b59b6'; c.fillRect(this.x - 15, by - 15, 30, 30); c.fillStyle = '#fff'; c.fillText('SAÍDA', this.x, by + 7); } else if (this.type === 'heart') c.fillText('❤️', this.x, by); else if (this.type === 'buff') c.fillText('🧚', this.x, by); } }
 
 // WARNING (Ataques de área)
-class Warning { constructor(x, y, r, time, type) { this.x = x; this.y = y; this.radius = r; this.time = time; this.maxTime = time; this.type = type; } update(dt) { this.time -= dt; if (this.time <= 0 && this.type === 'meteor') { boom(this.x, this.y, '#e74c3c', 40); boom(this.x, this.y, '#f1c40f', 30); if (player && dist(player.x, player.y, this.x, this.y) < this.radius + player.radius) { player.takeDamage(1 + (mapLevel - 1) * 0.5); let dx = player.x - this.x, dy = player.y - this.y, mg = Math.hypot(dx, dy) || 1; player.x += (dx / mg) * 60; player.y += (dy / mg) * 60; player.slowTimer = 3; } } return this.time > 0; } draw(c) { c.fillStyle = `rgba(231, 76, 60, ${0.2 + (1 - this.time / this.maxTime) * 0.5})`; c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#e74c3c'; c.lineWidth = 2; c.stroke(); let fallY = this.y - 800 * (this.time / this.maxTime); c.fillStyle = '#d35400'; c.beginPath(); c.arc(this.x, fallY, this.radius * 0.5, 0, Math.PI * 2); c.fill(); } }
+class Warning { 
+    constructor(x, y, r, time, type, isPlayerObj=false) { 
+        this.x = x; this.y = y; 
+        this.radius = r; 
+        this.time = time; 
+        this.maxTime = time; 
+        this.type = type; 
+        this.isPlayerObj = isPlayerObj;
+    } 
+    update(dt) { 
+        this.time -= dt; 
+        if (this.time <= 0 && this.type === 'meteor') { 
+            boom(this.x, this.y, '#e74c3c', 40); 
+            boom(this.x, this.y, '#f1c40f', 30); 
+            if (this.isPlayerObj) {
+                enemies.forEach(e => {
+                    if (dist(e.x, e.y, this.x, this.y) < this.radius + e.radius) { 
+                        e.takeDamage(15 * (player ? player.dmgMult : 1)); 
+                        e.stunTimer = 1.0;
+                    }
+                });
+            } else {
+                if (player && dist(player.x, player.y, this.x, this.y) < this.radius + player.radius) { 
+                    player.takeDamage(1 + (mapLevel - 1) * 0.5); 
+                    let dx = player.x - this.x, dy = player.y - this.y, mg = Math.hypot(dx, dy) || 1; 
+                    player.x += (dx / mg) * 60; player.y += (dy / mg) * 60; 
+                    player.slowTimer = 3; 
+                } 
+            }
+        } 
+        return this.time > 0; 
+    } 
+    draw(c) { 
+        let rgb = this.isPlayerObj ? '52, 152, 219' : '231, 76, 60';
+        let strokeCol = this.isPlayerObj ? '#3498db' : '#e74c3c';
+        let fallCol = this.isPlayerObj ? '#2980b9' : '#d35400';
+        c.fillStyle = `rgba(${rgb}, ${0.2 + (1 - this.time / this.maxTime) * 0.5})`; 
+        c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill(); 
+        c.strokeStyle = strokeCol; c.lineWidth = 2; c.stroke(); 
+        let fallY = this.y - 800 * (this.time / this.maxTime); 
+        c.fillStyle = fallCol; c.beginPath(); c.arc(this.x, fallY, this.radius * 0.5, 0, Math.PI * 2); c.fill(); 
+    } 
+}
 
 // ICEBERG E PEDRA
 class Iceberg { constructor(x, y, type) { this.x = x; this.y = y; this.w = 50; this.h = 60; this.hp = 10; this.timer = 15; this.type = type || 'ice'; } update(dt) { this.timer -= dt; return this.timer > 0 && this.hp > 0; } draw(c) { if (this.type === 'rock') { c.fillStyle = '#7f8fa6'; c.fillRect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h); c.strokeStyle = '#2f3640'; c.lineWidth = 2; c.strokeRect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h); } else { c.fillStyle = '#a8e6cf'; c.fillRect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h); c.strokeStyle = '#55efc4'; c.lineWidth = 2; c.strokeRect(this.x - this.w / 2, this.y - this.h / 2, this.w, this.h); } } }
@@ -552,10 +606,10 @@ class Player extends Actor {
             this.x += dx / l * 120; this.y += dy / l * 120;
             this.dashCD = 2.5; boom(this.x, this.y, '#00d2d3', 15);
         }
-        else if (this.charType === 1 && this.shieldCD <= 0) { this.shieldT = 3; this.shieldCD = 8; }
+        else if (this.charType === 1 && this.shieldCD <= 0) { this.shieldT = 5; this.shieldCD = 8; }
         else if (this.charType === 2 && this.burstCD <= 0) { for (let i = 0; i < 3; i++)setTimeout(() => { this.weaponCD = 0; if (gameState === 'PLAYING') this.shoot(); }, i * 80); this.burstCD = 4; }
-        else if (this.charType === 3 && this.fearCD <= 0) { this.fearT = 2; this.fearCD = 8; boom(this.x, this.y, '#833471', 30); }
-        else if (this.charType === 4 && this.ghostCD <= 0) { this.ghostT = 2.5; this.invTimer = 2.5; this.ghostCD = 8; boom(this.x, this.y, '#7f8fa6', 20); }
+        else if (this.charType === 3 && this.fearCD <= 0) { this.fearT = 4.5; this.fearCD = 8; boom(this.x, this.y, '#833471', 30); }
+        else if (this.charType === 4 && this.ghostCD <= 0) { this.ghostT = 4.5; this.invTimer = 4.5; this.ghostCD = 8; boom(this.x, this.y, '#7f8fa6', 20); }
         else if (this.charType === 5 && this.magicCD <= 0) { for (let i = 0; i < 12; i++) { let a = (i / 12) * Math.PI * 2; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 8, '#74b9ff', true, 'ice')); } this.magicCD = 10; boom(this.x, this.y, '#2980b9', 30); }
         else if (this.charType === 6 && this.toxicCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 150) { e.takeDamage(10 * this.dmgMult); e.slowTimer = (e.type === 'boss') ? 1 : 3; } }); this.toxicCD = 8; boom(this.x, this.y, '#2ecc71', 40); }
         else if (this.charType === 7 && this.empCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.stunTimer = (e.type === 'boss') ? 0.5 : 3; e.takeDamage(5 * this.dmgMult); } }); this.empCD = 12; boom(this.x, this.y, '#f1c40f', 50); }
@@ -570,15 +624,15 @@ class Player extends Actor {
         }
         else if (this.charType === 11 && this.chemCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.slowTimer = 4; e.takeDamage(4 * this.dmgMult); } }); this.chemCD = 7; boom(this.x, this.y, '#1dd1a1', 25); }
         else if (this.charType === 12 && this.rootCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 180) e.stunTimer = 2; }); this.rootCD = 10; boom(this.x, this.y, '#10ac84', 30); }
-        else if (this.charType === 13 && this.jetCD <= 0) { this.flyT = 4.0; this.jetCD = 12; boom(this.x, this.y, '#54a0ff', 15); }
-        else if (this.charType === 14 && this.cannonCD <= 0) { for (let i = 0; i < 5; i++) { let tx = this.x + (Math.random() - 0.5) * 400, ty = this.y + (Math.random() - 0.5) * 400; warnings.push(new Warning(tx, ty, 50, 0.5, 'meteor')); } this.cannonCD = 8; }
-        else if (this.charType === 15 && this.roarCD <= 0) { this.dmgMult *= 1.5; setTimeout(() => this.dmgMult /= 1.5, 5000); this.roarCD = 15; boom(this.x, this.y, '#ff9f43', 40); }
+        else if (this.charType === 13 && this.jetCD <= 0) { this.flyT = 6.0; this.jetCD = 12; boom(this.x, this.y, '#54a0ff', 15); }
+        else if (this.charType === 14 && this.cannonCD <= 0) { for (let i = 0; i < 5; i++) { let tx = this.x + (Math.random() - 0.5) * 400, ty = this.y + (Math.random() - 0.5) * 400; warnings.push(new Warning(tx, ty, 60, 0.5, 'meteor', true)); } this.cannonCD = 8; }
+        else if (this.charType === 15 && this.roarCD <= 0) { this.dmgMult *= 1.5; setTimeout(() => this.dmgMult /= 1.5, 8000); this.roarCD = 15; boom(this.x, this.y, '#ff9f43', 40); }
         else if (this.charType === 16 && this.laserCD <= 0) { enemies.forEach(e => { if (Math.abs(e.x - this.x) < 30 || Math.abs(e.y - this.y) < 30) e.takeDamage(15); }); this.laserCD = 5; boom(this.x, this.y, '#576574', 20); }
         else if (this.charType === 17 && this.medCD <= 0) { this.hp = Math.min(this.maxHp, this.hp + 2); updateHUD(); this.medCD = 20; boom(this.x, this.y, '#feca57', 30); }
-        else if (this.charType === 18 && this.tntCD <= 0) { warnings.push(new Warning(this.x, this.y, 100, 1.0, 'meteor')); this.tntCD = 6; }
+        else if (this.charType === 18 && this.tntCD <= 0) { warnings.push(new Warning(this.x, this.y, 120, 1.0, 'meteor', true)); this.tntCD = 6; }
         else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { e.takeDamage(8); e.stunTimer = 1; }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); }
     }
-    useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 80; e.y += dy / d * 80; } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 4; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.takeDamage(5 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.3 : 1.5; } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 80, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) e.takeDamage(10 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 50); boom(this.x, this.y, '#f39c12', 30); } }
+    useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; e.stunTimer = 1.0; } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } }
     shoot() { if (this.weaponCD > 0 || this.isJumping) return; let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy); if (!d) return; dx /= d; dy /= d; let col = '#feca57', spd = 10, rad = 5, wt = this.currentWeapon; if (wt === 'fire') { col = '#e74c3c'; rad = 7; } else if (wt === 'taser') { col = '#f1c40f'; spd = 12; } else if (wt === 'ice') { col = '#74b9ff'; rad = 6; } let p = new Projectile(this.x, this.y, dx, dy, spd, rad, col, true, wt); p.damage = this.dmgMult; projectiles.push(p); this.weaponCD = this.baseFireRate; if (typeof audio !== 'undefined') audio.playShoot(); }
     takeDamage(a) { 
         if (this.shieldT > 0 || this.flyT > 0 || this.ghostT > 0 || flyMode) return; 
