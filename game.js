@@ -928,7 +928,6 @@ class RoomSystem {
             roomList[2].type = 'miniboss'; roomList[3].type = 'miniboss';
             let extraTypes = ['treasure', 'npc'];
             if (!window.hasSpawnedArena) extraTypes.push('arena');
-            if (!window.hasSpawnedForge) extraTypes.push('forge');
             if (!window.hasSpawnedCasino) extraTypes.push('casino');
             extraTypes.sort(() => Math.random() - 0.5);
             roomList[4].type = extraTypes[0] || 'miniboss';
@@ -937,7 +936,6 @@ class RoomSystem {
             
             [roomList[4], roomList[5], roomList[6]].forEach(r => {
                 if (r.type === 'arena') window.hasSpawnedArena = true;
-                if (r.type === 'forge') window.hasSpawnedForge = true;
                 if (r.type === 'casino') window.hasSpawnedCasino = true;
             });
         } else if (roomList.length >= 5) {
@@ -1171,7 +1169,7 @@ class RoomSystem {
         this.enterRoom(tx, ty);
     }
     drawBase(c) {
-        c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : this.type === 'exit' ? '#23153c' : this.type === 'treasure' ? '#332918' : this.type === 'npc' ? '#103340' : this.type === 'arena' ? '#3e1a1a' : this.type === 'forge' ? '#3d220f' : this.type === 'casino' ? '#2d3436' : '#1e2029';
+        c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : this.type === 'exit' ? '#23153c' : this.type === 'treasure' ? '#332918' : this.type === 'npc' ? '#103340' : this.type === 'arena' ? '#3e1a1a' : this.type === 'casino' ? '#2d3436' : '#1e2029';
         if (this.type === 'spawn') c.fillStyle = '#1e2922';
         c.fillRect(0, 0, 800, 600); c.fillStyle = '#2f3542'; c.fillRect(0, 0, 800, WALL); c.fillRect(0, 600 - WALL, 800, WALL); c.fillRect(0, 0, WALL, 600); c.fillRect(800 - WALL, 0, WALL, 600);
         if (this.type === 'shop' && this.isCleared) { c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; c.fillText('🏪 Portas estão abertas', 400, 300); }
@@ -1194,11 +1192,11 @@ class RoomSystem {
         if (this.isCleared) {
             for (let d of this.doors) {
                 let rClr = this.rooms[d.side === 'N' ? `${this.currentX},${this.currentY - 1}` : d.side === 'S' ? `${this.currentX},${this.currentY + 1}` : d.side === 'E' ? `${this.currentX + 1},${this.currentY}` : `${this.currentX - 1},${this.currentY}`].cleared;
-                c.fillStyle = rClr ? '#2ed573' : d.toType === 'boss' ? '#ff4757' : d.toType === 'exit' ? '#9b59b6' : d.toType === 'miniboss' ? '#ffa502' : d.toType === 'treasure' ? '#f1c40f' : d.toType === 'npc' ? '#3498db' : d.toType === 'arena' ? '#e74c3c' : d.toType === 'forge' ? '#e67e22' : d.toType === 'casino' ? '#f1c40f' : '#2ed573';
+                c.fillStyle = rClr ? '#2ed573' : d.toType === 'boss' ? '#ff4757' : d.toType === 'exit' ? '#9b59b6' : d.toType === 'miniboss' ? '#ffa502' : d.toType === 'treasure' ? '#f1c40f' : d.toType === 'npc' ? '#3498db' : d.toType === 'arena' ? '#e74c3c' : d.toType === 'casino' ? '#f1c40f' : '#2ed573';
                 c.fillRect(d.x, d.y, d.w, d.h);
-                if (!rClr && ['boss', 'exit', 'miniboss', 'treasure', 'npc', 'arena', 'forge', 'casino'].includes(d.toType)) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? 'BOSS' : d.toType === 'exit' ? 'SAIDA' : d.toType === 'treasure' ? 'BAU' : d.toType === 'npc' ? 'NPC' : d.toType === 'arena' ? 'ARENA' : d.toType === 'forge' ? 'FORJA' : d.toType === 'casino' ? 'CASSINO' : 'MINI'; c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
+                if (!rClr && ['boss', 'exit', 'miniboss', 'treasure', 'npc', 'arena', 'casino'].includes(d.toType)) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? 'BOSS' : d.toType === 'exit' ? 'SAIDA' : d.toType === 'treasure' ? 'BAU' : d.toType === 'npc' ? 'NPC' : d.toType === 'arena' ? 'ARENA' : d.toType === 'casino' ? 'CASSINO' : 'MINI'; c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
             }
-        } else if (!['spawn', 'shop', 'exit', 'treasure', 'npc', 'forge', 'casino'].includes(this.type)) {
+        } else if (!['spawn', 'shop', 'exit', 'treasure', 'npc', 'casino'].includes(this.type)) {
             let txt = this.spawnTimer > 0 ? `PREPARE-SE: ${Math.ceil(this.spawnTimer)}s` : 'BLOQUEADO';
             let col = this.spawnTimer > 0 ? '#feca57' : '#ff4757';
             c.fillStyle = col; c.font = '20px VT323'; c.textAlign = 'center'; c.fillText(txt, 400, WALL + 20);
@@ -1220,7 +1218,7 @@ class RoomSystem {
         Object.values(this.rooms).forEach(r => {
             let cx = (r.x - this.currentX) * ms, cy = (r.y - this.currentY) * ms;
             let isCurrent = (r.x === this.currentX && r.y === this.currentY);
-            c.fillStyle = isCurrent ? '#fff' : r.cleared ? '#1dd1a1' : r.type === 'exit' ? '#9b59b6' : r.type === 'shop' ? '#feca57' : r.type === 'boss' ? '#ff4757' : r.type === 'miniboss' ? '#ffa502' : r.type === 'arena' ? '#e74c3c' : r.type === 'forge' ? '#e67e22' : r.type === 'casino' ? '#f1c40f' : '#c8d6e5';
+            c.fillStyle = isCurrent ? '#fff' : r.cleared ? '#1dd1a1' : r.type === 'exit' ? '#9b59b6' : r.type === 'shop' ? '#feca57' : r.type === 'boss' ? '#ff4757' : r.type === 'miniboss' ? '#ffa502' : r.type === 'arena' ? '#e74c3c' : r.type === 'casino' ? '#f1c40f' : '#c8d6e5';
             
             let size = isCurrent ? s * 1.8 + Math.sin(Date.now() / 150) * 3 : s;
             if (r.type === 'exit' || Math.hypot(r.x - this.currentX, r.y - this.currentY) < 3 || isCurrent) {
@@ -1292,7 +1290,6 @@ function startGame() {
     goldMult = 1.0; 
     takenBossDamage = false;
     window.hasSpawnedArena = false;
-    window.hasSpawnedForge = false;
     window.hasSpawnedCasino = false;
     player = new Player(400, 300, selectedChar); 
     currentRoom = new RoomSystem(); 
