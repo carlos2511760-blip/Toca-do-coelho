@@ -54,7 +54,7 @@ let screenShakeT = 0, screenShakeM = 0;
 let prevScreenBeforeSettings = 'titleScreen';
 let lightingEnabled = true;
 let goldMult = 1.0; 
-let fullBright = false, flyMode = false, cheatsUsed = false;
+let fullBright = false, flyMode = false, cheatsUsed = false, takenBossDamage = false;
 let flashT = 0;
 let joystickPos = { x: 0, y: 0 }, joystickActive = false;
 let gamepadActive = false;
@@ -537,6 +537,7 @@ class Warning {
                 });
             } else {
                 if (player && dist(player.x, player.y, this.x, this.y) < this.radius + player.radius) { 
+                    if (typeof currentRoom !== 'undefined' && currentRoom.type === 'boss') takenBossDamage = true;
                     player.takeDamage(1 + (mapLevel - 1) * 0.5); 
                     let dx = player.x - this.x, dy = player.y - this.y, mg = Math.hypot(dx, dy) || 1; 
                     player.x += (dx / mg) * 60; player.y += (dy / mg) * 60; 
@@ -593,13 +594,14 @@ class Player extends Actor {
         else if (ct === 17) { hp = 5; spd = 3.5; col = '#feca57'; } // Zen
         else if (ct === 18) { hp = 5; spd = 4.0; col = '#57606f'; } // Mineiro
         else if (ct === 19) { hp = 5; spd = 4.5; col = '#fffa65'; } // Radiante
+        else if (ct === 20) { hp = 5; spd = 4.5; col = '#f5f6fa'; } // Dimensional
         else { hp = 5; spd = 4.0; col = '#000000'; }
 
         hp = Math.max(1, hp + getDiff().hpBonus);
         super(x, y, 15, col, hp, spd);
         this.charType = ct;
         this.dashCD = 0; this.shieldT = 0; this.shieldCD = 0; this.burstCD = 0; this.fearT = 0; this.fearCD = 0; this.ghostT = 0; this.ghostCD = 0; this.magicCD = 0; this.toxicCD = 0; this.empCD = 0; this.fireCD = 0; this.luckCD = 0;
-        this.ninjaCD = 0; this.chemCD = 0; this.rootCD = 0; this.jetCD = 0; this.cannonCD = 0; this.roarCD = 0; this.laserCD = 0; this.medCD = 0; this.tntCD = 0; this.sunCD = 0;
+        this.ninjaCD = 0; this.chemCD = 0; this.rootCD = 0; this.jetCD = 0; this.cannonCD = 0; this.roarCD = 0; this.laserCD = 0; this.medCD = 0; this.tntCD = 0; this.sunCD = 0; this.dimCD = 0;
         this.baseFireRate = (ct === 2 || ct === 15) ? 0.12 : 0.25;
         this.weaponCD = 0;
         this.gold = (ct === 5 || ct === 14) ? 50 : 0;
@@ -618,7 +620,8 @@ class Player extends Actor {
             this.dashCD, this.shieldCD, this.burstCD, this.fearCD, this.ghostCD, 
             this.magicCD, this.toxicCD, this.empCD, this.fireCD, this.luckCD,
             this.ninjaCD, this.chemCD, this.rootCD, this.jetCD, this.cannonCD,
-            this.roarCD, this.laserCD, this.medCD, this.tntCD, this.sunCD
+            this.roarCD, this.laserCD, this.medCD, this.tntCD, this.sunCD,
+            this.dimCD
         ];
         return cds[this.charType] || 0;
     }
@@ -664,9 +667,44 @@ class Player extends Actor {
         else if (this.charType === 17 && this.medCD <= 0) { this.hp = Math.min(this.maxHp, this.hp + 2); updateHUD(); this.medCD = 20; boom(this.x, this.y, '#feca57', 30); }
         else if (this.charType === 18 && this.tntCD <= 0) { warnings.push(new Warning(this.x, this.y, 120, 1.0, 'meteor', true)); this.tntCD = 6; }
         else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { e.takeDamage(8); e.stunTimer = 1; }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); }
+        else if (this.charType === 20 && this.dimCD <= 0) {
+            enemies.forEach(e => {
+                let dmg = e.maxHp / 2;
+                e.takeDamage(dmg);
+                boom(e.x, e.y, '#f5f6fa', 15);
+            });
+            this.dimCD = 50;
+            flashT = 0.5;
+            if (typeof audio !== 'undefined') audio.playShoot();
+        }
     }
     useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; e.stunTimer = 1.0; } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } }
-    shoot() { if (this.weaponCD > 0 || this.isJumping) return; let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy); if (!d) return; dx /= d; dy /= d; let col = '#feca57', spd = 10, rad = 5, wt = this.currentWeapon; if (wt === 'fire') { col = '#e74c3c'; rad = 7; } else if (wt === 'taser') { col = '#f1c40f'; spd = 12; } else if (wt === 'ice') { col = '#74b9ff'; rad = 6; } let p = new Projectile(this.x, this.y, dx, dy, spd, rad, col, true, wt); p.damage = this.dmgMult; projectiles.push(p); this.weaponCD = this.baseFireRate; if (typeof audio !== 'undefined') audio.playShoot(); }
+    shoot() { 
+        if (this.weaponCD > 0 || this.isJumping) return; 
+        let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy); 
+        if (!d) return; 
+        dx /= d; dy /= d; 
+        let col = '#feca57', spd = 10, rad = 5, wt = this.currentWeapon; 
+        if (wt === 'fire') { col = '#e74c3c'; rad = 7; } 
+        else if (wt === 'taser') { col = '#f1c40f'; spd = 12; } 
+        else if (wt === 'ice') { col = '#74b9ff'; rad = 6; } 
+        
+        if (this.charType === 20) {
+            let px = -dy, py = dx;
+            let c1 = wt === 'normal' ? '#f5f6fa' : col;
+            let p1 = new Projectile(this.x + px*8, this.y + py*8, dx, dy, spd, rad, c1, true, wt);
+            let p2 = new Projectile(this.x - px*8, this.y - py*8, dx, dy, spd, rad, c1, true, wt);
+            p1.damage = this.dmgMult; p2.damage = this.dmgMult;
+            projectiles.push(p1, p2);
+        } else {
+            let p = new Projectile(this.x, this.y, dx, dy, spd, rad, col, true, wt); 
+            p.damage = this.dmgMult; 
+            projectiles.push(p); 
+        }
+        
+        this.weaponCD = this.baseFireRate; 
+        if (typeof audio !== 'undefined') audio.playShoot(); 
+    }
     takeDamage(a) { 
         if (this.shieldT > 0 || this.flyT > 0 || this.ghostT > 0 || flyMode) return; 
         
@@ -704,7 +742,7 @@ class Player extends Actor {
         if (this.charType === 6) { this.auraT += dt; if (this.auraT >= 1.0) { this.auraT = 0; enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 80) { e.takeDamage(2 * this.dmgMult); boom(e.x, e.y, '#2ecc71', 3); } }); } }
         if (this.charType === 7) { this.noDamageT += dt; if (this.noDamageT >= 8 && this.hp < this.maxHp) { this.noDamageT = 0; this.hp++; updateHUD(); boom(this.x, this.y, '#f1c40f', 10); } }
         this.dashCD -= dt; this.shieldCD -= dt; this.burstCD -= dt; this.fearCD -= dt; this.ghostCD -= dt; this.magicCD -= dt; this.toxicCD -= dt; this.empCD -= dt; this.fireCD -= dt; this.luckCD -= dt; 
-        this.ninjaCD -= dt; this.chemCD -= dt; this.rootCD -= dt; this.jetCD -= dt; this.cannonCD -= dt; this.roarCD -= dt; this.laserCD -= dt; this.medCD -= dt; this.tntCD -= dt; this.sunCD -= dt;
+        this.ninjaCD -= dt; this.chemCD -= dt; this.rootCD -= dt; this.jetCD -= dt; this.cannonCD -= dt; this.roarCD -= dt; this.laserCD -= dt; this.medCD -= dt; this.tntCD -= dt; this.sunCD -= dt; this.dimCD -= dt;
         if (this.shieldT > 0) this.shieldT -= dt; if (this.fearT > 0) this.fearT -= dt; if (this.ghostT > 0) this.ghostT -= dt; if (this.weaponCD > 0) this.weaponCD -= dt; if (this.skillCD > 0) this.skillCD -= dt;
         if (this.regenDur > 0) { this.regenDur -= dt; this.regenT -= dt; if (this.regenT <= 0) { this.hp = Math.min(this.maxHp, this.hp + 1); this.regenT = 5; updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
         if (this.burnTimer > 0) { this.burnTimer -= dt; this.burnTick += dt; if (this.burnTick >= 1) { this.burnTick = 0; this.hp -= 0.25; boom(this.x, this.y, '#e74c3c', 5); updateHUD(); if (this.hp <= 0 && !flyMode) triggerGameOver(); } }
@@ -890,7 +928,12 @@ class RoomSystem {
                     if (typeof audio !== 'undefined') audio.playHeal(); pickups.splice(i, 1); 
                 }
                 else if (pickups[i].type === 'exit') {
-                    mapLevel++; if (mapLevel > MAX_LEVELS) {
+                    mapLevel++; 
+                    if (mapLevel > MAX_LEVELS) {
+                        if (MAX_LEVELS === 8 && !takenBossDamage && !cheatsUsed) {
+                            localStorage.setItem('toca_char20', 'true');
+                            if (typeof initSecretCharacters === 'function') initSecretCharacters();
+                        }
                         gameState = 'VICTORY'; switchScreen('victory');
                         if (!cheatsUsed) {
                             let bvt = parseFloat(localStorage.getItem('toca_vic_time') || 999999);
@@ -1000,6 +1043,7 @@ function startGame() {
     floorCounterEl.innerText = mapLevel; 
     gameTime = 0; 
     goldMult = 1.0; 
+    takenBossDamage = false;
     player = new Player(400, 300, selectedChar); 
     currentRoom = new RoomSystem(); 
     bossHealthContainer.style.display = 'none'; 
@@ -1078,28 +1122,28 @@ function checkCollisions() {
                     if (p.weaponType === 'taser') e.stunTimer = (e.type === 'boss') ? 0.2 : 1.5; 
                     if (p.weaponType === 'ice') e.slowTimer = (e.type === 'boss') ? 1.0 : 3.0; 
                     if (p.weaponType === 'cyborg_emp_ball') { 
-                        // Explosão EMP em área
+                        // Explosão EMP em área GIGANTE
                         enemies.forEach(ae => {
-                            if (dist(p.x, p.y, ae.x, ae.y) < 120) {
-                                ae.takeDamage(p.damage * 0.6);
-                                ae.stunTimer = (ae.type === 'boss') ? 0.3 : 1.2;
-                                boom(ae.x, ae.y, '#74b9ff', 10);
+                            if (dist(p.x, p.y, ae.x, ae.y) < 200) {
+                                ae.takeDamage(p.damage * 0.7);
+                                ae.stunTimer = (ae.type === 'boss') ? 0.4 : 1.5;
+                                boom(ae.x, ae.y, '#74b9ff', 8);
                             }
                         });
-                        e.stunTimer = (e.type === 'boss') ? 0.4 : 1.8;
-                        boom(p.x, p.y, '#00d2d3', 35); 
+                        e.stunTimer = (e.type === 'boss') ? 0.5 : 2.0;
+                        boom(p.x, p.y, '#00d2d3', 50); 
                     } 
                     else if (player.charType === 16) { 
-                        e.slowTimer = 2.5; // Alvo principal também recebe lentidão
+                        e.slowTimer = 3.0; 
                         enemies.forEach(other_e => { 
-                            if (other_e !== e && dist(e.x, e.y, other_e.x, other_e.y) < 160) { 
-                                other_e.takeDamage(p.damage * 0.6); 
-                                other_e.slowTimer = 2.5; 
-                                boom(other_e.x, other_e.y, '#00d2d3', 8); 
+                            if (other_e !== e && dist(e.x, e.y, other_e.x, other_e.y) < 240) { 
+                                other_e.takeDamage(p.damage * 0.65); 
+                                other_e.slowTimer = 3.0; 
+                                boom(other_e.x, other_e.y, '#00d2d3', 10); 
                                 let ds = dist(e.x, e.y, other_e.x, other_e.y); 
-                                let steps = Math.max(4, Math.floor(ds / 12)); 
+                                let steps = Math.max(5, Math.floor(ds / 10)); 
                                 for(let step=1; step<steps; step++) { 
-                                    particles.push(new Particle(e.x + (other_e.x - e.x)*(step/steps), e.y + (other_e.y - e.y)*(step/steps), '#48dbfb', 3, 10, 18)); 
+                                    particles.push(new Particle(e.x + (other_e.x - e.x)*(step/steps), e.y + (other_e.y - e.y)*(step/steps), '#48dbfb', 3, 10, 20)); 
                                 } 
                             } 
                         }); 
@@ -1120,6 +1164,7 @@ function checkCollisions() {
         } else { 
             if (!player.isJumping && player.flyT <= 0) { 
                 if (dist(p.x, p.y, player.x, player.y) < p.radius + player.radius * 0.8) { 
+                    if (currentRoom.type === 'boss' && !(p.radius === 6 && p.color === '#ff4757' && p.weaponType === 'normal')) takenBossDamage = true;
                     if (p.weaponType === 'ice') player.slowTimer = 2.5; 
                     else if (p.weaponType === 'hellfire') player.burnTimer = 8; 
                     player.takeDamage(p.damage + (mapLevel - 1) * 0.55); 
@@ -1132,6 +1177,7 @@ function checkCollisions() {
     if (player && !player.isJumping && player.flyT <= 0) { 
         for (let e of enemies) { 
             if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 6) { 
+                if (e.type === 'boss') takenBossDamage = true;
                 player.takeDamage(1.2 + (mapLevel - 1) * 0.5); 
                 let dx = player.x - e.x, dy = player.y - e.y, mg = Math.hypot(dx, dy); 
                 if (mg > 0) { player.x += dx / mg * 24; player.y += dy / mg * 24; } 
@@ -1139,6 +1185,18 @@ function checkCollisions() {
         } 
     } 
 }
+
+function initSecretCharacters() {
+    let char20Unlocked = localStorage.getItem('toca_char20') === 'true';
+    if (char20Unlocked) {
+        let card = document.querySelector('.char-card[data-char="20"]');
+        if (card) {
+            card.classList.remove('locked');
+            card.innerHTML = '<h4>Coelho Dimensional</h4><p>Passiva: Tiro Duplo Lâmina</p><p>Ativa (Q): Corte Dimensional (-50% HP Máx)</p>';
+        }
+    }
+}
+initSecretCharacters();
 
 function gameLoop(ts) { 
     if (gameState !== 'PLAYING') return; 
