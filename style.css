@@ -103,14 +103,25 @@ canvas {
     height: 100%;
     display: none;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     background: var(--panel-bg);
     pointer-events: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 15px 5px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .screen.active {
     display: flex;
+}
+
+/* Screens that should stay centered (no scroll needed) */
+#title-screen, #hud, #pause-screen, #game-over, #victory {
+    justify-content: center;
+    overflow-y: hidden;
+    padding: 0;
 }
 
 /* ========== TITLE SCREEN ========== */
@@ -226,6 +237,11 @@ canvas {
     padding: 8px 20px;
 }
 
+#btn-settings-back, #btn-manual-back {
+    flex-shrink: 0;
+    margin-top: 10px;
+}
+
 .back-btn:hover {
     border-color: #a4b0be;
     background: rgba(255,255,255,0.05);
@@ -264,7 +280,6 @@ button:hover {
 .settings-panel, .manual-panel, .pause-panel {
     width: 90%;
     max-width: 650px;
-    max-height: 90%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -274,6 +289,7 @@ button:hover {
     border: 3px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 0 40px rgba(0,0,0,0.6);
+    flex-shrink: 0;
 }
 
 .settings-scroll-container {
@@ -613,7 +629,17 @@ button:hover {
 .pre-game-buttons {
     display: flex;
     gap: 15px;
-    margin-top: 5px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    padding: 10px;
+    position: sticky;
+    bottom: 0;
+    background: rgba(20, 21, 30, 0.95);
+    border-top: 2px solid var(--border);
+    width: 100%;
+    justify-content: center;
+    z-index: 5;
 }
 
 /* ========== PAUSE ========== */
