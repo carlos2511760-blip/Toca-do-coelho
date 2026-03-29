@@ -9,6 +9,12 @@ class AudioManager {
         this.sfxVol = 0.8;
         this.musicVol = 0.6;
         this.soundsEnabled = false;
+        
+        // Músicas em arquivo
+        this.titleMusic = new Audio('musica/Musica capa.mp3');
+        this.titleMusic.loop = true;
+        this.titleMusic.volume = this.musicVol * this.masterVol;
+        
         this.init();
     }
 
@@ -17,6 +23,10 @@ class AudioManager {
             if (this.ctx) return;
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             this.soundsEnabled = true;
+            
+            // Iniciar música do título no primeiro clique (browser policy)
+            this.playTitleMusic();
+            
             document.removeEventListener('click', unlock);
             document.removeEventListener('keydown', unlock);
             console.log("Áudio Contexto Inicializado");
@@ -29,6 +39,20 @@ class AudioManager {
         this.masterVol = master / 100;
         this.musicVol = music / 100;
         this.sfxVol = sfx / 100;
+        
+        // Atualizar volume da música de fundo
+        if (this.titleMusic) {
+            this.titleMusic.volume = this.musicVol * this.masterVol;
+        }
+    }
+
+    playTitleMusic() {
+        this.titleMusic.play().catch(e => console.log("Erro ao tocar música:", e));
+    }
+
+    stopTitleMusic() {
+        this.titleMusic.pause();
+        this.titleMusic.currentTime = 0;
     }
 
     playShoot() {

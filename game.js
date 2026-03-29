@@ -764,7 +764,25 @@ function buyItem(item, el) { if (player.gold < item.price) return; player.gold -
 function closeShop() { let rd = currentRoom.rooms[`${currentRoom.currentX},${currentRoom.currentY}`]; if (rd) rd.shopVisited = true; switchScreen('hud'); gameState = 'PLAYING'; lastTime = performance.now(); requestAnimationFrame(gameLoop); }
 
 // MAIN
-function startGame() { gameState = 'PLAYING'; switchScreen('hud'); mapLevel = 1; floorCounterEl.innerText = mapLevel; gameTime = 0; goldMult = 1.0; player = new Player(400, 300, selectedChar); currentRoom = new RoomSystem(); bossHealthContainer.style.display = 'none'; goldCounter.innerText = '0'; weaponNameEl.innerText = 'Padrão'; abilityNameEl.innerText = '-'; skillCdEl.innerText = ''; updateHUD(); lastTime = performance.now(); requestAnimationFrame(gameLoop); }
+function startGame() { 
+    if (typeof audio !== 'undefined') audio.stopTitleMusic();
+    gameState = 'PLAYING'; 
+    switchScreen('hud'); 
+    mapLevel = 1; 
+    floorCounterEl.innerText = mapLevel; 
+    gameTime = 0; 
+    goldMult = 1.0; 
+    player = new Player(400, 300, selectedChar); 
+    currentRoom = new RoomSystem(); 
+    bossHealthContainer.style.display = 'none'; 
+    goldCounter.innerText = '0'; 
+    weaponNameEl.innerText = 'Padrão'; 
+    abilityNameEl.innerText = '-'; 
+    skillCdEl.innerText = ''; 
+    updateHUD(); 
+    lastTime = performance.now(); 
+    requestAnimationFrame(gameLoop); 
+}
 function updateHUD() { if (!player) return; let p = Math.max(0, (player.hp / player.maxHp) * 100); healthBar.style.width = p + '%'; healthBar.style.backgroundColor = p < 30 ? '#ff4757' : 'var(--health)'; }
 function updateCooldowns() { if (!player) return; let icd = player.getInnateCD(); if (icd > 0) { charAbilityCdEl.innerText = `${Math.ceil(icd)}s`; charAbilityCdEl.style.color = '#ff4757'; } else { charAbilityCdEl.innerText = 'PRONTO'; charAbilityCdEl.style.color = '#2ed573'; } if (player.activeSkill) { if (player.skillCD > 0) { skillCdEl.innerText = `(${Math.ceil(player.skillCD)}s)`; skillCdEl.style.color = '#ff4757'; } else { skillCdEl.innerText = '(PRONTO)'; skillCdEl.style.color = '#2ed573'; } } }
 function triggerGameOver() { if (flyMode) return; gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; if (!cheatsUsed) { let bt = parseFloat(localStorage.getItem('toca_surv_time') || 0); if (gameTime > bt) { localStorage.setItem('toca_surv_time', gameTime.toString()); bt = gameTime; } goFinalTimeEl.innerText = `Tempo Sobrevivido: ${formatTime(gameTime)}`; goBestTimeEl.innerText = `Melhor Sobrevivência: ${formatTime(bt)}`; } else { goFinalTimeEl.innerText = `Survive: ${formatTime(gameTime)} (Cheats)`; goBestTimeEl.innerText = "N/A"; } }
