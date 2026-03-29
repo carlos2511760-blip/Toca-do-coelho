@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Toca do Coelho</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Passion+One:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Passion+One:wght@700&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
@@ -48,120 +49,121 @@
                         <button class="tab-btn" data-tab="tab-video">🖥️ Vídeo</button>
                         <button class="tab-btn" data-tab="tab-controls">🎮 Controles</button>
                         <button class="tab-btn" data-tab="tab-access">🌐 Acessibilidade</button>
-                        <button class="tab-btn" data-tab="tab-cheats" style="color:#fffa65; border-color:#fffa65;">💀 Cheats</button>
+                        <button class="tab-btn" data-tab="tab-cheats" style="color:#fffa65; border-color:#fffa65;">💀
+                            Cheats</button>
                     </div>
 
                     <div class="settings-scroll-container">
                         <!-- ÁUDIO -->
-                    <div class="tab-content active" id="tab-audio">
-                        <div class="setting-row">
-                            <label>Volume Geral</label>
-                            <input type="range" id="vol-master" min="0" max="100" value="80">
-                            <span class="range-val" id="vol-master-val">80%</span>
+                        <div class="tab-content active" id="tab-audio">
+                            <div class="setting-row">
+                                <label>Volume Geral</label>
+                                <input type="range" id="vol-master" min="0" max="100" value="80">
+                                <span class="range-val" id="vol-master-val">80%</span>
+                            </div>
+                            <div class="setting-row">
+                                <label>Música</label>
+                                <input type="range" id="vol-music" min="0" max="100" value="60">
+                                <span class="range-val" id="vol-music-val">60%</span>
+                            </div>
+                            <div class="setting-row">
+                                <label>Efeitos Sonoros</label>
+                                <input type="range" id="vol-sfx" min="0" max="100" value="80">
+                                <span class="range-val" id="vol-sfx-val">80%</span>
+                            </div>
                         </div>
-                        <div class="setting-row">
-                            <label>Música</label>
-                            <input type="range" id="vol-music" min="0" max="100" value="60">
-                            <span class="range-val" id="vol-music-val">60%</span>
-                        </div>
-                        <div class="setting-row">
-                            <label>Efeitos Sonoros</label>
-                            <input type="range" id="vol-sfx" min="0" max="100" value="80">
-                            <span class="range-val" id="vol-sfx-val">80%</span>
-                        </div>
-                    </div>
 
-                    <!-- VÍDEO -->
-                    <div class="tab-content" id="tab-video">
-                        <div class="setting-row">
-                            <label>Resolução</label>
-                            <select id="set-resolution">
-                                <option value="800x600">800 × 600</option>
-                                <option value="1024x768">1024 × 768</option>
-                                <option value="1280x720">1280 × 720 (HD)</option>
-                            </select>
+                        <!-- VÍDEO -->
+                        <div class="tab-content" id="tab-video">
+                            <div class="setting-row">
+                                <label>Resolução</label>
+                                <select id="set-resolution">
+                                    <option value="800x600">800 × 600</option>
+                                    <option value="1024x768">1024 × 768</option>
+                                    <option value="1280x720">1280 × 720 (HD)</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <label>Tela Cheia</label>
+                                <button id="btn-fullscreen" class="toggle-btn">Ativar</button>
+                            </div>
+                            <div class="setting-row">
+                                <label>Qualidade Gráfica</label>
+                                <select id="set-quality">
+                                    <option value="low">Baixa</option>
+                                    <option value="medium" selected>Média</option>
+                                    <option value="high">Alta</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <label>Iluminação Dinâmica</label>
+                                <button id="btn-lighting" class="toggle-btn on">Ligado</button>
+                            </div>
                         </div>
-                        <div class="setting-row">
-                            <label>Tela Cheia</label>
-                            <button id="btn-fullscreen" class="toggle-btn">Ativar</button>
-                        </div>
-                        <div class="setting-row">
-                            <label>Qualidade Gráfica</label>
-                            <select id="set-quality">
-                                <option value="low">Baixa</option>
-                                <option value="medium" selected>Média</option>
-                                <option value="high">Alta</option>
-                            </select>
-                        </div>
-                        <div class="setting-row">
-                            <label>Iluminação Dinâmica</label>
-                            <button id="btn-lighting" class="toggle-btn on">Ligado</button>
-                        </div>
-                    </div>
 
-                    <!-- CONTROLES -->
-                    <div class="tab-content" id="tab-controls">
-                        <div class="controls-grid">
-                            <div class="key-row"><span>Mover</span><kbd>W A S D</kbd></div>
-                            <div class="key-row"><span>Atirar</span><kbd>Clique Esq.</kbd></div>
-                            <div class="key-row"><span>Pular</span><kbd>Espaço</kbd></div>
-                            <div class="key-row"><span>Habilidade</span><kbd>Q</kbd></div>
-                            <div class="key-row"><span>Skill Extra</span><kbd>E</kbd></div>
-                            <div class="key-row"><span>Pausar</span><kbd>Esc</kbd></div>
+                        <!-- CONTROLES -->
+                        <div class="tab-content" id="tab-controls">
+                            <div class="controls-grid">
+                                <div class="key-row"><span>Mover</span><kbd>W A S D</kbd></div>
+                                <div class="key-row"><span>Atirar</span><kbd>Clique Esq.</kbd></div>
+                                <div class="key-row"><span>Pular</span><kbd>Espaço</kbd></div>
+                                <div class="key-row"><span>Habilidade</span><kbd>Q</kbd></div>
+                                <div class="key-row"><span>Skill Extra</span><kbd>E</kbd></div>
+                                <div class="key-row"><span>Pausar</span><kbd>Esc</kbd></div>
+                            </div>
+                            <p class="hint-text">🎮 Suporte a Gamepad em breve</p>
                         </div>
-                        <p class="hint-text">🎮 Suporte a Gamepad em breve</p>
-                    </div>
 
-                    <!-- ACESSIBILIDADE -->
-                    <div class="tab-content" id="tab-access">
-                        <div class="setting-row">
-                            <label>Idioma</label>
-                            <select id="set-language">
-                                <option value="pt" selected>Português</option>
-                                <option value="en">English</option>
-                                <option value="es">Español</option>
-                            </select>
+                        <!-- ACESSIBILIDADE -->
+                        <div class="tab-content" id="tab-access">
+                            <div class="setting-row">
+                                <label>Idioma</label>
+                                <select id="set-language">
+                                    <option value="pt" selected>Português</option>
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <label>Filtro Daltonismo</label>
+                                <select id="set-colorblind">
+                                    <option value="none" selected>Nenhum</option>
+                                    <option value="protanopia">Protanopia</option>
+                                    <option value="deuteranopia">Deuteranopia</option>
+                                    <option value="tritanopia">Tritanopia</option>
+                                </select>
+                            </div>
+                            <div class="setting-row">
+                                <label>Tamanho da HUD</label>
+                                <input type="range" id="set-hud-size" min="80" max="150" value="100">
+                                <span class="range-val" id="set-hud-size-val">100%</span>
+                            </div>
+                            <div class="setting-row">
+                                <label>Tamanho Controles Mobile</label>
+                                <input type="range" id="set-m-size" min="50" max="150" value="100">
+                                <span class="range-val" id="set-m-size-val">100%</span>
+                            </div>
+                            <div class="setting-row">
+                                <label>Joystick (X)</label>
+                                <input type="range" id="set-m-joy-x" min="0" max="300" value="40">
+                                <span class="range-val" id="set-m-joy-x-val">40px</span>
+                            </div>
+                            <div class="setting-row">
+                                <label>Joystick (Y)</label>
+                                <input type="range" id="set-m-joy-y" min="0" max="300" value="30">
+                                <span class="range-val" id="set-m-joy-y-val">30px</span>
+                            </div>
+                            <div class="setting-row">
+                                <label>Botões Acão (X)</label>
+                                <input type="range" id="set-m-btn-x" min="0" max="300" value="40">
+                                <span class="range-val" id="set-m-btn-x-val">40px</span>
+                            </div>
+                            <div class="setting-row">
+                                <label>Botões Acão (Y)</label>
+                                <input type="range" id="set-m-btn-y" min="0" max="300" value="30">
+                                <span class="range-val" id="set-m-btn-y-val">30px</span>
+                            </div>
                         </div>
-                        <div class="setting-row">
-                            <label>Filtro Daltonismo</label>
-                            <select id="set-colorblind">
-                                <option value="none" selected>Nenhum</option>
-                                <option value="protanopia">Protanopia</option>
-                                <option value="deuteranopia">Deuteranopia</option>
-                                <option value="tritanopia">Tritanopia</option>
-                            </select>
-                        </div>
-                        <div class="setting-row">
-                            <label>Tamanho da HUD</label>
-                            <input type="range" id="set-hud-size" min="80" max="150" value="100">
-                            <span class="range-val" id="set-hud-size-val">100%</span>
-                        </div>
-                        <div class="setting-row">
-                            <label>Tamanho Controles Mobile</label>
-                            <input type="range" id="set-m-size" min="50" max="150" value="100">
-                            <span class="range-val" id="set-m-size-val">100%</span>
-                        </div>
-                        <div class="setting-row">
-                            <label>Joystick (X)</label>
-                            <input type="range" id="set-m-joy-x" min="0" max="300" value="40">
-                            <span class="range-val" id="set-m-joy-x-val">40px</span>
-                        </div>
-                        <div class="setting-row">
-                            <label>Joystick (Y)</label>
-                            <input type="range" id="set-m-joy-y" min="0" max="300" value="30">
-                            <span class="range-val" id="set-m-joy-y-val">30px</span>
-                        </div>
-                        <div class="setting-row">
-                            <label>Botões Acão (X)</label>
-                            <input type="range" id="set-m-btn-x" min="0" max="300" value="40">
-                            <span class="range-val" id="set-m-btn-x-val">40px</span>
-                        </div>
-                        <div class="setting-row">
-                            <label>Botões Acão (Y)</label>
-                            <input type="range" id="set-m-btn-y" min="0" max="300" value="30">
-                            <span class="range-val" id="set-m-btn-y-val">30px</span>
-                        </div>
-                    </div>
 
                         <!-- CHEATS -->
                         <div class="tab-content" id="tab-cheats">
@@ -169,7 +171,7 @@
                                 <label style="color: #fffa65; font-weight: bold;">Habilitar Trapaças</label>
                                 <button id="btn-cheat-unlock" class="toggle-btn">Ativar</button>
                             </div>
-                            
+
                             <div id="cheats-list" class="cheats-list locked">
                                 <div class="setting-row">
                                     <label>Brilho Total (Full Bright)</label>
@@ -181,9 +183,12 @@
                                 </div>
                                 <div class="setting-row">
                                     <label>Ouro Infinito</label>
-                                    <button id="btn-cheat-gold" class="menu-btn" style="min-width:100px; padding:4px 10px; font-size:1rem;" disabled>+999 Ouro</button>
+                                    <button id="btn-cheat-gold" class="menu-btn"
+                                        style="min-width:100px; padding:4px 10px; font-size:1rem;" disabled>+999
+                                        Ouro</button>
                                 </div>
-                                <p class="hint-text" style="color:#fffa65;">⚠️ O uso de cheats desativa recordes nesta sessão.</p>
+                                <p class="hint-text" style="color:#fffa65;">⚠️ O uso de cheats desativa recordes nesta
+                                    sessão.</p>
                             </div>
                         </div>
                     </div>
@@ -199,38 +204,45 @@
                     <div class="manual-scroll">
                         <div class="manual-section">
                             <h3>🎯 Objetivo</h3>
-                            <p>Explore a toca, derrote inimigos e chefes em cada andar, colete ouro e itens, e sobreviva até escapar no 5º andar!</p>
+                            <p>Explore a toca, derrote inimigos e chefes em cada andar, colete ouro e itens, e sobreviva
+                                até escapar no 5º andar!</p>
                         </div>
                         <div class="manual-section">
                             <h3>🕹️ Controles</h3>
                             <p><strong>WASD</strong> — Mover | <strong>Mouse</strong> — Mirar e Atirar<br>
-                            <strong>Espaço</strong> — Pular (evita dano) | <strong>Q</strong> — Habilidade do Herói<br>
-                            <strong>E</strong> — Skill Extra (comprada na loja) | <strong>ESC</strong> — Pausar</p>
+                                <strong>Espaço</strong> — Pular (evita dano) | <strong>Q</strong> — Habilidade do
+                                Herói<br>
+                                <strong>E</strong> — Skill Extra (comprada na loja) | <strong>ESC</strong> — Pausar
+                            </p>
                         </div>
                         <div class="manual-section">
                             <h3>🗺️ Mapa</h3>
-                            <p>O mapa é gerado aleatoriamente. Cada sala pode ser de batalha, mini-chefe, chefe, tesouro, NPC ou loja. O minimapa no canto inferior direito mostra as salas próximas.</p>
+                            <p>O mapa é gerado aleatoriamente. Cada sala pode ser de batalha, mini-chefe, chefe,
+                                tesouro, NPC ou loja. O minimapa no canto inferior direito mostra as salas próximas.</p>
                         </div>
                         <div class="manual-section">
                             <h3>🏪 Loja</h3>
-                            <p>Após derrotar cada chefe, uma loja aparece com 3 itens aleatórios. Use ouro para comprar curas, armas, buffs ou habilidades especiais.</p>
+                            <p>Após derrotar cada chefe, uma loja aparece com 3 itens aleatórios. Use ouro para comprar
+                                curas, armas, buffs ou habilidades especiais.</p>
                         </div>
                         <div class="manual-section">
                             <h3>⚔️ Armas</h3>
                             <p>🔥 <strong>Cajado de Fogo</strong> — Queima inimigos<br>
-                            ⚡ <strong>Arma de Raio</strong> — Paralisa inimigos<br>
-                            ❄️ <strong>Cetro de Gelo</strong> — Desacelera inimigos</p>
+                                ⚡ <strong>Arma de Raio</strong> — Paralisa inimigos<br>
+                                ❄️ <strong>Cetro de Gelo</strong> — Desacelera inimigos</p>
                         </div>
                         <div class="manual-section">
                             <h3>👹 Chefes</h3>
-                            <p>Cada andar tem um chefe com padrão de ataque único. O chefe final do 5º andar é o <strong>Colosso do Apocalipse</strong>, com chuva de meteoros e barreiras de pedra!</p>
+                            <p>Cada andar tem um chefe com padrão de ataque único. O chefe final do 5º andar é o
+                                <strong>Colosso do Apocalipse</strong>, com chuva de meteoros e barreiras de pedra!</p>
                         </div>
                         <div class="manual-section">
                             <h3>🎖️ Dificuldades</h3>
                             <p><strong>Fácil</strong> — Mais vida, inimigos fracos<br>
-                            <strong>Normal</strong> — Experiência padrão<br>
-                            <strong>Difícil</strong> — Menos vida, inimigos fortes<br>
-                            <strong>Pesadelo</strong> — Para verdadeiros coelhos guerreiros!</p>
+                                <strong>Normal</strong> — Experiência padrão<br>
+                                <strong>Difícil</strong> — Menos vida, inimigos fortes<br>
+                                <strong>Pesadelo</strong> — Para verdadeiros coelhos guerreiros!
+                            </p>
                         </div>
                     </div>
                     <button id="btn-manual-back" class="menu-btn back-btn">← Voltar</button>
@@ -334,7 +346,7 @@
                             <p>Passiva: Moedas dão +50% Ouro</p>
                             <p>Ativa (Q): Criar Ouro Mágico</p>
                         </div>
-                        
+
                         <!-- NOVOS COELHOS (10) -->
                         <div class="char-card" data-char="10">
                             <h4>Coelho Ninja</h4>
@@ -368,8 +380,8 @@
                         </div>
                         <div class="char-card" data-char="16">
                             <h4>Coelho Ciborgue</h4>
-                            <p>Passiva: Corrente Elétrica (Dano+Lentidão)</p>
-                            <p>Ativa (Q): Bola de Energia (Paralisa)</p>
+                            <p>Passiva: Raio em Cadeia (Dano+Lentidão em área)</p>
+                            <p>Ativa (Q): Bola de Energia Paralisante</p>
                         </div>
                         <div class="char-card" data-char="17">
                             <h4>Coelho Zen</h4>

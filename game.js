@@ -102,6 +102,10 @@ function returnToMenu() {
     document.getElementById('game-container').classList.add('menu-mode');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (typeof lightCtx !== 'undefined') lightCtx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Reiniciar música da capa ao voltar para o menu
+    if (typeof audio !== 'undefined') audio.playTitleMusic();
+    
     switchScreen('titleScreen'); 
 }
 
@@ -649,7 +653,14 @@ class Player extends Actor {
         else if (this.charType === 13 && this.jetCD <= 0) { this.flyT = 6.0; this.jetCD = 12; boom(this.x, this.y, '#54a0ff', 15); }
         else if (this.charType === 14 && this.cannonCD <= 0) { for (let i = 0; i < 5; i++) { let tx = this.x + (Math.random() - 0.5) * 400, ty = this.y + (Math.random() - 0.5) * 400; warnings.push(new Warning(tx, ty, 60, 0.5, 'meteor', true)); } this.cannonCD = 8; }
         else if (this.charType === 15 && this.roarCD <= 0) { this.dmgMult *= 1.5; setTimeout(() => this.dmgMult /= 1.5, 8000); this.roarCD = 15; boom(this.x, this.y, '#ff9f43', 40); }
-        else if (this.charType === 16 && this.laserCD <= 0) { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; let pb = new Projectile(this.x, this.y, dx/d, dy/d, 8, 16, '#0984e3', true, 'cyborg_energy_ball'); pb.damage = 15; projectiles.push(pb); this.laserCD = 5; boom(this.x, this.y, '#0984e3', 20); }
+        else if (this.charType === 16 && this.laserCD <= 0) { 
+            let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; 
+            let pb = new Projectile(this.x, this.y, dx/d, dy/d, 8.5, 18, '#00d2d3', true, 'cyborg_emp_ball'); 
+            pb.damage = 18; 
+            projectiles.push(pb); 
+            this.laserCD = 5.5; 
+            boom(this.x, this.y, '#0984e3', 25); 
+        }
         else if (this.charType === 17 && this.medCD <= 0) { this.hp = Math.min(this.maxHp, this.hp + 2); updateHUD(); this.medCD = 20; boom(this.x, this.y, '#feca57', 30); }
         else if (this.charType === 18 && this.tntCD <= 0) { warnings.push(new Warning(this.x, this.y, 120, 1.0, 'meteor', true)); this.tntCD = 6; }
         else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { e.takeDamage(8); e.stunTimer = 1; }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); }
@@ -1066,28 +1077,40 @@ function checkCollisions() {
                     if (p.weaponType === 'fire') { e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); } 
                     if (p.weaponType === 'taser') e.stunTimer = (e.type === 'boss') ? 0.2 : 1.5; 
                     if (p.weaponType === 'ice') e.slowTimer = (e.type === 'boss') ? 1.0 : 3.0; 
-                    if (p.weaponType === 'cyborg_energy_ball') { e.stunTimer = 0.5; boom(p.x, p.y, '#00d2d3', 25); } 
+                    if (p.weaponType === 'cyborg_emp_ball') { 
+                        // Explosão EMP em área
+                        enemies.forEach(ae => {
+                            if (dist(p.x, p.y, ae.x, ae.y) < 120) {
+                                ae.takeDamage(p.damage * 0.6);
+                                ae.stunTimer = (ae.type === 'boss') ? 0.3 : 1.2;
+                                boom(ae.x, ae.y, '#74b9ff', 10);
+                            }
+                        });
+                        e.stunTimer = (e.type === 'boss') ? 0.4 : 1.8;
+                        boom(p.x, p.y, '#00d2d3', 35); 
+                    } 
                     else if (player.charType === 16) { 
+                        e.slowTimer = 2.5; // Alvo principal também recebe lentidão
                         enemies.forEach(other_e => { 
-                            if (other_e !== e && dist(e.x, e.y, other_e.x, other_e.y) < 150) { 
-                                other_e.takeDamage(p.damage * 0.5); 
-                                other_e.slowTimer = 2.0; 
-                                boom(other_e.x, other_e.y, '#0984e3', 6); 
+                            if (other_e !== e && dist(e.x, e.y, other_e.x, other_e.y) < 160) { 
+                                other_e.takeDamage(p.damage * 0.6); 
+                                other_e.slowTimer = 2.5; 
+                                boom(other_e.x, other_e.y, '#00d2d3', 8); 
                                 let ds = dist(e.x, e.y, other_e.x, other_e.y); 
-                                let steps = Math.max(3, Math.floor(ds / 15)); 
+                                let steps = Math.max(4, Math.floor(ds / 12)); 
                                 for(let step=1; step<steps; step++) { 
-                                    particles.push(new Particle(e.x + (other_e.x - e.x)*(step/steps), e.y + (other_e.y - e.y)*(step/steps), '#00d2d3', 2, 8, 15)); 
+                                    particles.push(new Particle(e.x + (other_e.x - e.x)*(step/steps), e.y + (other_e.y - e.y)*(step/steps), '#48dbfb', 3, 10, 18)); 
                                 } 
                             } 
                         }); 
                     } 
-                    boom(p.x, p.y, p.color, 3); 
+                    boom(p.x, p.y, p.color, 4); 
                     if (e.hp <= 0) { 
                         enemies.splice(j, 1); 
-                        if (player.charType === 3 && Math.random() < 0.25) { 
+                        if (player.charType === 3 && Math.random() < 0.28) { 
                             player.hp = Math.min(player.maxHp, player.hp + 1); 
                             updateHUD(); 
-                            boom(player.x, player.y, '#2ed573', 10); 
+                            boom(player.x, player.y, '#2ed573', 12); 
                         } 
                     } 
                     p.active = false; 
@@ -1097,9 +1120,9 @@ function checkCollisions() {
         } else { 
             if (!player.isJumping && player.flyT <= 0) { 
                 if (dist(p.x, p.y, player.x, player.y) < p.radius + player.radius * 0.8) { 
-                    if (p.weaponType === 'ice') player.slowTimer = 2; 
-                    else if (p.weaponType === 'hellfire') player.burnTimer = 10; 
-                    player.takeDamage(p.damage + (mapLevel - 1) * 0.5); 
+                    if (p.weaponType === 'ice') player.slowTimer = 2.5; 
+                    else if (p.weaponType === 'hellfire') player.burnTimer = 8; 
+                    player.takeDamage(p.damage + (mapLevel - 1) * 0.55); 
                     p.active = false; 
                 } 
             } 
@@ -1108,10 +1131,10 @@ function checkCollisions() {
     } 
     if (player && !player.isJumping && player.flyT <= 0) { 
         for (let e of enemies) { 
-            if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 5) { 
-                player.takeDamage(1 + (mapLevel - 1) * 0.5); 
+            if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 6) { 
+                player.takeDamage(1.2 + (mapLevel - 1) * 0.5); 
                 let dx = player.x - e.x, dy = player.y - e.y, mg = Math.hypot(dx, dy); 
-                if (mg > 0) { player.x += dx / mg * 20; player.y += dy / mg * 20; } 
+                if (mg > 0) { player.x += dx / mg * 24; player.y += dy / mg * 24; } 
             } 
         } 
     } 

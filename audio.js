@@ -11,7 +11,7 @@ class AudioManager {
         this.soundsEnabled = false;
         
         // Músicas em arquivo
-        this.titleMusic = new Audio('musica/Musica capa.mp3');
+        this.titleMusic = new Audio('Musica/Musica capa.mp3');
         this.titleMusic.loop = true;
         this.titleMusic.volume = this.musicVol * this.masterVol;
         
