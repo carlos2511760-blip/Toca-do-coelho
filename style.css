@@ -99,8 +99,7 @@ canvas {
     justify-content: center;
     width: 100%;
     height: 100%;
-    /* Removido o background daqui para usar o do body */
-    background: linear-gradient(to bottom, rgba(11, 12, 16, 0.3), rgba(11, 12, 16, 0.7)); 
+    background: transparent; 
 }
 
 #title-screen {
@@ -534,6 +533,18 @@ button:hover {
     border-color: var(--accent);
     background: rgba(255, 71, 87, 0.1);
     box-shadow: 0 0 10px var(--accent);
+}
+
+.char-card.locked {
+    filter: grayscale(1) brightness(0.5);
+    cursor: not-allowed;
+    border-style: dotted;
+    opacity: 0.6;
+}
+
+.char-card.locked:hover {
+    transform: none;
+    background: var(--glass);
 }
 
 .char-card h4 {
