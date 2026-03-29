@@ -18,7 +18,8 @@ const screens = {
     settings: document.getElementById('settings-screen'),
     manual: document.getElementById('manual-screen'),
     pause: document.getElementById('pause-screen'),
-    reward: document.getElementById('reward-screen')
+    reward: document.getElementById('reward-screen'),
+    casino: document.getElementById('casino-screen')
 };
 const startBtn = document.getElementById('start-btn');
 const charCards = document.querySelectorAll('.char-card');
@@ -930,14 +931,21 @@ class RoomSystem {
             if (!window.hasSpawnedArena) extraTypes.push('arena');
             if (!window.hasSpawnedCasino) extraTypes.push('casino');
             extraTypes.sort(() => Math.random() - 0.5);
-            roomList[4].type = extraTypes[0] || 'miniboss';
-            roomList[5].type = extraTypes[1] || 'miniboss';
-            roomList[6].type = extraTypes[2] || 'miniboss';
-            
-            [roomList[4], roomList[5], roomList[6]].forEach(r => {
-                if (r.type === 'arena') window.hasSpawnedArena = true;
-                if (r.type === 'casino') window.hasSpawnedCasino = true;
+            let nextR = 4;
+            extraTypes.forEach(t => {
+                if (roomList[nextR]) {
+                    roomList[nextR].type = t;
+                    if (t === 'arena') window.hasSpawnedArena = true;
+                    if (t === 'casino') window.hasSpawnedCasino = true;
+                }
+                nextR++;
             });
+            while(nextR < roomList.length) {
+                if (roomList[nextR] && roomList[nextR].type === 'battle') {
+                    roomList[nextR].type = 'miniboss';
+                }
+                nextR++;
+            }
         } else if (roomList.length >= 5) {
             roomList[0].type = 'boss'; roomList[1].type = 'exit';
             roomList[2].type = 'miniboss'; roomList[3].type = 'miniboss'; roomList[4].type = 'miniboss';
@@ -1272,13 +1280,14 @@ function closeShop() { let rd = currentRoom.rooms[`${currentRoom.currentX},${cur
 // CASINO
 let casinoSpinning = false;
 function openCasino() {
+    casinoSpinning = false; 
     document.getElementById('casino-gold-display').innerText = player.gold;
     document.getElementById('casino-result-msg').innerText = '';
     document.getElementById('slot-1').innerText = '0';
     document.getElementById('slot-2').innerText = '0';
     document.getElementById('slot-3').innerText = '0';
     document.getElementById('slot-4').innerText = '0';
-    switchScreen('casino-screen');
+    switchScreen('casino');
 }
 
 function closeCasino() {
@@ -1294,7 +1303,13 @@ function closeCasino() {
 document.getElementById('btn-leave-casino').addEventListener('click', closeCasino);
 document.getElementById('btn-spin').addEventListener('click', () => {
     let cost = 15;
-    if (casinoSpinning || player.gold < cost) return;
+    if (casinoSpinning) return;
+    if (player.gold < cost) {
+        let msg = document.getElementById('casino-result-msg');
+        msg.innerText = 'Sem ouro suficiente! (15 moedas)';
+        msg.style.color = '#ff4757';
+        return;
+    }
     player.gold -= cost;
     goldCounter.innerText = player.gold;
     document.getElementById('casino-gold-display').innerText = player.gold;
