@@ -16,6 +16,8 @@ const ITEM_CATALOG = {
     // --- BUFFS ---
     buff_strength: { name: 'Poção de Força', desc: 'Dano +25% permanente', type: 'buff', buffId: 'strength', price: 40, rarity: 'uncommon', weight: 20, emoji: '💪' },
     buff_speed: { name: 'Poção de Velocidade', desc: 'Velocidade +15% permanente', type: 'buff', buffId: 'speed', price: 35, rarity: 'uncommon', weight: 20, emoji: '👟' },
+    buff_shield: { name: 'Escudo Abençoado', desc: 'Escudo temporário (8s)', type: 'buff', buffId: 'shield', price: 55, rarity: 'epic', weight: 8, emoji: '🛡️' },
+    buff_maxhp: { name: 'Coração de Ferro', desc: 'Vida Máxima +2 permanente', type: 'buff', buffId: 'maxhp', price: 70, rarity: 'rare', weight: 12, emoji: '🫀' },
 
     // --- HABILIDADES ATIVAS (tecla E) ---
     skill_gravity: { name: 'Gravidade', desc: 'Puxa todos os inimigos ao centro', type: 'skill', skillId: 'gravity', price: 65, rarity: 'epic', weight: 10, emoji: '🌀' },
@@ -23,6 +25,7 @@ const ITEM_CATALOG = {
     skill_earthquake: { name: 'Terremoto', desc: 'Dano em área enorme ao redor', type: 'skill', skillId: 'earthquake', price: 70, rarity: 'epic', weight: 10, emoji: '🌋' },
     skill_iceberg: { name: 'Criar Iceberg', desc: 'Cria barreira de gelo bloqueadora', type: 'skill', skillId: 'iceberg', price: 50, rarity: 'rare', weight: 12, emoji: '🧊' },
     skill_explosion: { name: 'Explosão', desc: 'Mega explosão: dano massivo em área', type: 'skill', skillId: 'explosion', price: 80, rarity: 'legendary', weight: 5, emoji: '💥' },
+    skill_timewarp: { name: 'Distorção Temporal', desc: 'Desacelera todos os inimigos por 6s', type: 'skill', skillId: 'timewarp', price: 60, rarity: 'epic', weight: 8, emoji: '⏳' },
 };
 
 // --- BOSSES (9 diferentes) ---

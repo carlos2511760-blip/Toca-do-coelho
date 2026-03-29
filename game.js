@@ -566,7 +566,7 @@ class Iceberg { constructor(x, y, type) { this.x = x; this.y = y; this.w = 50; t
 class Projectile { constructor(x, y, vx, vy, spd, rad, col, isP, wType) { this.x = x; this.y = y; this.vx = vx * spd; this.vy = vy * spd; this.radius = rad; this.color = col; this.isPlayerObj = isP; this.damage = 1; this.active = true; this.weaponType = wType || 'normal'; } update(dt) { this.x += this.vx * (dt * 60); this.y += this.vy * (dt * 60); if (this.x < 0 || this.x > 800 || this.y < 0 || this.y > 600) this.active = false; for (let ib of icebergs) { if (this.x > ib.x - ib.w / 2 && this.x < ib.x + ib.w / 2 && this.y > ib.y - ib.h / 2 && this.y < ib.y + ib.h / 2) { ib.hp--; this.active = false; } } } draw(c) { c.fillStyle = this.color; c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill(); if (this.weaponType === 'fire') { c.fillStyle = 'rgba(255,165,0,0.4)'; c.beginPath(); c.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2); c.fill(); } if (this.weaponType === 'taser') { c.strokeStyle = '#f1c40f'; c.lineWidth = 1; c.beginPath(); c.moveTo(this.x - 5, this.y - 5); c.lineTo(this.x + 5, this.y + 5); c.stroke(); } if (this.weaponType === 'ice') { c.strokeStyle = '#74b9ff'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2); c.stroke(); } } }
 
 // ACTOR
-class Actor { constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; this.maxJumpTime = 0.8; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; this.hp -= amt; this.invTimer = 0.5; if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); if (this.hp <= 0 && this instanceof Enemy) { boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); } } updatePhysics(dt) { if (this.stunTimer > 0) { this.stunTimer -= dt; this.vx = 0; this.vy = 0; } let sm = this.slowTimer > 0 ? 0.4 : 1; this.x += this.vx * sm * (dt * 60); this.y += this.vy * sm * (dt * 60); if (this.invTimer > 0) this.invTimer -= dt; if (this.isJumping) { let jMod = (this instanceof Player && this.charType === 13) ? 0.6 : 1.0; this.jumpTimer -= dt * jMod; if (this.jumpTimer <= 0) this.isJumping = false; } if (this.slowTimer > 0) this.slowTimer -= dt; this.x = Math.max(WALL + this.radius, Math.min(800 - WALL - this.radius, this.x)); this.y = Math.max(WALL + this.radius, Math.min(600 - WALL - this.radius, this.y)); } }
+class Actor { constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; this.stunImmune = 0; this.maxJumpTime = 0.8; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; this.hp -= amt; this.invTimer = 0.5; if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); if (this.hp <= 0 && this instanceof Enemy) { boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); } } updatePhysics(dt) { if (this.stunTimer > 0) { this.stunTimer -= dt; this.vx = 0; this.vy = 0; } let sm = this.slowTimer > 0 ? 0.4 : 1; this.x += this.vx * sm * (dt * 60); this.y += this.vy * sm * (dt * 60); if (this.invTimer > 0) this.invTimer -= dt; if (this.stunImmune > 0) this.stunImmune -= dt; if (this.isJumping) { let jMod = (this instanceof Player && this.charType === 13) ? 0.6 : 1.0; this.jumpTimer -= dt * jMod; if (this.jumpTimer <= 0) this.isJumping = false; } if (this.slowTimer > 0) this.slowTimer -= dt; this.x = Math.max(WALL + this.radius, Math.min(800 - WALL - this.radius, this.x)); this.y = Math.max(WALL + this.radius, Math.min(600 - WALL - this.radius, this.y)); } }
 
 // PLAYER
 class Player extends Actor {
@@ -678,7 +678,7 @@ class Player extends Actor {
             if (typeof audio !== 'undefined') audio.playShoot();
         }
     }
-    useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; e.stunTimer = 1.0; } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } }
+    useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; if (e.stunImmune <= 0) { e.stunTimer = 1.0; e.stunImmune = 3.0; } } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); if (e.stunImmune <= 0) { e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; e.stunImmune = (e.type === 'boss') ? 3.0 : 5.0; } } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } else if (sk === 'timewarp') { enemies.forEach(e => { e.slowTimer = 6.0; boom(e.x, e.y, '#a29bfe', 5); }); boom(this.x, this.y, '#6c5ce7', 30); this.skillCD = 15; } }
     shoot() { 
         if (this.weaponCD > 0 || this.isJumping) return; 
         let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy); 
@@ -1029,7 +1029,7 @@ class RoomSystem {
 
 // SHOP
 function openShop() { shopGoldEl.innerText = player.gold; shopItemsEl.innerHTML = ''; let items = getRandomShopItems(3); items.forEach(item => { let div = document.createElement('div'); div.className = `shop-item rarity-${item.rarity}`; div.innerHTML = `<div class="item-rarity">${item.rarity.toUpperCase()}</div><h4>${item.emoji} ${item.name}</h4><p class="item-desc">${item.desc}</p><p class="item-price">🪙 ${item.price}</p>`; div.addEventListener('click', () => buyItem(item, div)); shopItemsEl.appendChild(div); }); switchScreen('shop'); }
-function buyItem(item, el) { if (player.gold < item.price) return; player.gold -= item.price; goldCounter.innerText = player.gold; shopGoldEl.innerText = player.gold; el.style.opacity = '0.3'; el.style.pointerEvents = 'none'; if (item.type === 'heal') { player.hp = Math.min(player.maxHp, player.hp + player.maxHp * item.value); updateHUD(); boom(player.x, player.y, '#2ed573', 15); } else if (item.type === 'heal_regen') { player.hp = Math.min(player.maxHp, player.hp + player.maxHp * item.value); player.regenDur = 30; player.regenT = 5; updateHUD(); } else if (item.type === 'weapon') { player.currentWeapon = item.weaponId; weaponNameEl.innerText = item.name; } else if (item.type === 'buff') { if (item.buffId === 'strength') player.dmgMult += 0.25; if (item.buffId === 'speed') player.speed *= 1.15; } else if (item.type === 'skill') { player.activeSkill = item.skillId; abilityNameEl.innerText = item.name; } }
+function buyItem(item, el) { if (player.gold < item.price) return; player.gold -= item.price; goldCounter.innerText = player.gold; shopGoldEl.innerText = player.gold; el.style.opacity = '0.3'; el.style.pointerEvents = 'none'; if (item.type === 'heal') { player.hp = Math.min(player.maxHp, player.hp + player.maxHp * item.value); updateHUD(); boom(player.x, player.y, '#2ed573', 15); } else if (item.type === 'heal_regen') { player.hp = Math.min(player.maxHp, player.hp + player.maxHp * item.value); player.regenDur = 30; player.regenT = 5; updateHUD(); } else if (item.type === 'weapon') { player.currentWeapon = item.weaponId; weaponNameEl.innerText = item.name; } else if (item.type === 'buff') { if (item.buffId === 'strength') player.dmgMult += 0.25; if (item.buffId === 'speed') player.speed *= 1.15; if (item.buffId === 'shield') { player.shieldT = 8; boom(player.x, player.y, '#48dbfb', 20); } if (item.buffId === 'maxhp') { player.maxHp += 2; player.hp += 2; updateHUD(); boom(player.x, player.y, '#e74c3c', 15); } } else if (item.type === 'skill') { player.activeSkill = item.skillId; abilityNameEl.innerText = item.name; } }
 function closeShop() { let rd = currentRoom.rooms[`${currentRoom.currentX},${currentRoom.currentY}`]; if (rd) rd.shopVisited = true; switchScreen('hud'); gameState = 'PLAYING'; lastTime = performance.now(); requestAnimationFrame(gameLoop); }
 
 // MAIN
@@ -1119,26 +1119,37 @@ function checkCollisions() {
                 if (dist(p.x, p.y, e.x, e.y) < p.radius + e.radius) { 
                     e.takeDamage(p.damage); 
                     if (p.weaponType === 'fire') { e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); } 
-                    if (p.weaponType === 'taser') e.stunTimer = (e.type === 'boss') ? 0.2 : 1.5; 
+                    if (p.weaponType === 'taser') {
+                        if (e.stunTimer <= 0 && e.stunImmune <= 0) {
+                            e.stunTimer = (e.type === 'boss') ? 0.2 : 1.5;
+                            e.stunImmune = (e.type === 'boss') ? 2.0 : 4.0;
+                        }
+                    }
                     if (p.weaponType === 'ice') e.slowTimer = (e.type === 'boss') ? 1.0 : 3.0; 
                     if (p.weaponType === 'cyborg_emp_ball') { 
-                        // Explosão EMP em área GIGANTE
+                        // Explosão EMP em área GIGANTE - respeita imunidade a stun
                         enemies.forEach(ae => {
                             if (dist(p.x, p.y, ae.x, ae.y) < 200) {
                                 ae.takeDamage(p.damage * 0.7);
-                                ae.stunTimer = (ae.type === 'boss') ? 0.4 : 1.5;
+                                if (ae.stunImmune <= 0) {
+                                    ae.stunTimer = (ae.type === 'boss') ? 0.4 : 1.5;
+                                    ae.stunImmune = (ae.type === 'boss') ? 3.0 : 5.0;
+                                }
                                 boom(ae.x, ae.y, '#74b9ff', 8);
                             }
                         });
-                        e.stunTimer = (e.type === 'boss') ? 0.5 : 2.0;
+                        if (e.stunImmune <= 0) {
+                            e.stunTimer = (e.type === 'boss') ? 0.5 : 2.0;
+                            e.stunImmune = (e.type === 'boss') ? 3.0 : 5.0;
+                        }
                         boom(p.x, p.y, '#00d2d3', 50); 
                     } 
                     else if (player.charType === 16) { 
-                        e.slowTimer = 3.0; 
+                        e.slowTimer = Math.min(e.slowTimer + 1.5, 3.0); 
                         enemies.forEach(other_e => { 
                             if (other_e !== e && dist(e.x, e.y, other_e.x, other_e.y) < 240) { 
                                 other_e.takeDamage(p.damage * 0.65); 
-                                other_e.slowTimer = 3.0; 
+                                other_e.slowTimer = Math.min(other_e.slowTimer + 1.5, 3.0); 
                                 boom(other_e.x, other_e.y, '#00d2d3', 10); 
                                 let ds = dist(e.x, e.y, other_e.x, other_e.y); 
                                 let steps = Math.max(5, Math.floor(ds / 10)); 
@@ -1151,7 +1162,7 @@ function checkCollisions() {
                     boom(p.x, p.y, p.color, 4); 
                     if (e.hp <= 0) { 
                         enemies.splice(j, 1); 
-                        if (player.charType === 3 && Math.random() < 0.28) { 
+                        if (player.charType === 3 && Math.random() < 0.20) { 
                             player.hp = Math.min(player.maxHp, player.hp + 1); 
                             updateHUD(); 
                             boom(player.x, player.y, '#2ed573', 12); 
@@ -1178,7 +1189,7 @@ function checkCollisions() {
         for (let e of enemies) { 
             if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 6) { 
                 if (e.type === 'boss') takenBossDamage = true;
-                player.takeDamage(1.2 + (mapLevel - 1) * 0.5); 
+                player.takeDamage(1.2 + (mapLevel - 1) * 0.4); 
                 let dx = player.x - e.x, dy = player.y - e.y, mg = Math.hypot(dx, dy); 
                 if (mg > 0) { player.x += dx / mg * 24; player.y += dy / mg * 24; } 
             } 
