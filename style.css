@@ -308,7 +308,7 @@ button:hover {
 .pause-panel {
     width: 90%;
     max-width: 650px;
-    max-height: 90vh;
+    height: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -324,7 +324,7 @@ button:hover {
 
 .settings-scroll-container {
     width: 100%;
-    overflow-y: auto;
+    overflow-y: visible;
     flex: 1 1 auto;
     min-height: 0;
     /* Crucial para flex overflow scroll funcionar */
@@ -513,8 +513,8 @@ button:hover {
 }
 
 .manual-scroll {
-    overflow-y: auto;
-    max-height: 380px;
+    overflow-y: visible;
+    max-height: none;
     width: 100%;
     padding-right: 8px;
 }
