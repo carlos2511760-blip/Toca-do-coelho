@@ -15,6 +15,9 @@
     /* MOBILE DYNAMICS */
     --m-size: 1;
     --m-joy-x: 40px;
+    --m-joy-y: 30px;
+    --m-btn-x: 40px;
+    --m-btn-y: 30px;
 }
 
 * {
@@ -38,7 +41,7 @@ body {
     min-height: 100vh;
     margin: 0;
     overflow: hidden;
-    touch-action: none;
+    overscroll-behavior-y: none;
     -webkit-user-select: none;
     user-select: none;
     transition: background 0.5s ease;
@@ -46,14 +49,26 @@ body {
 
 #game-container {
     position: relative;
-    width: 800px;
-    height: 600px;
+    width: 100vw;
+    height: auto;
+    max-width: 800px;
+    max-height: 100vh;
+    aspect-ratio: 4 / 3;
     background-color: var(--bg-color);
     border: 4px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 71, 87, 0.1);
     image-rendering: auto;
     overflow: hidden;
+}
+
+@media (min-aspect-ratio: 4/3) {
+    #game-container {
+        width: auto;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 600px;
+    }
 }
 
 #game-container.menu-mode {
@@ -66,6 +81,7 @@ canvas {
     display: block;
     width: 100%;
     height: 100%;
+    touch-action: none;
     z-index: 1;
 }
 
@@ -248,7 +264,7 @@ button:hover {
 .settings-panel, .manual-panel, .pause-panel {
     width: 90%;
     max-width: 650px;
-    max-height: 85%;
+    max-height: 90%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -258,6 +274,33 @@ button:hover {
     border: 3px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 0 40px rgba(0,0,0,0.6);
+}
+
+.settings-scroll-container {
+    width: 100%;
+    overflow-y: auto;
+    flex: 1; /* Permite que cresça e role se necessário */
+    padding-right: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.settings-scroll-container::-webkit-scrollbar { width: 6px; }
+.settings-scroll-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+.settings-scroll-container::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+.cheats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.3s ease;
+}
+
+.cheats-list.locked {
+    opacity: 0.4;
+    pointer-events: none;
+    filter: grayscale(1);
 }
 
 .panel-title {
@@ -886,14 +929,11 @@ button:hover {
     pointer-events: none;
     display: none;
     z-index: 100;
-    transform: scale(var(--m-size));
-    transform-origin: bottom center;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 #joystick-container {
     position: absolute;
-    bottom: 30px;
+    bottom: var(--m-joy-y);
     left: var(--m-joy-x);
     width: 150px;
     height: 150px;
@@ -901,6 +941,8 @@ button:hover {
     justify-content: center;
     align-items: center;
     pointer-events: auto;
+    transform: scale(var(--m-size));
+    transform-origin: bottom left;
 }
 
 #joystick-base {
@@ -928,12 +970,15 @@ button:hover {
 
 #action-zone {
     position: absolute;
-    bottom: 30px;
-    right: 40px;
+    bottom: var(--m-btn-y);
+    right: var(--m-btn-x);
     display: flex;
     gap: 15px;
     flex-direction: row-reverse;
     align-items: flex-end;
+    pointer-events: auto;
+    transform: scale(var(--m-size));
+    transform-origin: bottom right;
 }
 
 .m-btn {

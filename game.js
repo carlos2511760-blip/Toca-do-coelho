@@ -374,6 +374,17 @@ document.getElementById('set-colorblind').addEventListener('change', function ()
 });
 
 // CHEATS
+document.getElementById('btn-cheat-unlock').addEventListener('click', function() {
+    const list = document.getElementById('cheats-list');
+    const isLocked = list.classList.toggle('locked');
+    this.innerText = isLocked ? 'Ativar' : 'Desativar';
+    this.classList.toggle('on', !isLocked);
+    
+    // Habilitar/Desabilitar botões internos
+    const btns = list.querySelectorAll('button');
+    btns.forEach(b => b.disabled = isLocked);
+});
+
 document.getElementById('btn-cheat-bright').addEventListener('click', function() {
     fullBright = !fullBright;
     cheatsUsed = true;
@@ -413,12 +424,21 @@ document.querySelectorAll('.size-card').forEach(c => c.addEventListener('click',
 const updateMobileStyles = () => {
     const size = document.getElementById('set-m-size').value;
     const joyX = document.getElementById('set-m-joy-x').value;
+    const joyY = document.getElementById('set-m-joy-y').value;
+    const btnX = document.getElementById('set-m-btn-x').value;
+    const btnY = document.getElementById('set-m-btn-y').value;
     document.documentElement.style.setProperty('--m-size', size / 100);
     document.documentElement.style.setProperty('--m-joy-x', joyX + 'px');
+    document.documentElement.style.setProperty('--m-joy-y', joyY + 'px');
+    document.documentElement.style.setProperty('--m-btn-x', btnX + 'px');
+    document.documentElement.style.setProperty('--m-btn-y', btnY + 'px');
     document.getElementById('set-m-size-val').innerText = size + '%';
     document.getElementById('set-m-joy-x-val').innerText = joyX + 'px';
+    document.getElementById('set-m-joy-y-val').innerText = joyY + 'px';
+    document.getElementById('set-m-btn-x-val').innerText = btnX + 'px';
+    document.getElementById('set-m-btn-y-val').innerText = btnY + 'px';
 };
-['set-m-size', 'set-m-joy-x'].forEach(id => {
+['set-m-size', 'set-m-joy-x', 'set-m-joy-y', 'set-m-btn-x', 'set-m-btn-y'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', updateMobileStyles);
 });

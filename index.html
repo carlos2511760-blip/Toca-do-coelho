@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Toca do Coelho</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&family=Passion+One:wght@700&display=swap" rel="stylesheet">
@@ -51,7 +51,8 @@
                         <button class="tab-btn" data-tab="tab-cheats" style="color:#fffa65; border-color:#fffa65;">💀 Cheats</button>
                     </div>
 
-                    <!-- ÁUDIO -->
+                    <div class="settings-scroll-container">
+                        <!-- ÁUDIO -->
                     <div class="tab-content active" id="tab-audio">
                         <div class="setting-row">
                             <label>Volume Geral</label>
@@ -141,27 +142,50 @@
                             <span class="range-val" id="set-m-size-val">100%</span>
                         </div>
                         <div class="setting-row">
-                            <label>Posição Joystick (X)</label>
+                            <label>Joystick (X)</label>
                             <input type="range" id="set-m-joy-x" min="0" max="300" value="40">
                             <span class="range-val" id="set-m-joy-x-val">40px</span>
                         </div>
+                        <div class="setting-row">
+                            <label>Joystick (Y)</label>
+                            <input type="range" id="set-m-joy-y" min="0" max="300" value="30">
+                            <span class="range-val" id="set-m-joy-y-val">30px</span>
+                        </div>
+                        <div class="setting-row">
+                            <label>Botões Acão (X)</label>
+                            <input type="range" id="set-m-btn-x" min="0" max="300" value="40">
+                            <span class="range-val" id="set-m-btn-x-val">40px</span>
+                        </div>
+                        <div class="setting-row">
+                            <label>Botões Acão (Y)</label>
+                            <input type="range" id="set-m-btn-y" min="0" max="300" value="30">
+                            <span class="range-val" id="set-m-btn-y-val">30px</span>
+                        </div>
                     </div>
 
-                    <!-- CHEATS -->
-                    <div class="tab-content" id="tab-cheats">
-                        <div class="setting-row">
-                            <label>Brilho Total (Full Bright)</label>
-                            <button id="btn-cheat-bright" class="toggle-btn">Ativar</button>
+                        <!-- CHEATS -->
+                        <div class="tab-content" id="tab-cheats">
+                            <div class="setting-row" style="background: rgba(255, 71, 87, 0.1); border-color: #fffa65;">
+                                <label style="color: #fffa65; font-weight: bold;">Habilitar Trapaças</label>
+                                <button id="btn-cheat-unlock" class="toggle-btn">Ativar</button>
+                            </div>
+                            
+                            <div id="cheats-list" class="cheats-list locked">
+                                <div class="setting-row">
+                                    <label>Brilho Total (Full Bright)</label>
+                                    <button id="btn-cheat-bright" class="toggle-btn" disabled>Ativar</button>
+                                </div>
+                                <div class="setting-row">
+                                    <label>Modo Voo (God Mode)</label>
+                                    <button id="btn-cheat-fly" class="toggle-btn" disabled>Ativar</button>
+                                </div>
+                                <div class="setting-row">
+                                    <label>Ouro Infinito</label>
+                                    <button id="btn-cheat-gold" class="menu-btn" style="min-width:100px; padding:4px 10px; font-size:1rem;" disabled>+999 Ouro</button>
+                                </div>
+                                <p class="hint-text" style="color:#fffa65;">⚠️ O uso de cheats desativa recordes nesta sessão.</p>
+                            </div>
                         </div>
-                        <div class="setting-row">
-                            <label>Modo Voo (God Mode)</label>
-                            <button id="btn-cheat-fly" class="toggle-btn">Ativar</button>
-                        </div>
-                        <div class="setting-row">
-                            <label>Ouro Infinito</label>
-                            <button id="btn-cheat-gold" class="menu-btn" style="min-width:100px; padding:4px 10px; font-size:1rem;">+999 Ouro</button>
-                        </div>
-                        <p class="hint-text" style="color:#fffa65;">⚠️ O uso de cheats desativa recordes nesta sessão.</p>
                     </div>
 
                     <button id="btn-settings-back" class="menu-btn back-btn">← Voltar</button>
