@@ -595,7 +595,40 @@ class Projectile {
 }
 
 // ACTOR
-class Actor { constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; this.stunImmune = 0; this.levitateT = 0; this.maxJumpTime = 0.8; this.poisonTimer = 0; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; this.hp -= amt; this.invTimer = 0.5; if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); if (this.hp <= 0 && this instanceof Enemy) { boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); } } updatePhysics(dt) { if (this.stunTimer > 0) { this.stunTimer -= dt; this.vx = 0; this.vy = 0; } let sm = this.slowTimer > 0 ? 0.4 : 1; this.x += this.vx * sm * (dt * 60); this.y += this.vy * sm * (dt * 60); if (this.invTimer > 0) this.invTimer -= dt; if (this.stunImmune > 0) this.stunImmune -= dt; if (this.levitateT > 0) this.levitateT -= dt; if (this.isJumping) { let jMod = (this instanceof Player && this.charType === 13) ? 0.6 : 1.0; this.jumpTimer -= dt * jMod; if (this.jumpTimer <= 0) this.isJumping = false; } if (this.slowTimer > 0) this.slowTimer -= dt; if (this.poisonTimer > 0) { this.poisonTimer -= dt; this.hp -= 0.5 * dt; if (Math.random() < 0.1) boom(this.x, this.y, '#2ecc71', 1); if (this.hp <= 0 && this instanceof Enemy) { boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); this.x = -999; } } this.x = Math.max(WALL + this.radius, Math.min(800 - WALL - this.radius, this.x)); this.y = Math.max(WALL + this.radius, Math.min(600 - WALL - this.radius, this.y)); } }
+class Actor {
+    constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; this.stunImmune = 0; this.levitateT = 0; this.maxJumpTime = 0.8; this.poisonTimer = 0; this.burnTimer = 0; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; this.hp -= amt; this.invTimer = 0.5; if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); if (this.hp <= 0 && this instanceof Enemy) { boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); } } updatePhysics(dt) {
+        if (this.stunTimer > 0) { this.stunTimer -= dt; this.vx = 0; this.vy = 0; }
+        let sm = this.slowTimer > 0 ? 0.45 : 1;
+        this.x += this.vx * sm * (dt * 60); this.y += this.vy * sm * (dt * 60);
+        if (this.invTimer > 0) this.invTimer -= dt;
+        if (this.stunImmune > 0) this.stunImmune -= dt;
+        if (this.levitateT > 0) this.levitateT -= dt;
+        if (this.isJumping) { let jMod = (this instanceof Player && this.charType === 13) ? 0.6 : 1.0; this.jumpTimer -= dt * jMod; if (this.jumpTimer <= 0) this.isJumping = false; }
+        if (this.slowTimer > 0) this.slowTimer -= dt;
+
+        if (this.poisonTimer > 0) {
+            this.poisonTimer -= dt;
+            this.hp -= (this instanceof Player ? 1.0 : 3.0) * dt;
+            if (Math.random() < 0.25) boom(this.x, this.y, '#2ecc71', 1);
+        }
+        if (this.burnTimer > 0) {
+            this.burnTimer -= dt;
+            this.hp -= (this instanceof Player ? 1.8 : 5.5) * dt;
+            if (Math.random() < 0.3) boom(this.x, this.y, '#e67e22', 1);
+        }
+
+        if (this.hp <= 0) {
+            if (this instanceof Enemy) {
+                boom(this.x, this.y, this.color, 15);
+                if (typeof audio !== 'undefined') audio.playHit();
+                this.x = -1000; // Elimina o inimigo movendo-o para fora
+            } else if (this instanceof Player && !flyMode && gameState === 'PLAYING') {
+                triggerGameOver();
+            }
+        }
+        this.x = Math.max(WALL + this.radius, Math.min(800 - WALL - this.radius, this.x)); this.y = Math.max(WALL + this.radius, Math.min(600 - WALL - this.radius, this.y));
+    }
+}
 
 // PLAYER
 class Player extends Actor {
@@ -820,10 +853,29 @@ class Player extends Actor {
         if (this.shieldT > 0) this.shieldT -= dt; if (this.fearT > 0) this.fearT -= dt; if (this.ghostT > 0) this.ghostT -= dt; if (this.weaponCD > 0) this.weaponCD -= dt; if (this.skillCD > 0) this.skillCD -= dt;
         if (this.regenDur > 0) { this.regenDur -= dt; this.regenT -= dt; if (this.regenT <= 0) { this.hp = Math.min(this.maxHp, this.hp + 1); this.regenT = 5; updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
         if (this.hasPermRegen) { this.permRegenT = (this.permRegenT || 0) + dt; if (this.permRegenT >= 20) { this.permRegenT = 0; this.hp = Math.min(this.maxHp, this.hp + 1); updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
-        if (this.burnTimer > 0) { this.burnTimer -= dt; this.burnTick += dt; if (this.burnTick >= 1) { this.burnTick = 0; this.hp -= 0.25; boom(this.x, this.y, '#e74c3c', 5); updateHUD(); if (this.hp <= 0 && !flyMode) triggerGameOver(); } }
         if (mouse.down && this.weaponCD <= 0) this.shoot();
     }
-    draw(c) { if (this.isJumping) { c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.ellipse(this.x, this.y + 20, this.radius, this.radius / 2, 0, 0, Math.PI * 2); c.fill(); } c.fillStyle = (this.invTimer > 0 && Math.floor(this.invTimer * 20) % 2 === 0) ? '#fff' : this.color; let dY = this.y, dR = this.radius; if (this.flyT > 0) { dY -= 30; c.fillStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(this.x, this.y + 15, 12, 6, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = this.color; } else if (this.isJumping) { let jp = Math.sin((1 - this.jumpTimer / this.maxJumpTime) * Math.PI); dY -= jp * 50; dR += jp * 5; } c.beginPath(); c.moveTo(this.x - dR / 2, dY - dR); c.lineTo(this.x - dR / 2, dY - dR - 15); c.lineTo(this.x - dR / 4, dY - dR); c.moveTo(this.x + dR / 2, dY - dR); c.lineTo(this.x + dR / 2, dY - dR - 15); c.lineTo(this.x + dR / 4, dY - dR); c.arc(this.x, dY, dR, 0, Math.PI * 2); c.fill(); if (this.shieldT > 0) { c.strokeStyle = '#48dbfb'; c.lineWidth = 3; c.beginPath(); c.arc(this.x, dY, dR + 8, 0, Math.PI * 2); c.stroke(); } if (this.fearT > 0) { c.strokeStyle = '#833471'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, dR + 5 + Math.sin(Date.now() / 100) * 15, 0, Math.PI * 2); c.stroke(); } let mx = mouse.x - this.x, my = mouse.y - this.y, mg = Math.hypot(mx, my); if (mg > 0) { c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(this.x + (mx / mg) * dR, dY + (my / mg) * dR); c.lineTo(this.x + (mx / mg) * (dR + 20), dY + (my / mg) * (dR + 20)); c.stroke(); } if (this.burnTimer > 0 && Math.random() < 0.3) { c.fillStyle = '#e74c3c'; c.beginPath(); c.arc(this.x + (Math.random() - 0.5) * 15, dY - 15 + (Math.random() - 0.5) * 15, 4, 0, Math.PI * 2); c.fill(); } }
+    draw(c) {
+        if (this.isJumping) { c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.ellipse(this.x, this.y + 20, this.radius, this.radius / 2, 0, 0, Math.PI * 2); c.fill(); }
+        c.fillStyle = (this.invTimer > 0 && Math.floor(this.invTimer * 20) % 2 === 0) ? '#fff' : this.color;
+        let dY = this.y, dR = this.radius;
+        if (this.flyT > 0) { dY -= 30; c.fillStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(this.x, this.y + 15, 12, 6, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = this.color; }
+        else if (this.isJumping) { let jp = Math.sin((1 - this.jumpTimer / this.maxJumpTime) * Math.PI); dY -= jp * 50; dR += jp * 5; }
+
+        if (this.poisonTimer > 0) { c.shadowBlur = 15; c.shadowColor = '#2ecc71'; }
+        else if (this.burnTimer > 0) { c.shadowBlur = 15; c.shadowColor = '#e67e22'; }
+
+        c.beginPath(); c.moveTo(this.x - dR / 2, dY - dR); c.lineTo(this.x - dR / 2, dY - dR - 15); c.lineTo(this.x - dR / 4, dY - dR);
+        c.moveTo(this.x + dR / 2, dY - dR); c.lineTo(this.x + dR / 2, dY - dR - 15); c.lineTo(this.x + dR / 4, dY - dR);
+        c.arc(this.x, dY, dR, 0, Math.PI * 2); c.fill();
+        c.shadowBlur = 0;
+
+        if (this.shieldT > 0) { c.strokeStyle = '#48dbfb'; c.lineWidth = 3; c.beginPath(); c.arc(this.x, dY, dR + 8, 0, Math.PI * 2); c.stroke(); }
+        if (this.fearT > 0) { c.strokeStyle = '#833471'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, dR + 5 + Math.sin(Date.now() / 100) * 15, 0, Math.PI * 2); c.stroke(); }
+        let mx = mouse.x - this.x, my = mouse.y - this.y, mg = Math.hypot(mx, my);
+        if (mg > 0) { c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(this.x + (mx / mg) * dR, dY + (my / mg) * dR); c.lineTo(this.x + (mx / mg) * (dR + 20), dY + (my / mg) * (dR + 20)); c.stroke(); }
+        if (this.burnTimer > 0 && Math.random() < 0.3) { c.fillStyle = '#e74c3c'; c.beginPath(); c.arc(this.x + (Math.random() - 0.5) * 15, dY - 15 + (Math.random() - 0.5) * 15, 4, 0, Math.PI * 2); c.fill(); }
+    }
 }
 
 // ENEMY
@@ -848,22 +900,139 @@ class Enemy extends Actor {
         this.fireCD = 0;
         this.stateT = 0;
         this.tpCD = 0;
+        this.specialCD = 5 + Math.random() * 5;
         if (type === 'boss') {
             this.bossIdx = bossIdx || 0;
             this.bossDef = bd;
         }
     }
-    update(dt) { if (!player) return; let dx = player.x - this.x, dy = player.y - this.y, d = Math.hypot(dx, dy); if (d > 0) { dx /= d; dy /= d; } if (this.type === 'minion') { this.vx = dx * this.speed; this.vy = dy * this.speed; if (player.fearT > 0 && d < 150) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; } else { this.fireCD -= dt; if (this.fireCD <= 0 && d < 300) { projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false)); this.fireCD = 1.5 + Math.random(); } } } else if (this.type === 'miniboss') { this.vx = dx * this.speed; this.vy = dy * this.speed; if (player.fearT > 0 && d < 200) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; } this.fireCD -= dt; if (this.fireCD <= 0) { if (this.mbType === 0) { for (let i = -1; i <= 1; i++) { let a = Math.atan2(dy, dx) + i * 0.3; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, '#ff6348', false)); } this.fireCD = 2; } else if (this.mbType === 1) { for (let i = 0; i < 3; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, dx, dy, 7, 7, '#1dd1a1', false)); }, i * 200); this.fireCD = 2.2; } else { for (let i = 0; i < 8; i++) { let a = (i / 8) * Math.PI * 2 + Date.now() / 1000; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 9, '#5f27cd', false, 'taser')); } this.fireCD = 2.5; } } } else if (this.type === 'boss') { this.stateT += dt; this.fireCD -= dt; this.vx = dx * this.speed; this.vy = dy * this.speed; let pat = this.bossDef.pattern; if (this.fireCD <= 0) { if (pat === 'circle') { let b = 12 + mapLevel * 2; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 10, '#ff4757', false)); } this.fireCD = 1.8; } else if (pat === 'fire') { for (let i = 0; i < 5; i++) { let a = Math.atan2(dy, dx) + (i - 2) * 0.15 + this.stateT * 0.5; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, '#e74c3c', false, 'fire')); } this.fireCD = 1.2; } else if (pat === 'ice') { let b = 8; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2; let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 2.5, 12, '#74b9ff', false, 'ice'); projectiles.push(p); } this.fireCD = 2.5; } else if (pat === 'thunder') { if (this.tpCD <= 0 && Math.random() < 0.3) { this.x = WALL + 60 + Math.random() * (800 - WALL * 2 - 120); this.y = WALL + 60 + Math.random() * (600 - WALL * 2 - 120); boom(this.x, this.y, '#f1c40f', 15); this.tpCD = 3; } let a = Math.atan2(dy, dx); for (let i = 0; i < 3; i++)projectiles.push(new Projectile(this.x, this.y, Math.cos(a + i * 0.1), Math.sin(a + i * 0.1), 8, 5, '#f1c40f', false, 'taser')); this.fireCD = 0.8; } else if (pat === 'shadow') { if (Math.random() < 0.4 && enemies.length < 8) { enemies.push(new Enemy(this.x + 50, this.y, 'minion')); enemies.push(new Enemy(this.x - 50, this.y, 'minion')); } let a = Math.atan2(dy, dx); projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 15, '#636e72', false)); this.fireCD = 1.5; } else if (pat === 'wind') { let a = Math.atan2(dy, dx); for (let i = 0; i < 3; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 12, 4, '#ecf0f1', false)); }, i * 100); this.fireCD = 1.0; } else if (pat === 'toxic') { for (let i = 0; i < 6; i++) { let a = (i / 6) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 2, 8, '#55efc4', false, 'ice')); } this.fireCD = 2.0; } else if (pat === 'gravity') { if (d < 300) { player.x -= dx * 2; player.y -= dy * 2; } for (let i = 0; i < 4; i++) { let a = (i / 4) * Math.PI * 2 - this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#6c5ce7', false)); } this.fireCD = 1.5; } else if (pat === 'final_meteor') { if (this.shieldTimer === undefined) { this.shieldTimer = 5; this.meteorSeq = 0; this.atkState = 0; } this.shieldTimer -= dt; if (this.shieldTimer <= 0) { let a = Math.atan2(dy, dx); icebergs.push(new Iceberg(this.x + Math.cos(a) * 80, this.y + Math.sin(a) * 80, 'rock')); this.shieldTimer = 25; boom(this.x + Math.cos(a) * 80, this.y + Math.sin(a) * 80, '#7f8fa6', 15); } if (this.fireCD <= 0) { if (this.atkState === 0) { let b = 16; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#d35400', false, 'hellfire')); } this.meteorSeq++; this.fireCD = 0.6; if (this.meteorSeq >= 3) { this.atkState = 1; this.meteorSeq = 0; this.fireCD = 2.5; } } else if (this.atkState === 1) { for (let i = 0; i < 8; i++) { let tx = player.x + (Math.random() - 0.5) * 350; let ty = player.y + (Math.random() - 0.5) * 350; warnings.push(new Warning(tx, ty, 60, 2.0 + Math.random(), 'meteor')); } this.atkState = 0; this.fireCD = 4.0; } } } } if (this.tpCD > 0) this.tpCD -= dt; bossHealthBar.style.width = (this.hp / this.maxHp) * 100 + '%'; } this.updatePhysics(dt); }
+    update(dt) {
+        if (!player) return;
+        let dx = player.x - this.x, dy = player.y - this.y, d = Math.hypot(dx, dy);
+        if (d > 0) { dx /= d; dy /= d; }
+
+        this.specialCD -= dt;
+
+        if (this.type === 'minion') {
+            this.vx = dx * this.speed; this.vy = dy * this.speed;
+            if (player.fearT > 0 && d < 150) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
+            else {
+                this.fireCD -= dt;
+                if (this.fireCD <= 0 && d < 300) { projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false)); this.fireCD = 1.5 + Math.random(); }
+            }
+        } else if (this.type === 'miniboss') {
+            this.vx = dx * this.speed; this.vy = dy * this.speed;
+            if (this.specialCD <= 0) {
+                // ATAQUE ESPECIAL MINIBOSS: Dash Agressivo Elemental
+                this.vx = dx * this.speed * 4.5;
+                this.vy = dy * this.speed * 4.5;
+                boom(this.x, this.y, this.color, 15);
+                let pType = ['fire', 'poison', 'taser'][this.mbType];
+                for (let i = 0; i < 3; i++) {
+                    let a = Math.atan2(dy, dx) + (i - 1) * 0.4;
+                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 8, this.color, false, pType));
+                }
+                if (this.specialCD < -0.8) this.specialCD = 7 + Math.random() * 4;
+            }
+            if (player.fearT > 0 && d < 200) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
+            this.fireCD -= dt;
+            if (this.fireCD <= 0) {
+                if (this.mbType === 0) { for (let i = -1; i <= 1; i++) { let a = Math.atan2(dy, dx) + i * 0.3; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, '#ff6348', false, 'fire')); } this.fireCD = 2; }
+                else if (this.mbType === 1) { for (let i = 0; i < 3; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, dx, dy, 7, 7, '#1dd1a1', false, 'poison')); }, i * 200); this.fireCD = 2.2; }
+                else { for (let i = 0; i < 8; i++) { let a = (i / 8) * Math.PI * 2 + Date.now() / 1000; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 9, '#5f27cd', false, 'taser')); } this.fireCD = 2.5; }
+            }
+        } else if (this.type === 'boss') {
+            this.stateT += dt; this.fireCD -= dt;
+            this.vx = dx * this.speed; this.vy = dy * this.speed;
+            let pat = this.bossDef.pattern;
+
+            if (this.specialCD <= 0) {
+                // ATAQUE ESPECIAL BOSS BASEADO NO ELEMENTO
+                shake(0.4, 15);
+                if (pat === 'fire') {
+                    for (let i = 0; i < 30; i++) {
+                        let a = (i / 30) * Math.PI * 2;
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 12, '#e67e22', false, 'fire'));
+                    }
+                } else if (pat === 'ice') {
+                    for (let i = 0; i < 4; i++) {
+                        let tx = player.x + (Math.random() - 0.5) * 100, ty = player.y + (Math.random() - 0.5) * 100;
+                        icebergs.push(new Iceberg(tx, ty, 'ice'));
+                    }
+                    for (let i = 0; i < 16; i++) {
+                        let a = (i / 16) * Math.PI * 2;
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 10, '#74b9ff', false, 'ice'));
+                    }
+                } else if (pat === 'thunder') {
+                    for (let i = 0; i < 5; i++) {
+                        setTimeout(() => {
+                            if (this.hp > 0) {
+                                this.x = player.x + (Math.random() - 0.5) * 200;
+                                this.y = player.y + (Math.random() - 0.5) * 200;
+                                boom(this.x, this.y, '#f1c40f', 20);
+                                projectiles.push(new Projectile(this.x, this.y, 0, 1, 0.1, 80, 'rgba(241, 196, 15, 0.3)', false, 'taser'));
+                            }
+                        }, i * 300);
+                    }
+                } else if (pat === 'toxic') {
+                    for (let i = 0; i < 10; i++) {
+                        let tx = Math.random() * 800, ty = Math.random() * 600;
+                        warnings.push(new Warning(tx, ty, 80, 1.5, 'meteor')); // Usar aviso de área para chuva tóxica
+                        setTimeout(() => {
+                            for (let j = 0; j < 8; j++) {
+                                let a = (j / 8) * Math.PI * 2;
+                                projectiles.push(new Projectile(tx, ty, Math.cos(a), Math.sin(a), 2, 7, '#55efc4', false, 'poison'));
+                            }
+                        }, 1500);
+                    }
+                } else {
+                    // Explosão genérica para os outros
+                    for (let i = 0; i < 24; i++) {
+                        let a = (i / 24) * Math.PI * 2;
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 12, this.bossDef.eyeColor, false));
+                    }
+                }
+                this.specialCD = 12 + Math.random() * 6;
+            }
+
+            if (this.fireCD <= 0) {
+                if (pat === 'circle') { let b = 12 + mapLevel * 2; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 10, '#ff4757', false, 'fire')); } this.fireCD = 1.8; }
+                else if (pat === 'fire') { for (let i = 0; i < 5; i++) { let a = Math.atan2(dy, dx) + (i - 2) * 0.15 + this.stateT * 0.5; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, '#e74c3c', false, 'fire')); } this.fireCD = 1.2; }
+                else if (pat === 'ice') { let b = 8; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2; let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 2.5, 12, '#74b9ff', false, 'ice'); projectiles.push(p); } this.fireCD = 2.5; }
+                else if (pat === 'thunder') { if (this.tpCD <= 0 && Math.random() < 0.3) { this.x = WALL + 60 + Math.random() * (800 - WALL * 2 - 120); this.y = WALL + 60 + Math.random() * (600 - WALL * 2 - 120); boom(this.x, this.y, '#f1c40f', 15); this.tpCD = 3; } let a = Math.atan2(dy, dx); for (let i = 0; i < 3; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a + i * 0.1), Math.sin(a + i * 0.1), 8, 5, '#f1c40f', false, 'taser')); this.fireCD = 0.8; }
+                else if (pat === 'shadow') { if (Math.random() < 0.4 && enemies.length < 8) { enemies.push(new Enemy(this.x + 50, this.y, 'minion')); enemies.push(new Enemy(this.x - 50, this.y, 'minion')); } let a = Math.atan2(dy, dx); projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 15, '#636e72', false, 'poison')); this.fireCD = 1.5; }
+                else if (pat === 'wind') { let a = Math.atan2(dy, dx); for (let i = 0; i < 3; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 12, 4, '#ecf0f1', false, 'ice')); }, i * 100); this.fireCD = 1.0; }
+                else if (pat === 'toxic') { for (let i = 0; i < 6; i++) { let a = (i / 6) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 2, 8, '#55efc4', false, 'poison')); } this.fireCD = 2.0; }
+                else if (pat === 'gravity') { if (d < 300) { player.x -= dx * 2; player.y -= dy * 2; } for (let i = 0; i < 4; i++) { let a = (i / 4) * Math.PI * 2 - this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#6c5ce7', false, 'ice')); } this.fireCD = 1.5; }
+                else if (pat === 'final_meteor') {
+                    if (this.shieldTimer === undefined) { this.shieldTimer = 5; this.meteorSeq = 0; this.atkState = 0; }
+                    this.shieldTimer -= dt;
+                    if (this.shieldTimer <= 0) { let a = Math.atan2(dy, dx); icebergs.push(new Iceberg(this.x + Math.cos(a) * 80, this.y + Math.sin(a) * 80, 'rock')); this.shieldTimer = 25; boom(this.x + Math.cos(a) * 80, this.y + Math.sin(a) * 80, '#7f8fa6', 15); }
+                    if (this.fireCD <= 0) {
+                        if (this.atkState === 0) {
+                            let b = 16; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#d35400', false, 'hellfire')); }
+                            this.meteorSeq++; this.fireCD = 0.6; if (this.meteorSeq >= 3) { this.atkState = 1; this.meteorSeq = 0; this.fireCD = 2.5; }
+                        } else if (this.atkState === 1) {
+                            for (let i = 0; i < 8; i++) { let tx = player.x + (Math.random() - 0.5) * 350; let ty = player.y + (Math.random() - 0.5) * 350; warnings.push(new Warning(tx, ty, 60, 2.0 + Math.random(), 'meteor')); }
+                            this.atkState = 0; this.fireCD = 4.0;
+                        }
+                    }
+                }
+            }
+            if (this.tpCD > 0) this.tpCD -= dt;
+            bossHealthBar.style.width = (this.hp / this.maxHp) * 100 + '%';
+        }
+        this.updatePhysics(dt);
+    }
     draw(c) {
         c.fillStyle = (this.invTimer > 0) ? '#fff' : this.color;
         if (this.stunTimer > 0) { c.fillStyle = '#f1c40f'; }
+        if (this.poisonTimer > 0) { c.shadowBlur = 10; c.shadowColor = '#2ecc71'; }
+        else if (this.burnTimer > 0) { c.shadowBlur = 10; c.shadowColor = '#e67e22'; }
+
         let dY = this.y;
-        if (this.levitateT > 0) {
-            dY -= 20 + Math.sin(Date.now() / 150) * 10;
-        }
-        if (this.slowTimer > 0) {
-            c.strokeStyle = '#74b9ff'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, this.radius + 5, 0, Math.PI * 2); c.stroke();
-        }
+        if (this.levitateT > 0) { dY -= 20 + Math.sin(Date.now() / 150) * 10; }
+        if (this.slowTimer > 0) { c.strokeStyle = '#74b9ff'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, this.radius + 5, 0, Math.PI * 2); c.stroke(); }
         c.beginPath();
         if (this.type === 'boss') {
             let sp = 8;
@@ -879,17 +1048,12 @@ class Enemy extends Actor {
             c.fillStyle = '#fff'; c.beginPath(); c.arc(this.x - 5, dY - 3, 2, 0, Math.PI * 2); c.arc(this.x + 5, dY - 3, 2, 0, Math.PI * 2); c.fill(); // Olhos
             c.strokeStyle = '#2f3542'; c.lineWidth = 2; c.beginPath(); c.moveTo(this.x - this.radius, dY); c.lineTo(this.x - this.radius - 8, dY - 15); c.lineTo(this.x - this.radius + 5, dY - 8); c.moveTo(this.x + this.radius, dY); c.lineTo(this.x + this.radius + 8, dY - 15); c.lineTo(this.x + this.radius - 5, dY - 8); c.stroke(); // Orelhas
         }
+        c.shadowBlur = 0;
         if (this.levitateT > 0) {
-            c.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            c.lineWidth = 2;
-            c.beginPath();
-            c.arc(this.x, dY, this.radius + 6, 0, Math.PI * 2);
-            c.stroke();
+            c.strokeStyle = 'rgba(255, 255, 255, 0.4)'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, this.radius + 6, 0, Math.PI * 2); c.stroke();
             let grad = c.createRadialGradient(this.x - 5, dY - 5, 0, this.x, dY, this.radius + 6);
-            grad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-            grad.addColorStop(1, 'rgba(224, 86, 253, 0.1)');
-            c.fillStyle = grad;
-            c.fill();
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.3)'); grad.addColorStop(1, 'rgba(224, 86, 253, 0.1)');
+            c.fillStyle = grad; c.fill();
         }
     }
 }
@@ -989,7 +1153,7 @@ class RoomSystem {
         else if (this.type === 'exit') {
             roomCounter.innerText = 'Saída - Próx Andar'; roomCounter.style.color = '#9b59b6'; this.isCleared = true;
             if (!rd.looted && !rd.exitLocked) { pickups.push(new Pickup(cx, cy, 'exit', 0)); rd.looted = true; }
-            else if (rd.exitLocked) { roomCounter.innerText = '🔒 Saída Trancada — Derrote o Boss!'; roomCounter.style.color = '#ff4757'; this.isCleared = false; }
+            else if (rd.exitLocked) { roomCounter.innerText = '🔒 Saída Trancada — Derrote o Boss!'; roomCounter.style.color = '#ff4757'; }
         }
         else if (this.type === 'treasure') {
             roomCounter.innerText = 'Sala do Tesouro'; roomCounter.style.color = '#f1c40f'; this.isCleared = true;
@@ -1493,7 +1657,7 @@ function checkCollisions() {
                 if (dist(p.x, p.y, e.x, e.y) < p.radius + e.radius) {
                     if (p.hitIds) p.hitIds.add(e);
                     e.takeDamage(p.damage);
-                    if (p.weaponType === 'fire') { e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); }
+                    if (p.weaponType === 'fire') { e.burnTimer = 3.5; e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); }
                     if (p.weaponType === 'taser') {
                         if (e.stunTimer <= 0 && e.stunImmune <= 0) {
                             e.stunTimer = (e.type === 'boss') ? 0.2 : 1.5;
@@ -1577,6 +1741,9 @@ function checkCollisions() {
                 if (dist(p.x, p.y, player.x, player.y) < p.radius + player.radius * 0.8) {
                     if (currentRoom.type === 'boss' && !(p.radius === 6 && p.color === '#ff4757' && p.weaponType === 'normal')) takenBossDamage = true;
                     if (p.weaponType === 'ice') player.slowTimer = 2.5;
+                    else if (p.weaponType === 'fire') player.burnTimer = 4;
+                    else if (p.weaponType === 'poison') player.poisonTimer = 4.0;
+                    else if (p.weaponType === 'taser') player.stunTimer = 0.8;
                     else if (p.weaponType === 'hellfire') player.burnTimer = 8;
                     player.takeDamage(p.damage + (mapLevel - 1) * 0.55);
                     p.active = false;
