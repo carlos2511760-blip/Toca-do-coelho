@@ -651,7 +651,7 @@ class Player extends Actor {
         else if (ct === 12) { hp = 6; spd = 3.2; col = '#10ac84'; } // Druida
         else if (ct === 13) { hp = 4; spd = 4.0; col = '#54a0ff'; } // Astronauta
         else if (ct === 14) { hp = 6; spd = 3.8; col = '#ee5253'; } // Pirata
-        else if (ct === 15) { hp = 7; spd = 4.5; col = '#ff9f43'; } // Viking
+        else if (ct === 15) { hp = 8; spd = 4.8; col = '#ff9f43'; } // Viking
         else if (ct === 16) { hp = 6; spd = 4.0; col = '#576574'; } // Ciborgue
         else if (ct === 17) { hp = 5; spd = 3.5; col = '#feca57'; } // Zen
         else if (ct === 18) { hp = 5; spd = 4.0; col = '#57606f'; } // Mineiro
@@ -718,7 +718,38 @@ class Player extends Actor {
         else if (this.charType === 12 && this.rootCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 180) e.stunTimer = 2; }); this.rootCD = 10; boom(this.x, this.y, '#10ac84', 30); }
         else if (this.charType === 13 && this.jetCD <= 0) { this.flyT = 6.0; this.jetCD = 12; boom(this.x, this.y, '#54a0ff', 15); }
         else if (this.charType === 14 && this.cannonCD <= 0) { for (let i = 0; i < 5; i++) { let tx = this.x + (Math.random() - 0.5) * 400, ty = this.y + (Math.random() - 0.5) * 400; warnings.push(new Warning(tx, ty, 60, 0.5, 'meteor', true)); } this.cannonCD = 8; }
-        else if (this.charType === 15 && this.roarCD <= 0) { this.dmgMult *= 1.5; setTimeout(() => this.dmgMult /= 1.5, 8000); this.roarCD = 15; boom(this.x, this.y, '#ff9f43', 40); }
+        else if (this.charType === 15 && this.roarCD <= 0) {
+            // GRITO DE GUERRA: AoE knockback + dano + buff de dano
+            let hitCount = 0;
+            enemies.forEach(e => {
+                if (dist(this.x, this.y, e.x, e.y) < 180) {
+                    e.takeDamage(7 * this.dmgMult);
+                    let edx = e.x - this.x, edy = e.y - this.y, emg = Math.hypot(edx, edy) || 1;
+                    e.x += (edx / emg) * 80;
+                    e.y += (edy / emg) * 80;
+                    if (e.type !== 'boss' && e.stunImmune <= 0) {
+                        e.stunTimer = 1.2;
+                        e.stunImmune = 3;
+                    }
+                    boom(e.x, e.y, '#ff9f43', 8);
+                    hitCount++;
+                }
+            });
+            // Buff: 2x dano por 6s
+            this.dmgMult *= 2;
+            this.invTimer = 0.5;
+            setTimeout(() => { if (this.dmgMult > 1) this.dmgMult /= 2; }, 6000);
+            this.roarCD = 10;
+            shake(0.3, 10);
+            boom(this.x, this.y, '#ff9f43', 45);
+            boom(this.x, this.y, '#e17055', 35);
+            // Curar 1 HP se acertar 3+ inimigos
+            if (hitCount >= 3) {
+                this.hp = Math.min(this.maxHp, this.hp + 1);
+                updateHUD();
+                boom(this.x, this.y, '#2ed573', 10);
+            }
+        }
         else if (this.charType === 16 && this.laserCD <= 0) {
             let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1;
             let pb = new Projectile(this.x, this.y, dx / d, dy / d, 8.5, 15, '#00d2d3', true, 'cyborg_emp_ball');
@@ -842,7 +873,15 @@ class Player extends Actor {
         if (keys['KeyA']) dx--; if (keys['KeyD']) dx++;
         if (joystickActive) { dx = joystickPos.x; dy = joystickPos.y; }
         else if (dx && dy) { let l = Math.hypot(dx, dy); dx /= l; dy /= l; }
-        this.vx = dx * this.speed; this.vy = dy * this.speed;
+        let spdMod = this.speed;
+        // Viking Fúria de Combate: abaixo de 50% HP = +40% speed, +25% dano
+        if (this.charType === 15 && this.hp <= this.maxHp * 0.5) {
+            spdMod *= 1.4;
+            if (!this._vikingRage) { this._vikingRage = true; this.dmgMult *= 1.25; }
+        } else if (this.charType === 15 && this._vikingRage) {
+            this._vikingRage = false; this.dmgMult /= 1.25;
+        }
+        this.vx = dx * spdMod; this.vy = dy * spdMod;
         if (this.flyT > 0 && !flyMode) { this.isJumping = false; this.flyT -= dt; }
         else if (flyMode) this.isJumping = false;
         this.updatePhysics(dt);
@@ -872,6 +911,21 @@ class Player extends Actor {
 
         if (this.shieldT > 0) { c.strokeStyle = '#48dbfb'; c.lineWidth = 3; c.beginPath(); c.arc(this.x, dY, dR + 8, 0, Math.PI * 2); c.stroke(); }
         if (this.fearT > 0) { c.strokeStyle = '#833471'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, dR + 5 + Math.sin(Date.now() / 100) * 15, 0, Math.PI * 2); c.stroke(); }
+        // Viking Fúria visual
+        if (this.charType === 15 && this._vikingRage) {
+            c.strokeStyle = '#e17055'; c.lineWidth = 3;
+            c.beginPath(); c.arc(this.x, dY, dR + 4 + Math.sin(Date.now() / 80) * 3, 0, Math.PI * 2); c.stroke();
+            c.strokeStyle = '#ff9f43'; c.lineWidth = 1;
+            c.beginPath(); c.arc(this.x, dY, dR + 8 + Math.sin(Date.now() / 120) * 5, 0, Math.PI * 2); c.stroke();
+            if (Math.random() < 0.2) { c.fillStyle = '#e17055'; c.beginPath(); c.arc(this.x + (Math.random() - 0.5) * 20, dY - 10 + (Math.random() - 0.5) * 20, 3, 0, Math.PI * 2); c.fill(); }
+        }
+        // Buff visual do Grito de Guerra (dmgMult alto)
+        if (this.charType === 15 && this.dmgMult >= 2) {
+            c.shadowBlur = 20; c.shadowColor = '#ff9f43';
+            c.strokeStyle = 'rgba(255, 159, 67, 0.6)'; c.lineWidth = 2;
+            c.beginPath(); c.arc(this.x, dY, dR + 12 + Math.sin(Date.now() / 150) * 4, 0, Math.PI * 2); c.stroke();
+            c.shadowBlur = 0;
+        }
         let mx = mouse.x - this.x, my = mouse.y - this.y, mg = Math.hypot(mx, my);
         if (mg > 0) { c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(this.x + (mx / mg) * dR, dY + (my / mg) * dR); c.lineTo(this.x + (mx / mg) * (dR + 20), dY + (my / mg) * (dR + 20)); c.stroke(); }
         if (this.burnTimer > 0 && Math.random() < 0.3) { c.fillStyle = '#e74c3c'; c.beginPath(); c.arc(this.x + (Math.random() - 0.5) * 15, dY - 15 + (Math.random() - 0.5) * 15, 4, 0, Math.PI * 2); c.fill(); }
