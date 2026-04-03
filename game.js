@@ -536,7 +536,7 @@ class Warning {
             if (this.isPlayerObj) {
                 enemies.forEach(e => {
                     if (dist(e.x, e.y, this.x, this.y) < this.radius + e.radius) {
-                        e.takeDamage(15 * (player ? player.dmgMult : 1));
+                        e.takeDamage(10 * (player ? player.dmgMult : 1));
                         e.stunTimer = 1.0;
                     }
                 });
@@ -703,7 +703,7 @@ class Player extends Actor {
         else if (this.charType === 3 && this.fearCD <= 0) { this.fearT = 4.5; this.fearCD = 8; boom(this.x, this.y, '#833471', 30); }
         else if (this.charType === 4 && this.ghostCD <= 0) { this.ghostT = 4.5; this.invTimer = 4.5; this.ghostCD = 8; boom(this.x, this.y, '#7f8fa6', 20); }
         else if (this.charType === 5 && this.magicCD <= 0) { for (let i = 0; i < 12; i++) { let a = (i / 12) * Math.PI * 2; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 8, '#74b9ff', true, 'ice')); } this.magicCD = 10; boom(this.x, this.y, '#2980b9', 30); }
-        else if (this.charType === 6 && this.toxicCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 150) { e.takeDamage(10 * this.dmgMult); e.slowTimer = (e.type === 'boss') ? 1 : 3; } }); this.toxicCD = 8; boom(this.x, this.y, '#2ecc71', 40); }
+        else if (this.charType === 6 && this.toxicCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 150) { e.takeDamage(6 * this.dmgMult); e.poisonTimer = 3; e.slowTimer = (e.type === 'boss') ? 1 : 3; } }); this.toxicCD = 8; boom(this.x, this.y, '#2ecc71', 40); }
         else if (this.charType === 7 && this.empCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.stunTimer = (e.type === 'boss') ? 0.5 : 3; e.takeDamage(5 * this.dmgMult); } }); this.empCD = 12; boom(this.x, this.y, '#f1c40f', 50); }
         else if (this.charType === 8 && this.fireCD <= 0) { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; for (let i = -2; i <= 2; i++) { let a = Math.atan2(dy, dx) + i * 0.15; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 8, 10, '#e74c3c', true, 'fire')); } this.fireCD = 6; boom(this.x, this.y, '#d35400', 30); }
         else if (this.charType === 9 && this.luckCD <= 0) { pickups.push(new Pickup(this.x + 30, this.y, 'gold', Math.floor(Math.random() * 20) + 5)); this.luckCD = 15; boom(this.x, this.y, '#f368e0', 15); }
@@ -721,18 +721,18 @@ class Player extends Actor {
         else if (this.charType === 15 && this.roarCD <= 0) { this.dmgMult *= 1.5; setTimeout(() => this.dmgMult /= 1.5, 8000); this.roarCD = 15; boom(this.x, this.y, '#ff9f43', 40); }
         else if (this.charType === 16 && this.laserCD <= 0) {
             let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1;
-            let pb = new Projectile(this.x, this.y, dx / d, dy / d, 8.5, 18, '#00d2d3', true, 'cyborg_emp_ball');
-            pb.damage = 18;
+            let pb = new Projectile(this.x, this.y, dx / d, dy / d, 8.5, 15, '#00d2d3', true, 'cyborg_emp_ball');
+            pb.damage = 8;
             projectiles.push(pb);
-            this.laserCD = 5.5;
+            this.laserCD = 7;
             boom(this.x, this.y, '#0984e3', 25);
         }
         else if (this.charType === 17 && this.medCD <= 0) { this.hp = Math.min(this.maxHp, this.hp + 2); updateHUD(); this.medCD = 20; boom(this.x, this.y, '#feca57', 30); }
         else if (this.charType === 18 && this.tntCD <= 0) { warnings.push(new Warning(this.x, this.y, 120, 1.0, 'meteor', true)); this.tntCD = 6; }
-        else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { e.takeDamage(8); e.stunTimer = 1; }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); }
+        else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.takeDamage(6 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.3 : 0.8; } }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); flashT = 0.3; }
         else if (this.charType === 20 && this.dimCD <= 0) {
             enemies.forEach(e => {
-                let dmg = e.maxHp / 2;
+                let dmg = Math.min(e.maxHp * 0.25, 30);
                 e.takeDamage(dmg);
                 boom(e.x, e.y, '#f5f6fa', 15);
             });
@@ -1676,32 +1676,32 @@ function checkCollisions() {
                     if (p.weaponType === 'ice') e.slowTimer = (e.type === 'boss') ? 1.0 : 3.0;
                     if (p.weaponType === 'poison') e.poisonTimer = 4.0;
                     if (p.weaponType === 'cyborg_emp_ball') {
-                        // Explosão EMP em área GIGANTE - respeita imunidade a stun
+                        // Explosão EMP em área - dano moderado, stun forte
                         enemies.forEach(ae => {
-                            if (dist(p.x, p.y, ae.x, ae.y) < 200) {
-                                ae.takeDamage(p.damage * 0.7);
+                            if (ae !== e && dist(p.x, p.y, ae.x, ae.y) < 160) {
+                                ae.takeDamage(p.damage * 0.35);
                                 if (ae.stunImmune <= 0) {
-                                    ae.stunTimer = (ae.type === 'boss') ? 0.4 : 1.5;
+                                    ae.stunTimer = (ae.type === 'boss') ? 0.3 : 1.2;
                                     ae.stunImmune = (ae.type === 'boss') ? 3.0 : 5.0;
                                 }
-                                boom(ae.x, ae.y, '#74b9ff', 8);
+                                boom(ae.x, ae.y, '#74b9ff', 6);
                             }
                         });
                         if (e.stunImmune <= 0) {
-                            e.stunTimer = (e.type === 'boss') ? 0.5 : 2.0;
+                            e.stunTimer = (e.type === 'boss') ? 0.5 : 1.8;
                             e.stunImmune = (e.type === 'boss') ? 3.0 : 5.0;
                         }
-                        boom(p.x, p.y, '#00d2d3', 50);
+                        boom(p.x, p.y, '#00d2d3', 35);
                     }
                     else if (player.charType === 16) {
                         e.slowTimer = Math.min(e.slowTimer + 1.5, 3.0);
                         enemies.forEach(other_e => {
-                            if (other_e !== e && dist(e.x, e.y, other_e.x, other_e.y) < 240) {
-                                other_e.takeDamage(p.damage * 0.65);
-                                other_e.slowTimer = Math.min(other_e.slowTimer + 1.5, 3.0);
-                                boom(other_e.x, other_e.y, '#00d2d3', 10);
+                            if (other_e !== e && dist(e.x, e.y, other_e.x, other_e.y) < 180) {
+                                other_e.takeDamage(p.damage * 0.3);
+                                other_e.slowTimer = Math.min(other_e.slowTimer + 1.0, 2.5);
+                                boom(other_e.x, other_e.y, '#00d2d3', 6);
                                 let ds = dist(e.x, e.y, other_e.x, other_e.y);
-                                let steps = Math.max(5, Math.floor(ds / 10));
+                                let steps = Math.max(3, Math.floor(ds / 20));
                                 for (let step = 1; step < steps; step++) {
                                     particles.push(new Particle(e.x + (other_e.x - e.x) * (step / steps), e.y + (other_e.y - e.y) * (step / steps), '#48dbfb', 3, 10, 20));
                                 }
