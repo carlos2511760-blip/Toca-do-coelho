@@ -923,16 +923,20 @@ class Enemy extends Actor {
         } else if (this.type === 'miniboss') {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
             if (this.specialCD <= 0) {
-                // ATAQUE ESPECIAL MINIBOSS: Dash Agressivo Elemental
-                this.vx = dx * this.speed * 4.5;
-                this.vy = dy * this.speed * 4.5;
-                boom(this.x, this.y, this.color, 15);
+                // ATAQUE ESPECIAL MINIBOSS: Dash Agressivo Elemental (dispara uma vez)
+                let dashDx = dx * this.speed * 5;
+                let dashDy = dy * this.speed * 5;
+                this.vx = dashDx;
+                this.vy = dashDy;
+                boom(this.x, this.y, this.color, 18);
+                shake(0.15, 5);
                 let pType = ['fire', 'poison', 'taser'][this.mbType];
+                let pColor = ['#ff6348', '#1dd1a1', '#f1c40f'][this.mbType];
                 for (let i = 0; i < 3; i++) {
-                    let a = Math.atan2(dy, dx) + (i - 1) * 0.4;
-                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 8, this.color, false, pType));
+                    let a = Math.atan2(dy, dx) + (i - 1) * 0.35;
+                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, pColor, false, pType));
                 }
-                if (this.specialCD < -0.8) this.specialCD = 7 + Math.random() * 4;
+                this.specialCD = 6 + Math.random() * 4;
             }
             if (player.fearT > 0 && d < 200) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
             this.fireCD -= dt;
@@ -966,9 +970,11 @@ class Enemy extends Actor {
                 } else if (pat === 'thunder') {
                     for (let i = 0; i < 5; i++) {
                         setTimeout(() => {
-                            if (this.hp > 0) {
+                            if (this.hp > 0 && player && gameState === 'PLAYING') {
                                 this.x = player.x + (Math.random() - 0.5) * 200;
                                 this.y = player.y + (Math.random() - 0.5) * 200;
+                                this.x = Math.max(WALL + 20, Math.min(800 - WALL - 20, this.x));
+                                this.y = Math.max(WALL + 20, Math.min(600 - WALL - 20, this.y));
                                 boom(this.x, this.y, '#f1c40f', 20);
                                 projectiles.push(new Projectile(this.x, this.y, 0, 1, 0.1, 80, 'rgba(241, 196, 15, 0.3)', false, 'taser'));
                             }
@@ -976,12 +982,15 @@ class Enemy extends Actor {
                     }
                 } else if (pat === 'toxic') {
                     for (let i = 0; i < 10; i++) {
-                        let tx = Math.random() * 800, ty = Math.random() * 600;
-                        warnings.push(new Warning(tx, ty, 80, 1.5, 'meteor')); // Usar aviso de área para chuva tóxica
+                        let tx = WALL + 60 + Math.random() * (800 - WALL * 2 - 120);
+                        let ty = WALL + 60 + Math.random() * (600 - WALL * 2 - 120);
+                        warnings.push(new Warning(tx, ty, 80, 1.5, 'meteor', false));
                         setTimeout(() => {
-                            for (let j = 0; j < 8; j++) {
-                                let a = (j / 8) * Math.PI * 2;
-                                projectiles.push(new Projectile(tx, ty, Math.cos(a), Math.sin(a), 2, 7, '#55efc4', false, 'poison'));
+                            if (gameState === 'PLAYING') {
+                                for (let j = 0; j < 8; j++) {
+                                    let a = (j / 8) * Math.PI * 2;
+                                    projectiles.push(new Projectile(tx, ty, Math.cos(a), Math.sin(a), 2, 7, '#55efc4', false, 'poison'));
+                                }
                             }
                         }, 1500);
                     }
