@@ -65,6 +65,19 @@ let flashT = 0;
 let joystickPos = { x: 0, y: 0 }, joystickActive = false;
 let gamepadActive = false;
 
+// CUSTOM KEY BINDINGS
+const DEFAULT_BINDINGS = { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', ability: 'KeyQ', skill: 'KeyE', map: 'KeyM' };
+let keyBindings = Object.assign({}, DEFAULT_BINDINGS);
+try { let saved = JSON.parse(localStorage.getItem('toca_keybinds')); if (saved) keyBindings = Object.assign({}, DEFAULT_BINDINGS, saved); } catch(e){}
+function saveBindings() { localStorage.setItem('toca_keybinds', JSON.stringify(keyBindings)); }
+function keyLabel(code) {
+    if (code === 'Space') return 'Espaço';
+    if (code.startsWith('Key')) return code.replace('Key','');
+    if (code.startsWith('Digit')) return code.replace('Digit','');
+    if (code.startsWith('Arrow')) return '↑↓←→'[['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(code)] || code.replace('Arrow','');
+    return code.replace('Shift','Shift ').replace('Control','Ctrl');
+}
+
 // DIFFICULTY MODIFIERS
 const DIFF_MODS = {
     easy: { hpBonus: 3, enemyHpMult: 0.7, enemySpdMult: 0.85, enemyDmgMult: 0.7, label: '🌿 Fácil', rewardMult: 0.7 },
@@ -450,36 +463,64 @@ document.getElementById('set-colorblind').addEventListener('change', function ()
     else if (v === 'tritanopia') gc.style.filter = 'saturate(0.8) hue-rotate(60deg)';
 });
 
-// CHEATS
+// CHEATS — toggle único
 document.getElementById('btn-cheat-unlock').addEventListener('click', function () {
     const list = document.getElementById('cheats-list');
     const isLocked = list.classList.toggle('locked');
-    this.innerText = isLocked ? 'Ativar' : 'Desativar';
-    this.classList.toggle('on', !isLocked);
+    const activating = !isLocked;
+    this.innerText = activating ? 'Desativar' : 'Ativar';
+    this.classList.toggle('on', activating);
 
-    // Habilitar/Desabilitar botões internos
-    const btns = list.querySelectorAll('button');
-    btns.forEach(b => b.disabled = isLocked);
-});
-
-document.getElementById('btn-cheat-bright').addEventListener('click', function () {
-    fullBright = !fullBright;
-    cheatsUsed = true;
-    this.innerText = fullBright ? 'Ligado' : 'Ativar';
-    this.classList.toggle('on', fullBright);
-});
-document.getElementById('btn-cheat-fly').addEventListener('click', function () {
-    flyMode = !flyMode;
-    cheatsUsed = true;
-    this.innerText = flyMode ? 'Ligado' : 'Ativar';
-    this.classList.toggle('on', flyMode);
-});
-document.getElementById('btn-cheat-gold').addEventListener('click', () => {
-    if (player) {
-        player.gold += 999;
+    // Ativa/desativa TUDO de uma vez
+    cheatsUsed = cheatsUsed || activating;
+    fullBright = activating;
+    flyMode = activating;
+    if (activating && player) {
+        player.gold = 999999;
         goldCounter.innerText = player.gold;
-        cheatsUsed = true;
+        player.hp = player.maxHp;
+        updateHUD();
     }
+});
+
+// ===== KEYBIND SYSTEM =====
+let _rebindingBtn = null;
+function refreshKeybindUI() {
+    document.querySelectorAll('.keybind-btn').forEach(btn => {
+        const action = btn.dataset.action;
+        btn.innerText = keyLabel(keyBindings[action]);
+        btn.classList.remove('listening');
+    });
+}
+refreshKeybindUI();
+
+document.querySelectorAll('.keybind-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (_rebindingBtn) _rebindingBtn.classList.remove('listening');
+        _rebindingBtn = this;
+        this.classList.add('listening');
+        this.innerText = '...';
+    });
+});
+
+window.addEventListener('keydown', function(e) {
+    if (_rebindingBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const action = _rebindingBtn.dataset.action;
+        keyBindings[action] = e.code;
+        saveBindings();
+        _rebindingBtn.innerText = keyLabel(e.code);
+        _rebindingBtn.classList.remove('listening');
+        _rebindingBtn = null;
+        return;
+    }
+}, true);
+
+document.getElementById('btn-reset-keys').addEventListener('click', () => {
+    keyBindings = Object.assign({}, DEFAULT_BINDINGS);
+    saveBindings();
+    refreshKeybindUI();
 });
 
 // ===== DIFFICULTY CARDS =====
@@ -550,14 +591,17 @@ document.querySelectorAll('.reward-card').forEach(card => {
 // ===== INPUT =====
 let showBigMap = false;
 window.addEventListener('keydown', e => {
+    if (_rebindingBtn) return; // Don't process game input while rebinding
     keys[e.code] = true;
-    if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'Tab'].includes(e.code)) e.preventDefault();
-    if (e.code === 'KeyM' || e.code === 'Tab') {
+    // Prevent default for all bound keys
+    let allBoundKeys = Object.values(keyBindings).concat(['Tab', 'Escape']);
+    if (allBoundKeys.includes(e.code)) e.preventDefault();
+    if (e.code === keyBindings.map || e.code === 'Tab') {
         if (gameState === 'PLAYING') showBigMap = !showBigMap;
     }
-    if (e.code === 'Space' && gameState === 'PLAYING' && player) player.jump();
-    if (e.code === 'KeyQ' && gameState === 'PLAYING' && player) player.useAbility();
-    if (e.code === 'KeyE' && gameState === 'PLAYING' && player) player.useSkill();
+    if (e.code === keyBindings.jump && gameState === 'PLAYING' && player) player.jump();
+    if (e.code === keyBindings.ability && gameState === 'PLAYING' && player) player.useAbility();
+    if (e.code === keyBindings.skill && gameState === 'PLAYING' && player) player.useSkill();
     if (e.code === 'Escape') {
         if (gameState === 'PLAYING') pauseGame();
         else if (gameState === 'PAUSED') resumeGame();
@@ -790,7 +834,7 @@ class Player extends Actor {
         if (typeof onAbilityUsed === 'function') onAbilityUsed();
         if (this.charType === 0 && this.dashCD <= 0) {
             let dx = 0, dy = 0;
-            if (keys['KeyW']) dy--; if (keys['KeyS']) dy++; if (keys['KeyA']) dx--; if (keys['KeyD']) dx++;
+            if (keys[keyBindings.up]) dy--; if (keys[keyBindings.down]) dy++; if (keys[keyBindings.left]) dx--; if (keys[keyBindings.right]) dx++;
             if (joystickActive) { dx = joystickPos.x; dy = joystickPos.y; }
             if (!dx && !dy) return;
             let l = Math.hypot(dx, dy);
@@ -992,8 +1036,8 @@ class Player extends Actor {
     }
     update(dt) {
         let dx = 0, dy = 0;
-        if (keys['KeyW']) dy--; if (keys['KeyS']) dy++;
-        if (keys['KeyA']) dx--; if (keys['KeyD']) dx++;
+        if (keys[keyBindings.up]) dy--; if (keys[keyBindings.down]) dy++;
+        if (keys[keyBindings.left]) dx--; if (keys[keyBindings.right]) dx++;
         if (joystickActive) { dx = joystickPos.x; dy = joystickPos.y; }
         else if (dx && dy) { let l = Math.hypot(dx, dy); dx /= l; dy /= l; }
         let spdMod = this.speed;
@@ -1678,7 +1722,9 @@ class RoomSystem {
 // SHOP
 function openShop() { shopGoldEl.innerText = player.gold; shopItemsEl.innerHTML = ''; let items = getRandomShopItems(3); items.forEach(item => { let div = document.createElement('div'); div.className = `shop-item rarity-${item.rarity}`; div.innerHTML = `<div class="item-rarity">${item.rarity.toUpperCase()}</div><h4>${item.emoji} ${item.name}</h4><p class="item-desc">${item.desc}</p><p class="item-price">🪙 ${item.price}</p>`; div.addEventListener('click', () => buyItem(item, div)); shopItemsEl.appendChild(div); }); switchScreen('shop'); }
 function buyItem(item, el) {
-    if (player.gold < item.price) return; player.gold -= item.price; goldCounter.innerText = player.gold; shopGoldEl.innerText = player.gold; el.style.opacity = '0.3'; el.style.pointerEvents = 'none';
+    if (!cheatsUsed && player.gold < item.price) return;
+    if (!cheatsUsed) player.gold -= item.price;
+    goldCounter.innerText = player.gold; shopGoldEl.innerText = player.gold; el.style.opacity = '0.3'; el.style.pointerEvents = 'none';
     // Hook conquista: item comprado
     if (typeof onItemBought === 'function') onItemBought();
     // Rastrear compra para desbloqueio do Colecionador (apenas sem cheats)

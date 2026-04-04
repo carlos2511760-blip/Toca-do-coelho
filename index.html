@@ -106,15 +106,21 @@
 
                         <!-- CONTROLES -->
                         <div class="tab-content" id="tab-controls">
+                            <p class="hint-text" style="margin-bottom:8px;">Clique no botão e pressione uma nova tecla para remapear.</p>
                             <div class="controls-grid">
-                                <div class="key-row"><span>Mover</span><kbd>W A S D</kbd></div>
-                                <div class="key-row"><span>Atirar</span><kbd>Clique Esq.</kbd></div>
-                                <div class="key-row"><span>Pular</span><kbd>Espaço</kbd></div>
-                                <div class="key-row"><span>Habilidade</span><kbd>Q</kbd></div>
-                                <div class="key-row"><span>Skill Extra</span><kbd>E</kbd></div>
-                                <div class="key-row"><span>Pausar</span><kbd>Esc</kbd></div>
+                                <div class="key-row"><span>Mover Cima</span><button class="keybind-btn" data-action="up">W</button></div>
+                                <div class="key-row"><span>Mover Baixo</span><button class="keybind-btn" data-action="down">S</button></div>
+                                <div class="key-row"><span>Mover Esquerda</span><button class="keybind-btn" data-action="left">A</button></div>
+                                <div class="key-row"><span>Mover Direita</span><button class="keybind-btn" data-action="right">D</button></div>
+                                <div class="key-row"><span>Pular</span><button class="keybind-btn" data-action="jump">Espaço</button></div>
+                                <div class="key-row"><span>Habilidade (Q)</span><button class="keybind-btn" data-action="ability">Q</button></div>
+                                <div class="key-row"><span>Skill Extra (E)</span><button class="keybind-btn" data-action="skill">E</button></div>
+                                <div class="key-row"><span>Mapa</span><button class="keybind-btn" data-action="map">M</button></div>
                             </div>
-                            <p class="hint-text">🎮 Suporte a Gamepad em breve</p>
+                            <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+                                <button id="btn-reset-keys" class="toggle-btn" style="background:#e17055; border-color:#d63031; width:200px;">🔄 Restaurar Padrão</button>
+                            </div>
+                            <p class="hint-text">🎮 Suporte a Gamepad disponível. | Atirar = Clique Esq. | Pausar = Esc</p>
                         </div>
 
                         <!-- ACESSIBILIDADE -->
@@ -171,27 +177,16 @@
                         <!-- CHEATS -->
                         <div class="tab-content" id="tab-cheats">
                             <div class="setting-row" style="background: rgba(255, 71, 87, 0.1); border-color: #fffa65;">
-                                <label style="color: #fffa65; font-weight: bold;">Habilitar Trapaças</label>
+                                <label style="color: #fffa65; font-weight: bold;">Habilitar Trapaças (Modo Deus)</label>
                                 <button id="btn-cheat-unlock" class="toggle-btn">Ativar</button>
                             </div>
-
                             <div id="cheats-list" class="cheats-list locked">
-                                <div class="setting-row">
-                                    <label>Brilho Total (Full Bright)</label>
-                                    <button id="btn-cheat-bright" class="toggle-btn" disabled>Ativar</button>
-                                </div>
-                                <div class="setting-row">
-                                    <label>Modo Voo (God Mode)</label>
-                                    <button id="btn-cheat-fly" class="toggle-btn" disabled>Ativar</button>
-                                </div>
-                                <div class="setting-row">
-                                    <label>Ouro Infinito</label>
-                                    <button id="btn-cheat-gold" class="menu-btn"
-                                        style="min-width:100px; padding:4px 10px; font-size:1rem;" disabled>+999
-                                        Ouro</button>
-                                </div>
-                                <p class="hint-text" style="color:#fffa65;">⚠️ O uso de cheats desativa recordes nesta
-                                    sessão.</p>
+                                <p class="hint-text" style="color:#fffa65;">⚠️ O modo Trapaça ativará:<br>
+                                - 999.999 Ouro Ilimitado<br>
+                                - Vida Infinita (Invencível)<br>
+                                - Voo Livre por paredes<br>
+                                - Brilho Total no escuro<br><br>
+                                O uso de cheats bloqueia novas conquistas e envios de recorde.</p>
                             </div>
                         </div>
                     </div>

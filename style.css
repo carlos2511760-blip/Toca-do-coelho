@@ -1449,3 +1449,33 @@ button:hover {
     color: #747d8c;
     margin-top: 4px;
 }
+
+/* ========== KEYBIND BUTTONS ========== */
+.keybind-btn {
+    background: #2f3640;
+    color: #f5f6fa;
+    border: 2px solid #718093;
+    border-radius: 6px;
+    padding: 6px 18px;
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    cursor: pointer;
+    min-width: 80px;
+    text-align: center;
+    transition: all 0.2s;
+}
+.keybind-btn:hover {
+    background: #353b48;
+    border-color: #a4b0be;
+    transform: scale(1.05);
+}
+.keybind-btn.listening {
+    background: #e17055;
+    border-color: #d63031;
+    color: #fff;
+    animation: keybind-pulse 0.8s infinite alternate;
+}
+@keyframes keybind-pulse {
+    from { box-shadow: 0 0 5px #e17055; }
+    to { box-shadow: 0 0 18px #d63031; }
+}
