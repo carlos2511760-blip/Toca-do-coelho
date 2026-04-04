@@ -3,6 +3,22 @@ const ctx = canvas.getContext('2d');
 canvas.width = 800; canvas.height = 600;
 ctx.imageSmoothingEnabled = false;
 
+window.addEventListener('error', function(e) {
+    const ed = document.getElementById('error-display');
+    if (ed) {
+        ed.innerText += "Erro Critico: " + e.message + " (" + e.filename + ":" + e.lineno + ")\n";
+        ed.style.position = 'absolute';
+        ed.style.top = '10px';
+        ed.style.left = '10px';
+        ed.style.color = 'red';
+        ed.style.fontSize = '24px';
+        ed.style.zIndex = '999999';
+        ed.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        ed.style.padding = '10px';
+        ed.style.whiteSpace = 'pre-wrap';
+    }
+});
+
 const lightCanvas = document.createElement('canvas');
 lightCanvas.width = 800; lightCanvas.height = 600;
 const lightCtx = lightCanvas.getContext('2d');
@@ -1913,93 +1929,89 @@ function initSecretCharacters() {
 initSecretCharacters();
 
 function gameLoop(ts) {
-    try {
-        if (gameState !== 'PLAYING') return;
-        let dt = (ts - lastTime) / 1000;
-        if (dt > 0.1) dt = 0.1;
-        lastTime = ts;
-        handleGamepad();
-        gameTime += dt;
-        gameTimerEl.innerText = formatTime(gameTime);
-        player.update(dt);
-        currentRoom.update(dt);
-        enemies.forEach(e => e.update(dt));
-        projectiles.forEach(p => p.update(dt));
-        particles = particles.filter(p => p.update(dt));
-        icebergs = icebergs.filter(ib => ib.update(dt));
-        warnings = warnings.filter(w => w.update(dt));
-        checkCollisions();
-        // Contagem de kills para conquistas
-        if (typeof onEnemyKilled === 'function') {
-            const prevCount = enemies.length;
-            enemies = enemies.filter(e => e.hp > 0);
-            const killed = prevCount - enemies.length;
-            if (killed > 0) {
-                for (let i = 0; i < killed; i++) onEnemyKilled('minion');
-            }
-        } else {
-            enemies = enemies.filter(e => e.hp > 0);
+    if (gameState !== 'PLAYING') return;
+    let dt = (ts - lastTime) / 1000;
+    if (dt > 0.1) dt = 0.1;
+    lastTime = ts;
+    handleGamepad();
+    gameTime += dt;
+    gameTimerEl.innerText = formatTime(gameTime);
+    player.update(dt);
+    currentRoom.update(dt);
+    enemies.forEach(e => e.update(dt));
+    projectiles.forEach(p => p.update(dt));
+    particles = particles.filter(p => p.update(dt));
+    icebergs = icebergs.filter(ib => ib.update(dt));
+    warnings = warnings.filter(w => w.update(dt));
+    checkCollisions();
+    // Contagem de kills para conquistas
+    if (typeof onEnemyKilled === 'function') {
+        const prevCount = enemies.length;
+        enemies = enemies.filter(e => e.hp > 0);
+        const killed = prevCount - enemies.length;
+        if (killed > 0) {
+            for (let i = 0; i < killed; i++) onEnemyKilled('minion');
         }
-        updateCooldowns();
-
-        // Atualizar visibilidade do botão de Skill Extra no mobile
-        const mSkillBtn = document.getElementById('btn-m-skill');
-        if (mSkillBtn && player) {
-            mSkillBtn.style.display = player.activeSkill ? 'flex' : 'none';
-            if (player.skillCD > 0) mSkillBtn.style.opacity = '0.5'; else mSkillBtn.style.opacity = '1';
-        }
-
-        ctx.clearRect(0, 0, 800, 600);
-        ctx.save();
-        if (screenShakeT > 0) {
-            ctx.translate((Math.random() - .5) * screenShakeM, (Math.random() - .5) * screenShakeM);
-            screenShakeT -= dt;
-        }
-        currentRoom.drawBase(ctx);
-        warnings.forEach(w => w.draw(ctx));
-        enemies.forEach(e => e.draw(ctx));
-        projectiles.forEach(p => p.draw(ctx));
-        particles.forEach(p => p.draw(ctx));
-        if (player) player.draw(ctx);
-        ctx.restore();
-        if (lightingEnabled && !fullBright && player) {
-            lightCtx.globalCompositeOperation = 'source-over';
-            lightCtx.clearRect(0, 0, 800, 600);
-            lightCtx.fillStyle = 'rgba(10, 10, 15, 0.88)';
-            lightCtx.fillRect(0, 0, 800, 600);
-            lightCtx.globalCompositeOperation = 'destination-out';
-            let drawLight = (X, Y, R, int) => {
-                if (R <= 0) return;
-                let g = lightCtx.createRadialGradient(X, Y, 0, X, Y, R);
-                g.addColorStop(0, `rgba(0,0,0,${int})`);
-                g.addColorStop(1, 'rgba(0,0,0,0)');
-                lightCtx.fillStyle = g;
-                lightCtx.beginPath();
-                lightCtx.arc(X, Y, R, 0, Math.PI * 2);
-                lightCtx.fill();
-            };
-            let lRadius = 250;
-            if (player.charType === 19) lRadius = 400; // Radiant
-            else if (player.charType === 16) lRadius = 320; // Cyborg
-            drawLight(player.x, player.y, lRadius, 1);
-            projectiles.forEach(p => drawLight(p.x, p.y, p.radius * 8, 0.7));
-            particles.forEach(p => drawLight(p.x, p.y, p.size * 6, 0.5));
-            enemies.forEach(e => { if (['boss', 'miniboss'].includes(e.type)) drawLight(e.x, e.y, e.radius * 5, 0.6); });
-            icebergs.forEach(i => drawLight(i.x, i.y, 80, 0.4));
-            pickups.forEach(p => drawLight(p.x, p.y, 90, 0.5));
-            warnings.forEach(w => drawLight(w.x, w.y, 100, 0.5));
-            if (['shop', 'treasure', 'spawn', 'npc'].includes(currentRoom.type)) drawLight(400, 300, 480, 0.6);
-            lightCtx.globalCompositeOperation = 'source-over';
-            ctx.drawImage(lightCanvas, 0, 0);
-        }
-        if (flashT > 0) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${flashT * 2})`;
-            ctx.fillRect(0, 0, 800, 600);
-            flashT -= dt;
-        }
-        currentRoom.drawUI(ctx);
-    } catch (err) {
-        console.error("Erro no GameLoop:", err);
+    } else {
+        enemies = enemies.filter(e => e.hp > 0);
     }
+    updateCooldowns();
+
+    // Atualizar visibilidade do botão de Skill Extra no mobile
+    const mSkillBtn = document.getElementById('btn-m-skill');
+    if (mSkillBtn && player) {
+        mSkillBtn.style.display = player.activeSkill ? 'flex' : 'none';
+        if (player.skillCD > 0) mSkillBtn.style.opacity = '0.5'; else mSkillBtn.style.opacity = '1';
+    }
+
+    ctx.clearRect(0, 0, 800, 600);
+    ctx.save();
+    if (screenShakeT > 0) {
+        ctx.translate((Math.random() - .5) * screenShakeM, (Math.random() - .5) * screenShakeM);
+        screenShakeT -= dt;
+    }
+    currentRoom.drawBase(ctx);
+    warnings.forEach(w => w.draw(ctx));
+    enemies.forEach(e => e.draw(ctx));
+    projectiles.forEach(p => p.draw(ctx));
+    particles.forEach(p => p.draw(ctx));
+    if (player) player.draw(ctx);
+    ctx.restore();
+    if (lightingEnabled && !fullBright && player) {
+        lightCtx.globalCompositeOperation = 'source-over';
+        lightCtx.clearRect(0, 0, 800, 600);
+        lightCtx.fillStyle = 'rgba(10, 10, 15, 0.88)';
+        lightCtx.fillRect(0, 0, 800, 600);
+        lightCtx.globalCompositeOperation = 'destination-out';
+        let drawLight = (X, Y, R, int) => {
+            if (R <= 0) return;
+            let g = lightCtx.createRadialGradient(X, Y, 0, X, Y, R);
+            g.addColorStop(0, `rgba(0,0,0,${int})`);
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            lightCtx.fillStyle = g;
+            lightCtx.beginPath();
+            lightCtx.arc(X, Y, R, 0, Math.PI * 2);
+            lightCtx.fill();
+        };
+        let lRadius = 250;
+        if (player.charType === 19) lRadius = 400; // Radiant
+        else if (player.charType === 16) lRadius = 320; // Cyborg
+        drawLight(player.x, player.y, lRadius, 1);
+        projectiles.forEach(p => drawLight(p.x, p.y, p.radius * 8, 0.7));
+        particles.forEach(p => drawLight(p.x, p.y, p.size * 6, 0.5));
+        enemies.forEach(e => { if (['boss', 'miniboss'].includes(e.type)) drawLight(e.x, e.y, e.radius * 5, 0.6); });
+        icebergs.forEach(i => drawLight(i.x, i.y, 80, 0.4));
+        pickups.forEach(p => drawLight(p.x, p.y, 90, 0.5));
+        warnings.forEach(w => drawLight(w.x, w.y, 100, 0.5));
+        if (['shop', 'treasure', 'spawn', 'npc'].includes(currentRoom.type)) drawLight(400, 300, 480, 0.6);
+        lightCtx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(lightCanvas, 0, 0);
+    }
+    if (flashT > 0) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${flashT * 2})`;
+        ctx.fillRect(0, 0, 800, 600);
+        flashT -= dt;
+    }
+    currentRoom.drawUI(ctx);
     requestAnimationFrame(gameLoop);
 }
