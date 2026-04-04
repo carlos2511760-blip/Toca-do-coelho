@@ -322,3 +322,58 @@ function onGameWon(difficulty) {
     if (difficulty === 'nightmare') runStats.nightmareWon++;
     checkAchievements();
 }
+
+/** Renderiza o painel principal de Conquistas */
+function renderAchievements() {
+    const listEl = document.getElementById('achievements-list');
+    const countEl = document.getElementById('ach-count');
+    const progEl = document.getElementById('ach-progress');
+    
+    if (!listEl) return;
+    
+    listEl.innerHTML = '';
+    
+    let unlockedObj = null;
+    try {
+        unlockedObj = JSON.parse(localStorage.getItem('toca_achievements') || '{}');
+    } catch(e) {
+        unlockedObj = {};
+    }
+    
+    // Convert to explicit array of unlocked IDs for easier checking
+    const unlockedIds = Array.isArray(unlockedObj) ? unlockedObj : Object.keys(unlockedObj).filter(k => unlockedObj[k]);
+    
+    let unlockedTotal = 0;
+    
+    ACHIEVEMENTS.forEach(ach => {
+        const isUnlocked = unlockedIds.includes(ach.id);
+        if (isUnlocked) unlockedTotal++;
+        
+        const tier = TIER_COLOR[ach.tier] || TIER_COLOR.bronze;
+        
+        const card = document.createElement('div');
+        card.className = `ach-card ${isUnlocked ? 'unlocked' : ''}`;
+        
+        // Aplica cores do tier se desbloqueado
+        if (isUnlocked) {
+            card.style.borderColor = tier.border;
+            card.style.boxShadow = `inset 0 0 10px ${tier.bg}`;
+        }
+        
+        card.innerHTML = `
+            <div class="ach-icon-container" style="border-color: ${isUnlocked ? tier.border : '#576574'}; background: ${isUnlocked ? tier.bg : '#2f3542'}">
+                ${isUnlocked ? tier.icon : '🔒'}
+            </div>
+            <div class="ach-details">
+                <h3 class="ach-title">${ach.name}</h3>
+                <p class="ach-desc">${isUnlocked ? ach.desc : '???'}</p>
+                <div class="ach-category">${ach.category}</div>
+            </div>
+        `;
+        listEl.appendChild(card);
+    });
+    
+    // Update stats
+    countEl.innerText = `Desbloqueadas: ${unlockedTotal} / ${ACHIEVEMENTS.length}`;
+    progEl.innerText = `${Math.round((unlockedTotal / ACHIEVEMENTS.length) * 100)}%`;
+}

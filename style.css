@@ -1367,3 +1367,85 @@ button:hover {
 .casino-controls {
     margin-top: 20px;
 }
+
+/* ========== ACHIEVEMENTS SCREEN ========== */
+.achievements-panel {
+    width: 650px;
+}
+.achievements-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.4rem;
+    color: #feca57;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #576574;
+    padding-bottom: 10px;
+}
+.achievements-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 10px;
+}
+.achievements-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+.achievements-scroll::-webkit-scrollbar-track {
+    background: #2f3640;
+}
+.achievements-scroll::-webkit-scrollbar-thumb {
+    background: #718093;
+    border-radius: 4px;
+}
+.ach-card {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 2px solid #576574;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.6);
+    opacity: 0.5;
+    filter: grayscale(100%);
+    transition: all 0.3s;
+}
+.ach-card.unlocked {
+    opacity: 1;
+    filter: grayscale(0%);
+    background: rgba(45, 52, 54, 0.9);
+}
+.ach-icon-container {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    background: #1e272e;
+    border: 2px solid #576574;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-right: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+.ach-details {
+    flex: 1;
+    text-align: left;
+}
+.ach-title {
+    font-size: 1.5rem;
+    color: #fff;
+    margin: 0 0 4px 0;
+    text-transform: uppercase;
+}
+.ach-desc {
+    font-size: 1.1rem;
+    color: #ced6e0;
+    margin: 0;
+}
+.ach-category {
+    font-size: 0.9rem;
+    color: #747d8c;
+    margin-top: 4px;
+}

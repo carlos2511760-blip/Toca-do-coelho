@@ -21,6 +21,7 @@ const screens = {
     shop: document.getElementById('shop-screen'),
     settings: document.getElementById('settings-screen'),
     manual: document.getElementById('manual-screen'),
+    achievements: document.getElementById('achievements-screen'),
     pause: document.getElementById('pause-screen'),
     reward: document.getElementById('reward-screen'),
     casino: document.getElementById('casino-screen')
@@ -122,6 +123,11 @@ function dist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
 // ===== TITLE SCREEN BUTTONS =====
 document.getElementById('btn-play').addEventListener('click', () => switchScreen('mainMenu'));
 document.getElementById('btn-manual').addEventListener('click', () => switchScreen('manual'));
+document.getElementById('btn-achievements').addEventListener('click', () => {
+    switchScreen('achievements');
+    if (typeof renderAchievements === 'function') renderAchievements();
+});
+document.getElementById('btn-achievements-back').addEventListener('click', () => switchScreen('titleScreen'));
 document.getElementById('btn-settings').addEventListener('click', () => { prevScreenBeforeSettings = 'titleScreen'; switchScreen('settings'); });
 document.getElementById('btn-settings-back').addEventListener('click', () => switchScreen(prevScreenBeforeSettings));
 document.getElementById('btn-manual-back').addEventListener('click', () => switchScreen('titleScreen'));
@@ -638,12 +644,12 @@ class Actor {
 
         if (this.poisonTimer > 0) {
             this.poisonTimer -= dt;
-            this.hp -= (this instanceof Player ? 1.0 : 3.0) * dt;
+            this.hp -= (this instanceof Player ? 0.3 : 3.0) * dt;
             if (Math.random() < 0.25) boom(this.x, this.y, '#2ecc71', 1);
         }
         if (this.burnTimer > 0) {
             this.burnTimer -= dt;
-            this.hp -= (this instanceof Player ? 1.8 : 5.5) * dt;
+            this.hp -= (this instanceof Player ? 0.5 : 5.5) * dt;
             if (Math.random() < 0.3) boom(this.x, this.y, '#e67e22', 1);
         }
 
@@ -736,9 +742,9 @@ class Player extends Actor {
         else if (this.charType === 3 && this.fearCD <= 0) { this.fearT = 4.5; this.fearCD = 8; boom(this.x, this.y, '#833471', 30); }
         else if (this.charType === 4 && this.ghostCD <= 0) { this.ghostT = 4.5; this.invTimer = 4.5; this.ghostCD = 8; boom(this.x, this.y, '#7f8fa6', 20); }
         else if (this.charType === 5 && this.magicCD <= 0) { for (let i = 0; i < 12; i++) { let a = (i / 12) * Math.PI * 2; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 8, '#74b9ff', true, 'ice')); } this.magicCD = 10; boom(this.x, this.y, '#2980b9', 30); }
-        else if (this.charType === 6 && this.toxicCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 150) { e.takeDamage(6 * this.dmgMult); e.poisonTimer = 3; e.slowTimer = (e.type === 'boss') ? 1 : 3; } }); this.toxicCD = 8; boom(this.x, this.y, '#2ecc71', 40); }
-        else if (this.charType === 7 && this.empCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.stunTimer = (e.type === 'boss') ? 0.5 : 3; e.takeDamage(5 * this.dmgMult); } }); this.empCD = 12; boom(this.x, this.y, '#f1c40f', 50); }
-        else if (this.charType === 8 && this.fireCD <= 0) { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; for (let i = -2; i <= 2; i++) { let a = Math.atan2(dy, dx) + i * 0.15; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 8, 10, '#e74c3c', true, 'fire')); } this.fireCD = 6; boom(this.x, this.y, '#d35400', 30); }
+        else if (this.charType === 6 && this.toxicCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 150) { e.takeDamage(1.5 * this.dmgMult); e.poisonTimer = 3; e.slowTimer = (e.type === 'boss') ? 1 : 3; } }); this.toxicCD = 8; boom(this.x, this.y, '#2ecc71', 40); }
+        else if (this.charType === 7 && this.empCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.stunTimer = (e.type === 'boss') ? 0.5 : 3; e.takeDamage(1.5 * this.dmgMult); } }); this.empCD = 12; boom(this.x, this.y, '#f1c40f', 50); }
+        else if (this.charType === 8 && this.fireCD <= 0) { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; for (let i = -2; i <= 2; i++) { let a = Math.atan2(dy, dx) + i * 0.15; let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 8, 10, '#e74c3c', true, 'fire'); p.damage = 1.0 * this.dmgMult; projectiles.push(p); } this.fireCD = 6; boom(this.x, this.y, '#d35400', 30); }
         else if (this.charType === 9 && this.luckCD <= 0) { pickups.push(new Pickup(this.x + 30, this.y, 'gold', Math.floor(Math.random() * 20) + 5)); this.luckCD = 15; boom(this.x, this.y, '#f368e0', 15); }
         else if (this.charType === 10 && this.ninjaCD <= 0) {
             boom(this.x, this.y, '#2f3542', 25);
@@ -747,7 +753,7 @@ class Player extends Actor {
             boom(this.x, this.y, '#2f3542', 20);
             for (let i = 0; i < 5; i++) particles.push(new Particle(this.x, this.y, '#000', 4, 10, 40));
         }
-        else if (this.charType === 11 && this.chemCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.slowTimer = 4; e.takeDamage(4 * this.dmgMult); } }); this.chemCD = 7; boom(this.x, this.y, '#1dd1a1', 25); }
+        else if (this.charType === 11 && this.chemCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.slowTimer = 4; e.takeDamage(1.5 * this.dmgMult); } }); this.chemCD = 7; boom(this.x, this.y, '#1dd1a1', 25); }
         else if (this.charType === 12 && this.rootCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 180) e.stunTimer = 2; }); this.rootCD = 10; boom(this.x, this.y, '#10ac84', 30); }
         else if (this.charType === 13 && this.jetCD <= 0) { this.flyT = 6.0; this.jetCD = 12; boom(this.x, this.y, '#54a0ff', 15); }
         else if (this.charType === 14 && this.cannonCD <= 0) {
@@ -769,7 +775,7 @@ class Player extends Actor {
             let hitCount = 0;
             enemies.forEach(e => {
                 if (dist(this.x, this.y, e.x, e.y) < 180) {
-                    e.takeDamage(7 * this.dmgMult);
+                    e.takeDamage(2.0 * this.dmgMult);
                     let edx = e.x - this.x, edy = e.y - this.y, emg = Math.hypot(edx, edy) || 1;
                     e.x += (edx / emg) * 80;
                     e.y += (edy / emg) * 80;
@@ -799,7 +805,7 @@ class Player extends Actor {
         else if (this.charType === 16 && this.laserCD <= 0) {
             let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1;
             let pb = new Projectile(this.x, this.y, dx / d, dy / d, 8.5, 15, '#00d2d3', true, 'cyborg_emp_ball');
-            pb.damage = 8;
+            pb.damage = 2.5 * this.dmgMult;
             projectiles.push(pb);
             this.laserCD = 7;
             boom(this.x, this.y, '#0984e3', 25);
@@ -815,10 +821,10 @@ class Player extends Actor {
             warnings.push(new Warning(tgtX, tgtY, 120, 1.0, 'meteor', true));
             this.tntCD = 6;
         }
-        else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.takeDamage(6 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.3 : 0.8; } }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); flashT = 0.3; }
+        else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.takeDamage(2 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.3 : 0.8; } }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); flashT = 0.3; }
         else if (this.charType === 20 && this.dimCD <= 0) {
             enemies.forEach(e => {
-                let dmg = Math.min(e.maxHp * 0.25, 30);
+                let dmg = Math.min(e.maxHp * 0.10, 15);
                 e.takeDamage(dmg);
                 boom(e.x, e.y, '#f5f6fa', 15);
             });
