@@ -176,6 +176,21 @@ document.getElementById('btn-import-save').addEventListener('click', () => {
     input.click();
 });
 
+document.getElementById('btn-reset-save').addEventListener('click', () => {
+    if (confirm("⚠️ TEM CERTEZA? ⚠️\n\nIsso apagará TODO o seu progresso, incluindo:\n- Todos os recordes de tempo\n- Personagens Desbloqueados\n- Conquistas\n- Ouro e Itens comprados\n\nEssa ação é IRREVERSÍVEL! Deseja continuar?")) {
+        let keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if (key.startsWith('toca_') || key.startsWith('tdc_')) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        alert("O seu progresso foi totalmente apagado. O jogo será reiniciado.");
+        window.location.reload();
+    }
+});
+
 // ===== PAUSE SYSTEM =====
 document.getElementById('btn-resume').addEventListener('click', resumeGame);
 document.getElementById('btn-pause-settings').addEventListener('click', () => { prevScreenBeforeSettings = 'pause'; switchScreen('settings'); });
@@ -1666,15 +1681,17 @@ function buyItem(item, el) {
     if (player.gold < item.price) return; player.gold -= item.price; goldCounter.innerText = player.gold; shopGoldEl.innerText = player.gold; el.style.opacity = '0.3'; el.style.pointerEvents = 'none';
     // Hook conquista: item comprado
     if (typeof onItemBought === 'function') onItemBought();
-    // Rastrear compra para desbloqueio do Colecionador
-    let purchased = JSON.parse(localStorage.getItem('toca_purchased') || '[]');
-    if (item.key && !purchased.includes(item.key)) {
-        purchased.push(item.key);
-        localStorage.setItem('toca_purchased', JSON.stringify(purchased));
-        let allItems = Object.keys(ITEM_CATALOG);
-        if (allItems.every(k => purchased.includes(k))) {
-            localStorage.setItem('toca_char21', 'true');
-            if (typeof initSecretCharacters === 'function') initSecretCharacters();
+    // Rastrear compra para desbloqueio do Colecionador (apenas sem cheats)
+    if (!cheatsUsed) {
+        let purchased = JSON.parse(localStorage.getItem('toca_purchased') || '[]');
+        if (item.key && !purchased.includes(item.key)) {
+            purchased.push(item.key);
+            localStorage.setItem('toca_purchased', JSON.stringify(purchased));
+            let allItems = Object.keys(ITEM_CATALOG);
+            if (allItems.every(k => purchased.includes(k))) {
+                localStorage.setItem('toca_char21', 'true');
+                if (typeof initSecretCharacters === 'function') initSecretCharacters();
+            }
         }
     }
     if (item.type === 'heal') { player.hp = Math.min(player.maxHp, player.hp + player.maxHp * item.value); updateHUD(); boom(player.x, player.y, '#2ed573', 15); }

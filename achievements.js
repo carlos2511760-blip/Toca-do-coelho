@@ -182,6 +182,7 @@ function saveUnlocked(set) {
 
 // ─── Verificação e desbloqueio ────────────────────────────────────────────────
 function checkAchievements() {
+    if (typeof cheatsUsed !== 'undefined' && cheatsUsed) return;
     const unlocked = getUnlockedSet();
     for (const ach of ACHIEVEMENTS) {
         if (!unlocked.has(ach.id) && ach.check(runStats)) {
