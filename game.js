@@ -694,6 +694,8 @@ class Player extends Actor {
         return cds[this.charType] || 0;
     }
     useAbility() {
+        // Hook conquista: habilidade usada
+        if (typeof onAbilityUsed === 'function') onAbilityUsed();
         if (this.charType === 0 && this.dashCD <= 0) {
             let dx = 0, dy = 0;
             if (keys['KeyW']) dy--; if (keys['KeyS']) dy++; if (keys['KeyA']) dx--; if (keys['KeyD']) dx++;
@@ -870,6 +872,8 @@ class Player extends Actor {
     }
     takeDamage(a) {
         if (this.shieldT > 0 || this.flyT > 0 || this.ghostT > 0 || flyMode) return;
+        // Hook conquista: jogador tomou dano
+        if (typeof onPlayerDamaged === 'function') onPlayerDamaged();
 
         // Passive: Ninja Dodge
         if (this.charType === 10 && Math.random() < 0.15) {
@@ -1391,6 +1395,8 @@ class RoomSystem {
             if (this.type === 'boss') {
                 bossHealthContainer.style.display = 'none';
                 pickups.push(new Pickup(400, 300, 'gold', 30 + Math.floor(Math.random() * 20)));
+                // Hook de conquista: boss derrotado
+                if (typeof onEnemyKilled === 'function') onEnemyKilled('boss');
                 // DESBLOQUEAR a sala de saída deste andar
                 for (let key in this.rooms) {
                     if (this.rooms[key].type === 'exit' && this.rooms[key].exitLocked) {
@@ -1417,6 +1423,8 @@ class RoomSystem {
                     let v = Math.round(pickups[i].value * goldMult);
                     if (player.charType === 9 || player.charType === 14) v = Math.ceil(v * 1.5); // Luck/Pirate
                     player.gold += v; goldCounter.innerText = player.gold; boom(pickups[i].x, pickups[i].y, '#feca57', 10);
+                    // Hook conquistas: ouro coletado
+                    if (typeof onGoldCollected === 'function') onGoldCollected(v);
                     if (typeof audio !== 'undefined') audio.playCoin(); pickups.splice(i, 1);
                 }
                 else if (pickups[i].type === 'heart') {
@@ -1431,12 +1439,16 @@ class RoomSystem {
                     if (typeof audio !== 'undefined') audio.playHeal(); pickups.splice(i, 1);
                 }
                 else if (pickups[i].type === 'exit') {
+                    // Hook conquistas: andar completo
+                    if (typeof onFloorCleared === 'function') onFloorCleared();
                     mapLevel++;
                     if (mapLevel > MAX_LEVELS) {
                         if (MAX_LEVELS === 8 && !takenBossDamage && !cheatsUsed) {
                             localStorage.setItem('toca_char20', 'true');
                             if (typeof initSecretCharacters === 'function') initSecretCharacters();
                         }
+                        // Hook conquistas: vitória
+                        if (typeof onGameWon === 'function') onGameWon(selectedDiff);
                         gameState = 'VICTORY'; switchScreen('victory');
                         if (!cheatsUsed) {
                             let bvt = parseFloat(localStorage.getItem('toca_vic_time') || 999999);
@@ -1554,6 +1566,8 @@ class RoomSystem {
 function openShop() { shopGoldEl.innerText = player.gold; shopItemsEl.innerHTML = ''; let items = getRandomShopItems(3); items.forEach(item => { let div = document.createElement('div'); div.className = `shop-item rarity-${item.rarity}`; div.innerHTML = `<div class="item-rarity">${item.rarity.toUpperCase()}</div><h4>${item.emoji} ${item.name}</h4><p class="item-desc">${item.desc}</p><p class="item-price">🪙 ${item.price}</p>`; div.addEventListener('click', () => buyItem(item, div)); shopItemsEl.appendChild(div); }); switchScreen('shop'); }
 function buyItem(item, el) {
     if (player.gold < item.price) return; player.gold -= item.price; goldCounter.innerText = player.gold; shopGoldEl.innerText = player.gold; el.style.opacity = '0.3'; el.style.pointerEvents = 'none';
+    // Hook conquista: item comprado
+    if (typeof onItemBought === 'function') onItemBought();
     // Rastrear compra para desbloqueio do Colecionador
     let purchased = JSON.parse(localStorage.getItem('toca_purchased') || '[]');
     if (item.key && !purchased.includes(item.key)) {
@@ -1700,6 +1714,7 @@ function startGame() {
     abilityNameEl.innerText = '-';
     skillCdEl.innerText = '';
     updateHUD();
+    if (typeof resetRunStats === 'function') resetRunStats();
     lastTime = performance.now();
     requestAnimationFrame(gameLoop);
 }
@@ -1911,7 +1926,18 @@ function gameLoop(ts) {
     icebergs = icebergs.filter(ib => ib.update(dt));
     warnings = warnings.filter(w => w.update(dt));
     checkCollisions();
-    enemies = enemies.filter(e => e.hp > 0);
+    // Contagem de kills para conquistas
+    if (typeof onEnemyKilled === 'function') {
+        const prevCount = enemies.length;
+        enemies = enemies.filter(e => e.hp > 0);
+        const killed = prevCount - enemies.length;
+        if (killed > 0) {
+            // Verifica tipo dos inimigos mortos para boss kills
+            for (let i = 0; i < killed; i++) onEnemyKilled('minion');
+        }
+    } else {
+        enemies = enemies.filter(e => e.hp > 0);
+    }
     updateCooldowns();
 
     // Atualizar visibilidade do botão de Skill Extra no mobile
