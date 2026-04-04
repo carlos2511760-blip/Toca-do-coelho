@@ -3,21 +3,9 @@ const ctx = canvas.getContext('2d');
 canvas.width = 800; canvas.height = 600;
 ctx.imageSmoothingEnabled = false;
 
-window.addEventListener('error', function(e) {
-    const ed = document.getElementById('error-display');
-    if (ed) {
-        ed.innerText += "Erro Critico: " + e.message + " (" + e.filename + ":" + e.lineno + ")\n";
-        ed.style.position = 'absolute';
-        ed.style.top = '10px';
-        ed.style.left = '10px';
-        ed.style.color = 'red';
-        ed.style.fontSize = '24px';
-        ed.style.zIndex = '999999';
-        ed.style.backgroundColor = 'rgba(0,0,0,0.8)';
-        ed.style.padding = '10px';
-        ed.style.whiteSpace = 'pre-wrap';
-    }
-});
+
+function formatTime(s) { let m = Math.floor(s / 60); let sec = Math.floor(s % 60); return (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec; }
+
 
 const lightCanvas = document.createElement('canvas');
 lightCanvas.width = 800; lightCanvas.height = 600;
@@ -1491,43 +1479,64 @@ class RoomSystem {
         this.enterRoom(tx, ty);
     }
     drawBase(c) {
-        if (!['boss','shop','exit','treasure','npc','arena','casino','spawn'].includes(this.type)) {
-            let h = (this.currentX * 137 + this.currentY * 57) % 360;
-            c.fillStyle = `hsl(${h}, 15%, 15%)`;
-        } else {
-            c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : this.type === 'exit' ? '#23153c' : this.type === 'treasure' ? '#332918' : this.type === 'npc' ? '#103340' : this.type === 'arena' ? '#3e1a1a' : this.type === 'casino' ? '#2d3436' : '#1e2922';
-        }
-        c.fillRect(0, 0, 800, 600); c.fillStyle = '#2f3542'; c.fillRect(0, 0, 800, WALL); c.fillRect(0, 600 - WALL, 800, WALL); c.fillRect(0, 0, WALL, 600); c.fillRect(800 - WALL, 0, WALL, 600);
-        if (this.type === 'shop' && this.isCleared) { c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; c.fillText('🏪 Portas estão abertas', 400, 300); }
-        // Draw NPC cage when mini-boss is alive
-        if (this.type === 'npc' && !this.isCleared && this.spawnTimer <= 0 && enemies.length > 0) {
-            c.strokeStyle = '#3498db'; c.lineWidth = 4;
-            let cageX = 400, cageY = 300, cageR = 60;
-            for (let i = 0; i < 8; i++) {
-                let a = (i / 8) * Math.PI * 2;
-                let bx = cageX + Math.cos(a) * cageR, by = cageY + Math.sin(a) * cageR;
-                c.beginPath(); c.moveTo(cageX + Math.cos(a) * (cageR - 20), cageY + Math.sin(a) * (cageR - 20));
-                c.lineTo(bx, by); c.stroke();
+        try {
+            // Cores base ligeiramente mais claras para garantir visibilidade
+            if (!['boss','shop','exit','treasure','npc','arena','casino','spawn'].includes(this.type)) {
+                let h = (this.currentX * 137 + this.currentY * 57) % 360;
+                c.fillStyle = `hsl(${h}, 20%, 25%)`;
+            } else {
+                c.fillStyle = this.type === 'boss' ? '#3d050a' : 
+                            this.type === 'shop' ? '#223627' : 
+                            this.type === 'exit' ? '#2e1c4d' : 
+                            this.type === 'treasure' ? '#453821' : 
+                            this.type === 'npc' ? '#164557' : 
+                            this.type === 'arena' ? '#4d2121' : 
+                            this.type === 'casino' ? '#353b48' : 
+                            '#273b2d'; // Spawn
             }
-            c.strokeStyle = 'rgba(52,152,219,0.4)'; c.lineWidth = 3;
-            c.beginPath(); c.arc(cageX, cageY, cageR, 0, Math.PI * 2); c.stroke();
-            c.fillStyle = 'rgba(52,152,219,0.06)'; c.beginPath(); c.arc(cageX, cageY, cageR, 0, Math.PI * 2); c.fill();
-            c.font = '20px VT323'; c.fillStyle = '#74b9ff'; c.textAlign = 'center';
-            c.fillText('🔒 Derrote o guardião para libertar o Anjo!', 400, WALL + 22);
-        }
-        if (this.isCleared) {
-            for (let d of this.doors) {
-                let rClr = this.rooms[d.side === 'N' ? `${this.currentX},${this.currentY - 1}` : d.side === 'S' ? `${this.currentX},${this.currentY + 1}` : d.side === 'E' ? `${this.currentX + 1},${this.currentY}` : `${this.currentX - 1},${this.currentY}`].cleared;
-                c.fillStyle = rClr ? '#2ed573' : d.toType === 'boss' ? '#ff4757' : d.toType === 'exit' ? '#9b59b6' : d.toType === 'miniboss' ? '#ffa502' : d.toType === 'treasure' ? '#f1c40f' : d.toType === 'npc' ? '#3498db' : d.toType === 'arena' ? '#e74c3c' : d.toType === 'casino' ? '#f1c40f' : '#2ed573';
-                c.fillRect(d.x, d.y, d.w, d.h);
-                if (!rClr && ['boss', 'exit', 'miniboss', 'treasure', 'npc', 'arena', 'casino'].includes(d.toType)) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? 'BOSS' : d.toType === 'exit' ? 'SAIDA' : d.toType === 'treasure' ? 'BAU' : d.toType === 'npc' ? 'NPC' : d.toType === 'arena' ? 'ARENA' : d.toType === 'casino' ? 'CASSINO' : 'MINI'; c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
+            c.fillRect(0, 0, 800, 600); 
+
+            // Paredes
+            c.fillStyle = '#3a4254'; 
+            c.fillRect(0, 0, 800, WALL); 
+            c.fillRect(0, 600 - WALL, 800, WALL); 
+            c.fillRect(0, 0, WALL, 600); 
+            c.fillRect(800 - WALL, 0, WALL, 600);
+
+            if (this.type === 'shop' && this.isCleared) { 
+                c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; 
+                c.fillText('💰 Portas estão abertas', 400, 300); 
             }
-        } else if (!['spawn', 'shop', 'exit', 'treasure', 'npc', 'casino'].includes(this.type)) {
-            let txt = this.spawnTimer > 0 ? `PREPARE-SE: ${Math.ceil(this.spawnTimer)}s` : 'BLOQUEADO';
-            let col = this.spawnTimer > 0 ? '#feca57' : '#ff4757';
-            c.fillStyle = col; c.font = '20px VT323'; c.textAlign = 'center'; c.fillText(txt, 400, WALL + 20);
-        }
-        pickups.forEach(p => p.draw(c)); icebergs.forEach(ib => ib.draw(c));
+            // Draw NPC cage when mini-boss is alive
+            if (this.type === 'npc' && !this.isCleared && this.spawnTimer <= 0 && enemies.length > 0) {
+                c.strokeStyle = '#3498db'; c.lineWidth = 4;
+                let cageX = 400, cageY = 300, cageR = 60;
+                for (let i = 0; i < 8; i++) {
+                    let a = (i / 8) * Math.PI * 2;
+                    let bx = cageX + Math.cos(a) * cageR, by = cageY + Math.sin(a) * cageR;
+                    c.beginPath(); c.moveTo(cageX + Math.cos(a) * (cageR - 20), cageY + Math.sin(a) * (cageR - 20));
+                    c.lineTo(bx, by); c.stroke();
+                }
+                c.strokeStyle = 'rgba(52,152,219,0.4)'; c.lineWidth = 3;
+                c.beginPath(); c.arc(cageX, cageY, cageR, 0, Math.PI * 2); c.stroke();
+                c.fillStyle = 'rgba(52,152,219,0.06)'; c.beginPath(); c.arc(cageX, cageY, cageR, 0, Math.PI * 2); c.fill();
+                c.font = '20px VT323'; c.fillStyle = '#74b9ff'; c.textAlign = 'center';
+                c.fillText('🔒 Derrote o guardião para libertar o Anjo!', 400, WALL + 22);
+            }
+            if (this.isCleared) {
+                for (let d of this.doors) {
+                    let rClr = this.rooms[d.side === 'N' ? `${this.currentX},${this.currentY - 1}` : d.side === 'S' ? `${this.currentX},${this.currentY + 1}` : d.side === 'E' ? `${this.currentX + 1},${this.currentY}` : `${this.currentX - 1},${this.currentY}`].cleared;
+                    c.fillStyle = rClr ? '#2ed573' : d.toType === 'boss' ? '#ff4757' : d.toType === 'exit' ? '#9b59b6' : d.toType === 'miniboss' ? '#ffa502' : d.toType === 'treasure' ? '#f1c40f' : d.toType === 'npc' ? '#3498db' : d.toType === 'arena' ? '#e74c3c' : d.toType === 'casino' ? '#f1c40f' : '#2ed573';
+                    c.fillRect(d.x, d.y, d.w, d.h);
+                    if (!rClr && ['boss', 'exit', 'miniboss', 'treasure', 'npc', 'arena', 'casino'].includes(d.toType)) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? 'BOSS' : d.toType === 'exit' ? 'SAIDA' : d.toType === 'treasure' ? 'BAU' : d.toType === 'npc' ? 'NPC' : d.toType === 'arena' ? 'ARENA' : d.toType === 'casino' ? 'CASSINO' : 'MINI'; c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
+                }
+            } else if (!['spawn', 'shop', 'exit', 'treasure', 'npc', 'casino'].includes(this.type)) {
+                let txt = this.spawnTimer > 0 ? `PREPARE-SE: ${Math.ceil(this.spawnTimer)}s` : 'BLOQUEADO';
+                let col = this.spawnTimer > 0 ? '#feca57' : '#ff4757';
+                c.fillStyle = col; c.font = '20px VT323'; c.textAlign = 'center'; c.fillText(txt, 400, WALL + 20);
+            }
+            pickups.forEach(p => p.draw(c)); icebergs.forEach(ib => ib.draw(c));
+        } catch(e) { console.error("Erro drawBase:", e); }
     }
     drawUI(c) {
         this.drawMinimap(c, false);
@@ -1929,97 +1938,92 @@ function initSecretCharacters() {
 initSecretCharacters();
 
 function gameLoop(ts) {
+    if (gameState !== 'PLAYING') {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    
+    let dt = 0;
     try {
-        if (gameState !== 'PLAYING') return;
-        let dt = (ts - lastTime) / 1000;
-        if (dt > 0.1) dt = 0.1;
+        dt = (ts - lastTime) / 1000;
+        if (isNaN(dt) || dt > 0.1 || dt < 0) dt = 0.016;
         lastTime = ts;
+        
         handleGamepad();
         gameTime += dt;
-        gameTimerEl.innerText = formatTime(gameTime);
-        player.update(dt);
-        currentRoom.update(dt);
-        enemies.forEach(e => e.update(dt));
-        projectiles.forEach(p => p.update(dt));
+        if (gameTimerEl) gameTimerEl.innerText = formatTime(gameTime);
+        
+        // Updates com proteção
+        if (player) player.update(dt);
+        if (currentRoom) currentRoom.update(dt);
+        
+        enemies.forEach(e => { try { e.update(dt); } catch(err){} });
+        projectiles.forEach(p => { try { p.update(dt); } catch(err){} });
         particles = particles.filter(p => { try { return p.update(dt); } catch(e){ return false; } });
-        icebergs = icebergs.filter(ib => ib.update(dt));
-        warnings = warnings.filter(w => w.update(dt));
+        icebergs = icebergs.filter(ib => { try { return ib.update(dt); } catch(e){ return false; } });
+        warnings = warnings.filter(w => { try { return w.update(dt); } catch(e){ return false; } });
+        
         checkCollisions();
-        // Contagem de kills para conquistas
-        if (typeof onEnemyKilled === 'function') {
-            const prevCount = enemies.length;
-            enemies = enemies.filter(e => e.hp > 0);
-            const killed = prevCount - enemies.length;
-            if (killed > 0) {
-                for (let i = 0; i < killed; i++) onEnemyKilled('minion');
-            }
-        } else {
-            enemies = enemies.filter(e => e.hp > 0);
-        }
+        
+        // Limpeza de entidades mortas
+        enemies = enemies.filter(e => e.hp > 0 && !e.isDead);
+        projectiles = projectiles.filter(p => p.active);
+        
         updateCooldowns();
 
-        // Atualizar visibilidade do botão de Skill Extra no mobile
-        const mSkillBtn = document.getElementById('btn-m-skill');
-        if (mSkillBtn && player) {
-            mSkillBtn.style.display = player.activeSkill ? 'flex' : 'none';
-            if (player.skillCD > 0) mSkillBtn.style.opacity = '0.5'; else mSkillBtn.style.opacity = '1';
-        }
-
+        // Render Principal
         ctx.clearRect(0, 0, 800, 600);
+        
+        // Teste de Render (Fundo de segurança)
+        ctx.fillStyle = "#1e272e"; 
+        ctx.fillRect(0, 0, 800, 600);
+        
         ctx.save();
         if (screenShakeT > 0) {
             ctx.translate((Math.random() - .5) * screenShakeM, (Math.random() - .5) * screenShakeM);
             screenShakeT -= dt;
         }
-        currentRoom.drawBase(ctx);
-        warnings.forEach(w => w.draw(ctx));
-        enemies.forEach(e => e.draw(ctx));
-        projectiles.forEach(p => p.draw(ctx));
-        particles.forEach(p => p.draw(ctx));
-        if (player) player.draw(ctx);
-        ctx.restore();
-        if (lightingEnabled && !fullBright && player) {
-            lightCtx.globalCompositeOperation = 'source-over';
-            lightCtx.clearRect(0, 0, 800, 600);
-            lightCtx.fillStyle = 'rgba(10, 10, 15, 0.88)';
-            lightCtx.fillRect(0, 0, 800, 600);
-            lightCtx.globalCompositeOperation = 'destination-out';
-            let drawLight = (X, Y, R, int) => {
-                if (!(R > 0) || isNaN(X) || isNaN(Y)) return;
-                try {
-                    let g = lightCtx.createRadialGradient(X, Y, 0, X, Y, R);
-                    g.addColorStop(0, `rgba(0,0,0,${int})`);
-                    g.addColorStop(1, 'rgba(0,0,0,0)');
-                    lightCtx.fillStyle = g;
-                    lightCtx.beginPath();
-                    lightCtx.arc(X, Y, R, 0, Math.PI * 2);
-                    lightCtx.fill();
-                } catch(e) {}
-            };
-            let lRadius = 250;
-            if (player.charType === 19) lRadius = 400; // Radiant
-            else if (player.charType === 16) lRadius = 320; // Cyborg
-            drawLight(player.x, player.y, lRadius, 1);
-            projectiles.forEach(p => drawLight(p.x, p.y, p.radius * 8, 0.7));
-            particles.forEach(p => drawLight(p.x, p.y, (p.size || 5) * 6, 0.5));
-            enemies.forEach(e => { if (['boss', 'miniboss'].includes(e.type)) drawLight(e.x, e.y, e.radius * 5, 0.6); });
-            icebergs.forEach(i => drawLight(i.x, i.y, 80, 0.4));
-            pickups.forEach(p => drawLight(p.x, p.y, 90, 0.5));
-            warnings.forEach(w => drawLight(w.x, w.y, 100, 0.5));
-            if (['shop', 'treasure', 'spawn', 'npc'].includes(currentRoom.type)) drawLight(400, 300, 480, 0.6);
-            lightCtx.globalCompositeOperation = 'source-over';
-            ctx.drawImage(lightCanvas, 0, 0);
+
+        // Desenho da Sala
+        if (currentRoom && typeof currentRoom.drawBase === 'function') {
+            currentRoom.drawBase(ctx);
         }
+
+        // Desenho de Entidades com Try-Catch individual
+        try { warnings.forEach(w => w.draw(ctx)); } catch(e){}
+        try { pickups.forEach(p => p.draw(ctx)); } catch(e){}
+        try { icebergs.forEach(i => i.draw(ctx)); } catch(e){}
+        try { enemies.forEach(e => e.draw(ctx)); } catch(e){}
+        try { projectiles.forEach(p => p.draw(ctx)); } catch(e){}
+        try { particles.forEach(p => p.draw(ctx)); } catch(e){}
+        
+        // Desenho do Jogador
+        if (player && typeof player.draw === 'function') {
+            try { player.draw(ctx); } catch(e){ console.error("Erro Player Draw:", e); }
+        }
+        
+        ctx.restore();
+
+        // Camada de Flash (Dano)
         if (flashT > 0) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${flashT * 2})`;
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.5, flashT)})`;
             ctx.fillRect(0, 0, 800, 600);
             flashT -= dt;
         }
-        currentRoom.drawUI(ctx);
+
+        // UI e Minimapa
+        if (currentRoom && typeof currentRoom.drawUI === 'function') {
+            try { currentRoom.drawUI(ctx); } catch(e){}
+        }
+
     } catch (err) {
-        console.error("Game Loop Error:", err);
+        console.error("Critical Game Loop Error:", err);
         const ed = document.getElementById('error-display');
-        if (ed) ed.innerText = "Game Loop Error: " + err.message;
+        if (ed) {
+            ed.innerText = "Game Error: " + err.message;
+            ed.style.display = 'block';
+        }
     }
+    
     requestAnimationFrame(gameLoop);
 }
