@@ -69,7 +69,7 @@ let lastTime = 0;
 let gameTime = 0;
 let screenShakeT = 0, screenShakeM = 0;
 let prevScreenBeforeSettings = 'titleScreen';
-let lightingEnabled = true;
+let lightingEnabled = false;
 let goldMult = 1.0;
 let fullBright = false, flyMode = false, cheatsUsed = false, takenBossDamage = false;
 let flashT = 0;
