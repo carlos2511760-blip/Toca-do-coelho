@@ -335,9 +335,9 @@ function renderAchievements() {
     
     let unlockedObj = null;
     try {
-        unlockedObj = JSON.parse(localStorage.getItem('toca_achievements') || '{}');
+        unlockedObj = JSON.parse(localStorage.getItem('tdc_achievements') || '[]');
     } catch(e) {
-        unlockedObj = {};
+        unlockedObj = [];
     }
     
     // Convert to explicit array of unlocked IDs for easier checking

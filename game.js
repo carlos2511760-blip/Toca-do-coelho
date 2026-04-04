@@ -133,6 +133,49 @@ document.getElementById('btn-settings-back').addEventListener('click', () => swi
 document.getElementById('btn-manual-back').addEventListener('click', () => switchScreen('titleScreen'));
 document.getElementById('btn-back-title').addEventListener('click', () => switchScreen('titleScreen'));
 
+// Exportar e Importar Save
+document.getElementById('btn-export-save').addEventListener('click', () => {
+    let saveObj = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        if (key.startsWith('toca_') || key.startsWith('tdc_')) {
+            saveObj[key] = localStorage.getItem(key);
+        }
+    }
+    let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(saveObj));
+    let dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "toca_do_coelho_save.json");
+    dlAnchorElem.click();
+});
+
+document.getElementById('btn-import-save').addEventListener('click', () => {
+    let input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+        let file = e.target.files[0];
+        let reader = new FileReader();
+        reader.readAsText(file,'UTF-8');
+        reader.onload = readerEvent => {
+            try {
+                let content = readerEvent.target.result;
+                let saveObj = JSON.parse(content);
+                for (let key in saveObj) {
+                    if (key.startsWith('toca_') || key.startsWith('tdc_')) {
+                        localStorage.setItem(key, saveObj[key]);
+                    }
+                }
+                alert("Save importado com sucesso! O jogo será recarregado para aplicar as mudanças.");
+                window.location.reload();
+            } catch (err) {
+                alert("Erro ao importar o save. Arquivo inválido.");
+            }
+        }
+    }
+    input.click();
+});
+
 // ===== PAUSE SYSTEM =====
 document.getElementById('btn-resume').addEventListener('click', resumeGame);
 document.getElementById('btn-pause-settings').addEventListener('click', () => { prevScreenBeforeSettings = 'pause'; switchScreen('settings'); });
@@ -644,12 +687,14 @@ class Actor {
 
         if (this.poisonTimer > 0) {
             this.poisonTimer -= dt;
-            this.hp -= (this instanceof Player ? 0.3 : 3.0) * dt;
+            this.hp -= (this instanceof Player ? 0.05 : 3.0) * dt;
+            if (this instanceof Player && typeof updateHUD === 'function') updateHUD();
             if (Math.random() < 0.25) boom(this.x, this.y, '#2ecc71', 1);
         }
         if (this.burnTimer > 0) {
             this.burnTimer -= dt;
-            this.hp -= (this instanceof Player ? 0.5 : 5.5) * dt;
+            this.hp -= (this instanceof Player ? 0.1 : 5.5) * dt;
+            if (this instanceof Player && typeof updateHUD === 'function') updateHUD();
             if (Math.random() < 0.3) boom(this.x, this.y, '#e67e22', 1);
         }
 
