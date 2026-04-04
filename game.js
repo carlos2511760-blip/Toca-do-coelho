@@ -604,7 +604,29 @@ class Projectile {
 
 // ACTOR
 class Actor {
-    constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; this.stunImmune = 0; this.levitateT = 0; this.maxJumpTime = 0.8; this.poisonTimer = 0; this.burnTimer = 0; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; // Cap de dano: miniboss não pode perder mais de 30% do HP max por golpe de habilidade // EXCETO se o atacante for um personagem secreto (Dimensional=20, Colecionador=21) let isSecretChar = player && (player.charType === 20 || player.charType === 21); if (this instanceof Enemy && this.type === 'miniboss' && amt > 0 && !isSecretChar) { amt = Math.min(amt, Math.ceil(this.maxHp * 0.30)); } this.hp -= amt; this.invTimer = 0.5; if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); if (this.hp <= 0 && this instanceof Enemy && !this.isDead) { this.isDead = true; boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); } } updatePhysics(dt) {
+    constructor(x, y, r, col, hp, spd) { 
+        this.x = x; this.y = y; this.radius = r; this.color = col; 
+        this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; 
+        this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; 
+        this.slowTimer = 0; this.stunTimer = 0; this.stunImmune = 0; 
+        this.levitateT = 0; this.maxJumpTime = 0.8; this.poisonTimer = 0; this.burnTimer = 0; 
+    } 
+    takeDamage(amt) { 
+        if (this.invTimer > 0 || this.isJumping) return; 
+        /* Cap de dano: miniboss não pode perder mais de 30% do HP max por golpe de habilidade 
+           EXCETO se o atacante for um personagem secreto (Dimensional=20, Colecionador=21) */
+        let isSecretChar = player && (player.charType === 20 || player.charType === 21); 
+        if (this instanceof Enemy && this.type === 'miniboss' && amt > 0 && !isSecretChar) { 
+            amt = Math.min(amt, Math.ceil(this.maxHp * 0.30)); 
+        } 
+        this.hp -= amt; this.invTimer = 0.5; 
+        if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); 
+        if (this.hp <= 0 && this instanceof Enemy && !this.isDead) { 
+            this.isDead = true; boom(this.x, this.y, this.color, 15); 
+            if (typeof audio !== 'undefined') audio.playHit(); 
+        } 
+    } 
+    updatePhysics(dt) {
         if (this.stunTimer > 0) { this.stunTimer -= dt; this.vx = 0; this.vy = 0; }
         let sm = this.slowTimer > 0 ? 0.45 : 1;
         this.x += this.vx * sm * (dt * 60); this.y += this.vy * sm * (dt * 60);
