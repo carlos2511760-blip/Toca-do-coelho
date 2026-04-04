@@ -600,7 +600,7 @@ class Projectile {
 
 // ACTOR
 class Actor {
-    constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; this.stunImmune = 0; this.levitateT = 0; this.maxJumpTime = 0.8; this.poisonTimer = 0; this.burnTimer = 0; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; this.hp -= amt; this.invTimer = 0.5; if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); if (this.hp <= 0 && this instanceof Enemy && !this.isDead) { this.isDead = true; boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); } } updatePhysics(dt) {
+    constructor(x, y, r, col, hp, spd) { this.x = x; this.y = y; this.radius = r; this.color = col; this.maxHp = hp; this.hp = hp; this.speed = spd; this.vx = 0; this.vy = 0; this.isJumping = false; this.jumpTimer = 0; this.invTimer = 0; this.slowTimer = 0; this.stunTimer = 0; this.stunImmune = 0; this.levitateT = 0; this.maxJumpTime = 0.8; this.poisonTimer = 0; this.burnTimer = 0; } takeDamage(amt) { if (this.invTimer > 0 || this.isJumping) return; // Cap de dano: miniboss não pode perder mais de 30% do HP max por golpe de habilidade // EXCETO se o atacante for um personagem secreto (Dimensional=20, Colecionador=21) let isSecretChar = player && (player.charType === 20 || player.charType === 21); if (this instanceof Enemy && this.type === 'miniboss' && amt > 0 && !isSecretChar) { amt = Math.min(amt, Math.ceil(this.maxHp * 0.30)); } this.hp -= amt; this.invTimer = 0.5; if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); if (this.hp <= 0 && this instanceof Enemy && !this.isDead) { this.isDead = true; boom(this.x, this.y, this.color, 15); if (typeof audio !== 'undefined') audio.playHit(); } } updatePhysics(dt) {
         if (this.stunTimer > 0) { this.stunTimer -= dt; this.vx = 0; this.vy = 0; }
         let sm = this.slowTimer > 0 ? 0.45 : 1;
         this.x += this.vx * sm * (dt * 60); this.y += this.vy * sm * (dt * 60);
@@ -722,7 +722,20 @@ class Player extends Actor {
         else if (this.charType === 11 && this.chemCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.slowTimer = 4; e.takeDamage(4 * this.dmgMult); } }); this.chemCD = 7; boom(this.x, this.y, '#1dd1a1', 25); }
         else if (this.charType === 12 && this.rootCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 180) e.stunTimer = 2; }); this.rootCD = 10; boom(this.x, this.y, '#10ac84', 30); }
         else if (this.charType === 13 && this.jetCD <= 0) { this.flyT = 6.0; this.jetCD = 12; boom(this.x, this.y, '#54a0ff', 15); }
-        else if (this.charType === 14 && this.cannonCD <= 0) { for (let i = 0; i < 5; i++) { let tx = this.x + (Math.random() - 0.5) * 400, ty = this.y + (Math.random() - 0.5) * 400; warnings.push(new Warning(tx, ty, 60, 0.5, 'meteor', true)); } this.cannonCD = 8; }
+        else if (this.charType === 14 && this.cannonCD <= 0) {
+            // Canhão mira no inimigo mais próximo (ou no mouse se nenhum inimigo)
+            let tgtX = mouse.x, tgtY = mouse.y;
+            if (enemies.length > 0) {
+                let nearest = enemies.reduce((a, b) => dist(this.x, this.y, a.x, a.y) < dist(this.x, this.y, b.x, b.y) ? a : b);
+                tgtX = nearest.x; tgtY = nearest.y;
+            }
+            for (let i = 0; i < 5; i++) {
+                let tx = tgtX + (Math.random() - 0.5) * 120;
+                let ty = tgtY + (Math.random() - 0.5) * 120;
+                warnings.push(new Warning(tx, ty, 60, 0.5, 'meteor', true));
+            }
+            this.cannonCD = 8;
+        }
         else if (this.charType === 15 && this.roarCD <= 0) {
             // GRITO DE GUERRA: AoE knockback + dano + buff de dano
             let hitCount = 0;
@@ -764,7 +777,16 @@ class Player extends Actor {
             boom(this.x, this.y, '#0984e3', 25);
         }
         else if (this.charType === 17 && this.medCD <= 0) { this.hp = Math.min(this.maxHp, this.hp + 2); updateHUD(); this.medCD = 20; boom(this.x, this.y, '#feca57', 30); }
-        else if (this.charType === 18 && this.tntCD <= 0) { warnings.push(new Warning(this.x, this.y, 120, 1.0, 'meteor', true)); this.tntCD = 6; }
+        else if (this.charType === 18 && this.tntCD <= 0) {
+            // TNT mira no inimigo mais próximo (ou no mouse se campo vazio)
+            let tgtX = mouse.x, tgtY = mouse.y;
+            if (enemies.length > 0) {
+                let nearest = enemies.reduce((a, b) => dist(this.x, this.y, a.x, a.y) < dist(this.x, this.y, b.x, b.y) ? a : b);
+                tgtX = nearest.x; tgtY = nearest.y;
+            }
+            warnings.push(new Warning(tgtX, tgtY, 120, 1.0, 'meteor', true));
+            this.tntCD = 6;
+        }
         else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.takeDamage(6 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.3 : 0.8; } }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); flashT = 0.3; }
         else if (this.charType === 20 && this.dimCD <= 0) {
             enemies.forEach(e => {
