@@ -345,10 +345,40 @@ function renderAchievements() {
     const unlockedIds = Array.isArray(unlockedObj) ? unlockedObj : Object.keys(unlockedObj).filter(k => unlockedObj[k]);
     
     let unlockedTotal = 0;
-    
-    ACHIEVEMENTS.forEach(ach => {
+
+    // Ordena por tier: bronze → silver → gold → platinum
+    const TIER_ORDER = ['bronze', 'silver', 'gold', 'platinum'];
+    const sorted = [...ACHIEVEMENTS].sort((a, b) =>
+        TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier)
+    );
+
+    const TIER_LABEL = {
+        bronze:   '🥉 Bronze',
+        silver:   '🥈 Prata',
+        gold:     '🥇 Ouro',
+        platinum: '💎 Platina',
+    };
+
+    let currentTier = null;
+
+    sorted.forEach(ach => {
         const isUnlocked = unlockedIds.includes(ach.id);
         if (isUnlocked) unlockedTotal++;
+
+        // Inserir separador de tier quando mudar de grupo
+        if (ach.tier !== currentTier) {
+            currentTier = ach.tier;
+            const t = TIER_COLOR[currentTier];
+            const separator = document.createElement('div');
+            separator.style.cssText = `
+                width: 100%; text-align: left; padding: 6px 4px 4px;
+                font-family: 'VT323', monospace; font-size: 1.4rem;
+                color: ${t.border}; border-bottom: 1px solid ${t.border}44;
+                margin-top: 10px; letter-spacing: 2px;
+            `;
+            separator.innerText = TIER_LABEL[currentTier];
+            listEl.appendChild(separator);
+        }
         
         const tier = TIER_COLOR[ach.tier] || TIER_COLOR.bronze;
         
