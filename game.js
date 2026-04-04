@@ -72,9 +72,15 @@ try { let saved = JSON.parse(localStorage.getItem('toca_keybinds')); if (saved) 
 function saveBindings() { localStorage.setItem('toca_keybinds', JSON.stringify(keyBindings)); }
 function keyLabel(code) {
     if (code === 'Space') return 'Espaço';
+    if (code === 'Mouse0') return 'M1 (Esq.)';
+    if (code === 'Mouse1') return 'M3 (Meio)';
+    if (code === 'Mouse2') return 'M2 (Dir.)';
     if (code.startsWith('Key')) return code.replace('Key','');
     if (code.startsWith('Digit')) return code.replace('Digit','');
-    if (code.startsWith('Arrow')) return '↑↓←→'[['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(code)] || code.replace('Arrow','');
+    if (code === 'ArrowUp') return '↑';
+    if (code === 'ArrowDown') return '↓';
+    if (code === 'ArrowLeft') return '←';
+    if (code === 'ArrowRight') return '→';
     return code.replace('Shift','Shift ').replace('Control','Ctrl');
 }
 
@@ -491,6 +497,21 @@ function refreshKeybindUI() {
         btn.innerText = keyLabel(keyBindings[action]);
         btn.classList.remove('listening');
     });
+
+    const lAb = keyLabel(keyBindings.ability);
+    const lSk = keyLabel(keyBindings.skill);
+
+    // Atualiza labels visuais na HUD
+    const hAb = document.getElementById('hud-ability-key');
+    const hSk = document.getElementById('hud-skill-key');
+    if (hAb) hAb.innerText = lAb;
+    if (hSk) hSk.innerText = lSk;
+
+    // Atualiza nomes no menu de controles para não ficar "(Q)" se for outra tecla
+    const labelAbility = document.getElementById('label-ability');
+    const labelSkill = document.getElementById('label-skill');
+    if (labelAbility) labelAbility.innerText = `Habilidade (${lAb})`;
+    if (labelSkill) labelSkill.innerText = `Skill Extra (${lSk})`;
 }
 refreshKeybindUI();
 
@@ -588,31 +609,70 @@ document.querySelectorAll('.reward-card').forEach(card => {
     });
 });
 
-// ===== INPUT =====
+// ===== INPUT (Teclado e Mouse) =====
 let showBigMap = false;
 window.addEventListener('keydown', e => {
-    if (_rebindingBtn) return; // Don't process game input while rebinding
-    keys[e.code] = true;
-    // Prevent default for all bound keys
-    let allBoundKeys = Object.values(keyBindings).concat(['Tab', 'Escape']);
-    if (allBoundKeys.includes(e.code)) e.preventDefault();
-    if (e.code === keyBindings.map || e.code === 'Tab') {
-        if (gameState === 'PLAYING') showBigMap = !showBigMap;
+    if (_rebindingBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const action = _rebindingBtn.dataset.action;
+        keyBindings[action] = e.code;
+        saveBindings();
+        refreshKeybindUI();
+        _rebindingBtn = null;
+        return;
     }
+    keys[e.code] = true;
+    const allBoundKeys = Object.values(keyBindings).concat(['Tab', 'Escape']);
+    if (allBoundKeys.includes(e.code)) e.preventDefault();
+    if (e.code === keyBindings.map || e.code === 'Tab') { if (gameState === 'PLAYING') showBigMap = !showBigMap; }
     if (e.code === keyBindings.jump && gameState === 'PLAYING' && player) player.jump();
     if (e.code === keyBindings.ability && gameState === 'PLAYING' && player) player.useAbility();
     if (e.code === keyBindings.skill && gameState === 'PLAYING' && player) player.useSkill();
-    if (e.code === 'Escape') {
-        if (gameState === 'PLAYING') pauseGame();
-        else if (gameState === 'PAUSED') resumeGame();
-    }
+    if (e.code === 'Escape') { if (gameState === 'PLAYING') pauseGame(); else if (gameState === 'PAUSED') resumeGame(); }
 });
 window.addEventListener('keyup', e => keys[e.code] = false);
+
+document.addEventListener('mousedown', e => {
+    const mouseCode = 'Mouse' + e.button;
+    keys[mouseCode] = true;
+    if (e.button === 0) mouse.down = true;
+
+    if (_rebindingBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const action = _rebindingBtn.dataset.action;
+        keyBindings[action] = mouseCode;
+        saveBindings();
+        refreshKeybindUI();
+        _rebindingBtn = null;
+        return;
+    }
+
+    if (gameState === 'PLAYING' && player) {
+        if (mouseCode === keyBindings.jump) player.jump();
+        if (mouseCode === keyBindings.ability) player.useAbility();
+        if (mouseCode === keyBindings.skill) player.useSkill();
+    }
+});
+
+document.addEventListener('mouseup', e => {
+    const mouseCode = 'Mouse' + e.button;
+    keys[mouseCode] = false;
+    if (e.button === 0) {
+        mouse.down = false;
+        if (player && gameState === 'PLAYING' && keyBindings.ability !== 'Mouse0' && keyBindings.skill !== 'Mouse0') {
+            player.shoot();
+        }
+    }
+});
+
 window.addEventListener('blur', () => { for (let k in keys) keys[k] = false; mouse.down = false; });
-document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('contextmenu', e => {
+    // Só previne se o botão direito (Mouse2) estiver sendo usado para alguma ação do jogo
+    if (Object.values(keyBindings).includes('Mouse2')) e.preventDefault();
+});
 document.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * (canvas.width / r.width); mouse.y = (e.clientY - r.top) * (canvas.height / r.height); });
-document.addEventListener('mousedown', e => { if (e.button === 0) mouse.down = true; });
-document.addEventListener('mouseup', e => { if (e.button === 0) { mouse.down = false; if (player && gameState === 'PLAYING') player.shoot(); } });
 charCards.forEach(c => c.addEventListener('click', () => {
     if (c.classList.contains('locked')) return;
     charCards.forEach(x => x.classList.remove('selected'));

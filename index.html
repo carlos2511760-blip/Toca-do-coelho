@@ -113,8 +113,8 @@
                                 <div class="key-row"><span>Mover Esquerda</span><button class="keybind-btn" data-action="left">A</button></div>
                                 <div class="key-row"><span>Mover Direita</span><button class="keybind-btn" data-action="right">D</button></div>
                                 <div class="key-row"><span>Pular</span><button class="keybind-btn" data-action="jump">Espaço</button></div>
-                                <div class="key-row"><span>Habilidade (Q)</span><button class="keybind-btn" data-action="ability">Q</button></div>
-                                <div class="key-row"><span>Skill Extra (E)</span><button class="keybind-btn" data-action="skill">E</button></div>
+                                <div class="key-row"><span id="label-ability">Habilidade (Q)</span><button class="keybind-btn" data-action="ability">Q</button></div>
+                                <div class="key-row"><span id="label-skill">Skill Extra (E)</span><button class="keybind-btn" data-action="skill">E</button></div>
                                 <div class="key-row"><span>Mapa</span><button class="keybind-btn" data-action="map">M</button></div>
                             </div>
                             <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
@@ -469,9 +469,9 @@
                     </div>
                     <div class="hud-right">
                         <div class="weapon-display">🔫 Arma: <span id="weapon-name">Padrão</span></div>
-                        <div class="char-ability-display">✨ Habil. (Q): <span id="char-ability-cd"
+                        <div class="char-ability-display">✨ Habil. (<span id="hud-ability-key">Q</span>): <span id="char-ability-cd"
                                 style="color:#2ed573;">PRONTO</span></div>
-                        <div class="skill-display">⚡ Extra (E): <span id="ability-name">-</span> <span
+                        <div class="skill-display">⚡ Extra (<span id="hud-skill-key">E</span>): <span id="ability-name">-</span> <span
                                 id="skill-cd"></span></div>
                     </div>
                 </div>
