@@ -480,9 +480,13 @@ document.querySelectorAll('.reward-card').forEach(card => {
 });
 
 // ===== INPUT =====
+let showBigMap = false;
 window.addEventListener('keydown', e => {
     keys[e.code] = true;
-    if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE'].includes(e.code)) e.preventDefault();
+    if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'Tab'].includes(e.code)) e.preventDefault();
+    if (e.code === 'KeyM' || e.code === 'Tab') {
+        if (gameState === 'PLAYING') showBigMap = !showBigMap;
+    }
     if (e.code === 'Space' && gameState === 'PLAYING' && player) player.jump();
     if (e.code === 'KeyQ' && gameState === 'PLAYING' && player) player.useAbility();
     if (e.code === 'KeyE' && gameState === 'PLAYING' && player) player.useSkill();
@@ -638,23 +642,23 @@ class Player extends Actor {
         // ORIGINAIS
         if (ct === 0) { spd = 5.5; col = '#00d2d3'; }
         else if (ct === 1) { hp = 8; spd = 3.5; col = '#ff9f43'; }
-        else if (ct === 2) { hp = 4; spd = 4.5; col = '#ff4757'; }
+        else if (ct === 2) { hp = 5; spd = 4.5; col = '#ff4757'; }
         else if (ct === 3) { hp = 5; spd = 4.0; col = '#833471'; }
-        else if (ct === 4) { hp = 4; spd = 4.8; col = '#7f8fa6'; }
-        else if (ct === 5) { hp = 4; spd = 4.0; col = '#2980b9'; }
-        else if (ct === 6) { hp = 6; spd = 3.5; col = '#2ecc71'; }
-        else if (ct === 7) { hp = 7; spd = 3.0; col = '#f1c40f'; }
-        else if (ct === 8) { hp = 5; spd = 4.0; col = '#d35400'; }
-        else if (ct === 9) { hp = 5; spd = 4.2; col = '#f368e0'; }
+        else if (ct === 4) { hp = 4; spd = 5.0; col = '#7f8fa6'; }
+        else if (ct === 5) { hp = 5; spd = 4.2; col = '#2980b9'; }
+        else if (ct === 6) { hp = 6; spd = 3.8; col = '#2ecc71'; }
+        else if (ct === 7) { hp = 7; spd = 3.2; col = '#f1c40f'; }
+        else if (ct === 8) { hp = 5; spd = 4.2; col = '#d35400'; }
+        else if (ct === 9) { hp = 5; spd = 4.5; col = '#f368e0'; }
         // NOVOS
-        else if (ct === 10) { hp = 4; spd = 5.0; col = '#2f3542'; } // Ninja
-        else if (ct === 11) { hp = 5; spd = 4.0; col = '#1dd1a1'; } // Alquimista
-        else if (ct === 12) { hp = 6; spd = 3.2; col = '#10ac84'; } // Druida
-        else if (ct === 13) { hp = 4; spd = 4.0; col = '#54a0ff'; } // Astronauta
+        else if (ct === 10) { hp = 4; spd = 5.2; col = '#2f3542'; } // Ninja
+        else if (ct === 11) { hp = 5; spd = 4.2; col = '#1dd1a1'; } // Alquimista
+        else if (ct === 12) { hp = 6; spd = 3.5; col = '#10ac84'; } // Druida
+        else if (ct === 13) { hp = 5; spd = 4.5; col = '#54a0ff'; } // Astronauta
         else if (ct === 14) { hp = 6; spd = 3.8; col = '#ee5253'; } // Pirata
-        else if (ct === 15) { hp = 8; spd = 4.8; col = '#ff9f43'; } // Viking
+        else if (ct === 15) { hp = 7; spd = 3.8; col = '#ff9f43'; } // Viking
         else if (ct === 16) { hp = 6; spd = 4.0; col = '#576574'; } // Ciborgue
-        else if (ct === 17) { hp = 5; spd = 3.5; col = '#feca57'; } // Zen
+        else if (ct === 17) { hp = 6; spd = 4.2; col = '#feca57'; } // Zen
         else if (ct === 18) { hp = 5; spd = 4.0; col = '#57606f'; } // Mineiro
         else if (ct === 19) { hp = 5; spd = 4.5; col = '#fffa65'; } // Radiante
         else if (ct === 20) { hp = 5; spd = 4.5; col = '#f5f6fa'; } // Dimensional
@@ -979,26 +983,27 @@ class Enemy extends Actor {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
             if (this.specialCD <= 0) {
                 // ATAQUE ESPECIAL MINIBOSS: Dash Agressivo Elemental (dispara uma vez)
-                let dashDx = dx * this.speed * 5;
-                let dashDy = dy * this.speed * 5;
-                this.vx = dashDx;
-                this.vy = dashDy;
-                boom(this.x, this.y, this.color, 18);
-                shake(0.15, 5);
+                boom(this.x, this.y, this.color, 30);
+                shake(0.3, 10);
                 let pType = ['fire', 'poison', 'taser'][this.mbType];
                 let pColor = ['#ff6348', '#1dd1a1', '#f1c40f'][this.mbType];
-                for (let i = 0; i < 3; i++) {
-                    let a = Math.atan2(dy, dx) + (i - 1) * 0.35;
-                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, pColor, false, pType));
+                for (let i = 0; i < 12; i++) {
+                    let a = (i / 12) * Math.PI * 2;
+                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 12, pColor, false, pType));
                 }
-                this.specialCD = 6 + Math.random() * 4;
+                this.x = player.x + (Math.random() - 0.5) * 150;
+                this.y = player.y + (Math.random() - 0.5) * 150;
+                this.x = Math.max(WALL + 20, Math.min(800 - WALL - 20, this.x));
+                this.y = Math.max(WALL + 20, Math.min(600 - WALL - 20, this.y));
+                boom(this.x, this.y, pColor, 20);
+                this.specialCD = 5 + Math.random() * 2;
             }
             if (player.fearT > 0 && d < 200) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
             this.fireCD -= dt;
             if (this.fireCD <= 0) {
-                if (this.mbType === 0) { for (let i = -1; i <= 1; i++) { let a = Math.atan2(dy, dx) + i * 0.3; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, '#ff6348', false, 'fire')); } this.fireCD = 2; }
-                else if (this.mbType === 1) { for (let i = 0; i < 3; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, dx, dy, 7, 7, '#1dd1a1', false, 'poison')); }, i * 200); this.fireCD = 2.2; }
-                else { for (let i = 0; i < 8; i++) { let a = (i / 8) * Math.PI * 2 + Date.now() / 1000; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 9, '#5f27cd', false, 'taser')); } this.fireCD = 2.5; }
+                if (this.mbType === 0) { for (let i = -2; i <= 2; i++) { let a = Math.atan2(dy, dx) + i * 0.25; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 10, '#ff6348', false, 'fire')); } this.fireCD = 1.5; }
+                else if (this.mbType === 1) { for (let i = 0; i < 5; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, dx, dy, 8, 8, '#1dd1a1', false, 'poison')); }, i * 150); this.fireCD = 1.6; }
+                else { for (let i = 0; i < 12; i++) { let a = (i / 12) * Math.PI * 2 + Date.now() / 1000; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#5f27cd', false, 'taser')); } this.fireCD = 1.8; }
             }
         } else if (this.type === 'boss') {
             this.stateT += dt; this.fireCD -= dt;
@@ -1060,14 +1065,14 @@ class Enemy extends Actor {
             }
 
             if (this.fireCD <= 0) {
-                if (pat === 'circle') { let b = 12 + mapLevel * 2; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 10, '#ff4757', false, 'fire')); } this.fireCD = 1.8; }
-                else if (pat === 'fire') { for (let i = 0; i < 5; i++) { let a = Math.atan2(dy, dx) + (i - 2) * 0.15 + this.stateT * 0.5; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, '#e74c3c', false, 'fire')); } this.fireCD = 1.2; }
-                else if (pat === 'ice') { let b = 8; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2; let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 2.5, 12, '#74b9ff', false, 'ice'); projectiles.push(p); } this.fireCD = 2.5; }
-                else if (pat === 'thunder') { if (this.tpCD <= 0 && Math.random() < 0.3) { this.x = WALL + 60 + Math.random() * (800 - WALL * 2 - 120); this.y = WALL + 60 + Math.random() * (600 - WALL * 2 - 120); boom(this.x, this.y, '#f1c40f', 15); this.tpCD = 3; } let a = Math.atan2(dy, dx); for (let i = 0; i < 3; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a + i * 0.1), Math.sin(a + i * 0.1), 8, 5, '#f1c40f', false, 'taser')); this.fireCD = 0.8; }
-                else if (pat === 'shadow') { if (Math.random() < 0.4 && enemies.length < 8) { enemies.push(new Enemy(this.x + 50, this.y, 'minion')); enemies.push(new Enemy(this.x - 50, this.y, 'minion')); } let a = Math.atan2(dy, dx); projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 15, '#636e72', false, 'poison')); this.fireCD = 1.5; }
-                else if (pat === 'wind') { let a = Math.atan2(dy, dx); for (let i = 0; i < 3; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 12, 4, '#ecf0f1', false, 'ice')); }, i * 100); this.fireCD = 1.0; }
-                else if (pat === 'toxic') { for (let i = 0; i < 6; i++) { let a = (i / 6) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 2, 8, '#55efc4', false, 'poison')); } this.fireCD = 2.0; }
-                else if (pat === 'gravity') { if (d < 300) { player.x -= dx * 2; player.y -= dy * 2; } for (let i = 0; i < 4; i++) { let a = (i / 4) * Math.PI * 2 - this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#6c5ce7', false, 'ice')); } this.fireCD = 1.5; }
+                if (pat === 'circle') { let b = 16 + mapLevel * 2; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3.5, 12, '#ff4757', false, 'fire')); } this.fireCD = 1.5; }
+                else if (pat === 'fire') { for (let i = 0; i < 8; i++) { let a = Math.atan2(dy, dx) + (i - 3.5) * 0.2 + this.stateT * 0.8; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 9, '#e74c3c', false, 'fire')); } this.fireCD = 1.0; }
+                else if (pat === 'ice') { let b = 12; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2; let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3.5, 12, '#74b9ff', false, 'ice'); projectiles.push(p); } this.fireCD = 2.0; }
+                else if (pat === 'thunder') { if (this.tpCD <= 0 && Math.random() < 0.4) { this.x = WALL + 60 + Math.random() * (800 - WALL * 2 - 120); this.y = WALL + 60 + Math.random() * (600 - WALL * 2 - 120); boom(this.x, this.y, '#f1c40f', 20); this.tpCD = 2; } let a = Math.atan2(dy, dx); for (let i = -2; i <= 2; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a + i * 0.15), Math.sin(a + i * 0.15), 9, 6, '#f1c40f', false, 'taser')); this.fireCD = 0.6; }
+                else if (pat === 'shadow') { if (Math.random() < 0.5 && enemies.length < 10) { enemies.push(new Enemy(this.x + 50, this.y, 'minion')); enemies.push(new Enemy(this.x - 50, this.y, 'minion')); } let a = Math.atan2(dy, dx); for (let i=-1; i<=1; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a+i*0.2), Math.sin(a+i*0.2), 7, 12, '#636e72', false, 'poison')); this.fireCD = 1.2; }
+                else if (pat === 'wind') { let a = Math.atan2(dy, dx); for (let i = 0; i < 5; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 14, 5, '#ecf0f1', false, 'ice')); }, i * 60); this.fireCD = 0.7; }
+                else if (pat === 'toxic') { for (let i = 0; i < 10; i++) { let a = (i / 10) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 10, '#55efc4', false, 'poison')); } this.fireCD = 1.6; }
+                else if (pat === 'gravity') { if (d < 400) { player.x -= dx * 2.5; player.y -= dy * 2.5; } for (let i = 0; i < 8; i++) { let a = (i / 8) * Math.PI * 2 - this.stateT * 1.5; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4.5, 12, '#6c5ce7', false, 'ice')); } this.fireCD = 1.1; }
                 else if (pat === 'final_meteor') {
                     if (this.shieldTimer === undefined) { this.shieldTimer = 5; this.meteorSeq = 0; this.atkState = 0; }
                     this.shieldTimer -= dt;
@@ -1436,8 +1441,12 @@ class RoomSystem {
         this.enterRoom(tx, ty);
     }
     drawBase(c) {
-        c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : this.type === 'exit' ? '#23153c' : this.type === 'treasure' ? '#332918' : this.type === 'npc' ? '#103340' : this.type === 'arena' ? '#3e1a1a' : this.type === 'casino' ? '#2d3436' : '#1e2029';
-        if (this.type === 'spawn') c.fillStyle = '#1e2922';
+        if (!['boss','shop','exit','treasure','npc','arena','casino','spawn'].includes(this.type)) {
+            let h = (this.currentX * 137 + this.currentY * 57) % 360;
+            c.fillStyle = `hsl(${h}, 15%, 15%)`;
+        } else {
+            c.fillStyle = this.type === 'boss' ? '#2c0407' : this.type === 'shop' ? '#1a2a1e' : this.type === 'exit' ? '#23153c' : this.type === 'treasure' ? '#332918' : this.type === 'npc' ? '#103340' : this.type === 'arena' ? '#3e1a1a' : this.type === 'casino' ? '#2d3436' : '#1e2922';
+        }
         c.fillRect(0, 0, 800, 600); c.fillStyle = '#2f3542'; c.fillRect(0, 0, 800, WALL); c.fillRect(0, 600 - WALL, 800, WALL); c.fillRect(0, 0, WALL, 600); c.fillRect(800 - WALL, 0, WALL, 600);
         if (this.type === 'shop' && this.isCleared) { c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; c.fillText('🏪 Portas estão abertas', 400, 300); }
         // Draw NPC cage when mini-boss is alive
@@ -1471,12 +1480,28 @@ class RoomSystem {
         pickups.forEach(p => p.draw(c)); icebergs.forEach(ib => ib.draw(c));
     }
     drawUI(c) {
-        this.drawMinimap(c);
+        this.drawMinimap(c, false);
+        if (typeof showBigMap !== 'undefined' && showBigMap) {
+            this.drawMinimap(c, true);
+        }
     }
-    drawMinimap(c) {
-        c.save(); c.translate(700, 480); let s = 6, ms = 15;
-        c.globalAlpha = 0.5; c.fillStyle = '#000'; c.fillRect(-50, -50, 100, 100); c.globalAlpha = 1;
-        c.strokeStyle = '#576574'; c.lineWidth = 2;
+    drawMinimap(c, big) {
+        c.save(); 
+        if (big) {
+            c.translate(400, 300);
+        } else {
+            c.translate(700, 480);
+        }
+        let s = big ? 20 : 6, ms = big ? 50 : 15;
+        if (big) {
+            c.fillStyle = 'rgba(0,0,0,0.85)';
+            c.fillRect(-400, -300, 800, 600);
+            c.fillStyle = '#fff'; c.font = '24px VT323'; c.textAlign = 'center';
+            c.fillText('MAPA GLOBAL (Aperte M ou Tab para fechar)', 0, -250);
+        } else {
+            c.globalAlpha = 0.5; c.fillStyle = '#000'; c.fillRect(-50, -50, 100, 100); c.globalAlpha = 1;
+        }
+        c.strokeStyle = '#576574'; c.lineWidth = big ? 5 : 2;
         Object.values(this.rooms).forEach(r => {
             let cx = (r.x - this.currentX) * ms, cy = (r.y - this.currentY) * ms;
             if (this.rooms[`${r.x + 1},${r.y}`]) { c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + ms, cy); c.stroke(); }
