@@ -491,6 +491,7 @@ document.getElementById('btn-cheat-unlock').addEventListener('click', function (
 
 // ===== KEYBIND SYSTEM =====
 let _rebindingBtn = null;
+let _justReboundMouse = false;
 function refreshKeybindUI() {
     document.querySelectorAll('.keybind-btn').forEach(btn => {
         const action = btn.dataset.action;
@@ -516,7 +517,40 @@ function refreshKeybindUI() {
 refreshKeybindUI();
 
 document.querySelectorAll('.keybind-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+    // mousedown captura botões do mouse ANTES do evento click disparar
+    btn.addEventListener('mousedown', function(e) {
+        // Se já está no modo escuta e não é o botão esquerdo (que abre o escuta),
+        // captura como rebind de mouse
+        if (_rebindingBtn && _rebindingBtn === this) {
+            // Botão esquerdo (0) abre o modo escuta via click, não captura como mouse
+            // Botões do meio (1) e direito (2) são capturados aqui
+            if (e.button !== 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                const mouseCode = 'Mouse' + e.button;
+                const action = _rebindingBtn.dataset.action;
+                keyBindings[action] = mouseCode;
+                saveBindings();
+                refreshKeybindUI();
+                _rebindingBtn = null;
+                _justReboundMouse = true;
+                return;
+            }
+        } else if (!_rebindingBtn) {
+            // Não está no modo escuta: captura qualquer botão do mouse para rebind se clicar no botão
+            // (botão esquerdo abre o escuta via click, então deixa passar)
+            if (e.button !== 0) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }
+    });
+
+    btn.addEventListener('click', function(e) {
+        if (_justReboundMouse) {
+            _justReboundMouse = false;
+            return;
+        }
         if (_rebindingBtn) _rebindingBtn.classList.remove('listening');
         _rebindingBtn = this;
         this.classList.add('listening');
@@ -524,18 +558,16 @@ document.querySelectorAll('.keybind-btn').forEach(btn => {
     });
 });
 
+// Captura de tecla durante rebind (listener com capture=true para ter prioridade)
 window.addEventListener('keydown', function(e) {
-    if (_rebindingBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        const action = _rebindingBtn.dataset.action;
-        keyBindings[action] = e.code;
-        saveBindings();
-        _rebindingBtn.innerText = keyLabel(e.code);
-        _rebindingBtn.classList.remove('listening');
-        _rebindingBtn = null;
-        return;
-    }
+    if (!_rebindingBtn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const action = _rebindingBtn.dataset.action;
+    keyBindings[action] = e.code;
+    saveBindings();
+    refreshKeybindUI();
+    _rebindingBtn = null;
 }, true);
 
 document.getElementById('btn-reset-keys').addEventListener('click', () => {
@@ -612,16 +644,8 @@ document.querySelectorAll('.reward-card').forEach(card => {
 // ===== INPUT (Teclado e Mouse) =====
 let showBigMap = false;
 window.addEventListener('keydown', e => {
-    if (_rebindingBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        const action = _rebindingBtn.dataset.action;
-        keyBindings[action] = e.code;
-        saveBindings();
-        refreshKeybindUI();
-        _rebindingBtn = null;
-        return;
-    }
+    // Rebind é tratado pelo listener com capture=true acima — aqui só jogo normal
+    if (_rebindingBtn) return;
     keys[e.code] = true;
     const allBoundKeys = Object.values(keyBindings).concat(['Tab', 'Escape']);
     if (allBoundKeys.includes(e.code)) e.preventDefault();
@@ -638,7 +662,14 @@ document.addEventListener('mousedown', e => {
     keys[mouseCode] = true;
     if (e.button === 0) mouse.down = true;
 
-    if (_rebindingBtn) {
+    // Se está aguardando rebind via botão esquerdo do mouse (Mouse0),
+    // captura AQUI pois o 'click' do keybind-btn não cobre botão esquerdo de forma confiável
+    // O botão esquerdo (0) abre o modo escuta via click, então só captura esquerdo
+    // se o clique sair de FORA dos keybind-btns (esse caso é tratado nos botões).
+    // Para botões do meio (1) e direito (2), o mousedown nos keybind-btns já captura.
+    // Este listener global captura apenas Mouse0 se _rebindingBtn estiver ativo
+    // E o clique veio de fora do botão keybind (evita conflito com o click listener)
+    if (_rebindingBtn && e.button === 0 && !e.target.classList.contains('keybind-btn')) {
         e.preventDefault();
         e.stopPropagation();
         const action = _rebindingBtn.dataset.action;
@@ -646,6 +677,8 @@ document.addEventListener('mousedown', e => {
         saveBindings();
         refreshKeybindUI();
         _rebindingBtn = null;
+        _justReboundMouse = true;
+        setTimeout(() => _justReboundMouse = false, 300);
         return;
     }
 
