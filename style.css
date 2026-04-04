@@ -141,7 +141,7 @@ canvas {
     background: transparent;
 }
 
-#title-screen {
+#title-screen, #hud {
     background: transparent !important;
 }
 
