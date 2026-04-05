@@ -727,9 +727,6 @@ document.addEventListener('mouseup', e => {
     keys[mouseCode] = false;
     if (e.button === 0) {
         mouse.down = false;
-        if (player && gameState === 'PLAYING' && keyBindings.ability !== 'Mouse0' && keyBindings.skill !== 'Mouse0') {
-            player.shoot();
-        }
     }
 });
 
