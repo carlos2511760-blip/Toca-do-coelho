@@ -661,7 +661,7 @@ function enableOperatorMode() {
     let c21 = document.querySelector('.char-card[data-char="21"]');
     if (c21 && c21.innerHTML.includes('???')) c21.innerHTML = '<h4>Coelho Colecionador</h4><p>Passiva: Tiro Ricochete (5x)</p><p>Ativa (Q): Bolha Coletora (Choca ao centro)</p>';
     let c22 = document.querySelector('.char-card[data-char="22"]');
-    if (c22 && c22.innerHTML.includes('???')) c22.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem burst auto. [1]/[2] Troca Tiro</p><p>Ativa (Q): Buraco Negro Temporal (CD: 40s)</p>';
+    if (c22 && c22.innerHTML.includes('???')) c22.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem auto burst. [1]/[2] Troca Tiro</p><p>Ativa (Q): Gênese e Colapso (CD: 50s)</p>';
     
     alert("🔧 MODO OPERADOR ATIVADO!\nTodos os personagens secretos foram liberados temporariamente para teste.\nConquistas e recordes estão desativados nesta sessão.");
 }
@@ -1105,20 +1105,78 @@ class Player extends Actor {
             boom(this.x, this.y, '#e056fd', 25);
         }
         else if (this.charType === 22 && this.cosmicCD <= 0) {
-            boom(this.x, this.y, '#000', 50);
-            boom(this.x, this.y, '#9b59b6', 30);
-            flashT = 1.0;
+            // Habilidade Suprema: Gênese e Colapso
+            // 1. Ascensão: Modo "Deus" (Invulnerável e flutuando)
+            this.invTimer = 4.0;
+            this.flyT = 4.0;
+            shake(0.6, 20);
+            boom(this.x, this.y, '#000', 80);
+            
+            // 2. O Colapso: Puxa TODOS os inimigos do mapa violentamente pro centro e os paralisa no ar
             enemies.forEach(e => {
-                let d = dist(this.x, this.y, e.x, e.y);
-                if (d < 400) {
-                    e.stunTimer = 6.0;
-                    e.takeDamage(20 * this.dmgMult);
-                    e.x += (this.x - e.x) * 0.5;
-                    e.y += (this.y - e.y) * 0.5;
-                    boom(e.x, e.y, '#34495e', 10);
-                }
+                e.x = this.x + (Math.random() - 0.5) * 80;
+                e.y = this.y + (Math.random() - 0.5) * 80;
+                e.stunTimer = 4.0;
+                e.levitateT = 4.0;
+                e.takeDamage(10 * this.dmgMult);
             });
-            this.cosmicCD = 40;
+
+            // 3. Transmutação de Matéria: Todo projétil na tela (aliado e inimigo) vira uma estrela veloz sua
+            projectiles.forEach(p => {
+                p.isPlayerObj = true;
+                p.color = '#fff';
+                p.weaponType = 'bounce';
+                p.bounces = 5;
+                let ang = Math.random() * Math.PI * 2;
+                p.vx = Math.cos(ang) * 15;
+                p.vy = Math.sin(ang) * 15;
+                p.damage = 15 * this.dmgMult;
+                boom(p.x, p.y, '#9b59b6', 5);
+            });
+
+            // Loop de trituração do buraco negro
+            let step = 0;
+            let chargeTimer = setInterval(() => {
+                if (gameState !== 'PLAYING' || this.hp <= 0) { clearInterval(chargeTimer); return; }
+                step++;
+                // Dano contínuo em quem está preso
+                enemies.forEach(e => {
+                    let dx = this.x - e.x, dy = this.y - e.y, d = Math.hypot(dx, dy);
+                    if (d > 30) { e.x += dx * 0.4; e.y += dy * 0.4; } // Assegura que não escapam
+                    e.takeDamage(2.5 * this.dmgMult);
+                    boom(e.x, e.y, '#1e272e', 2);
+                });
+                
+                // Emissão de energia da singularidade (dispara estrelas para todos os lados)
+                for(let i = 0; i < 4; i++) {
+                    let a = Math.random() * Math.PI * 2;
+                    let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 12, 5, '#fbc531', true, 'normal');
+                    p.damage = 10 * this.dmgMult;
+                    projectiles.push(p);
+                }
+
+                // O BIG BANG (A Gênese - após 3 segundos)
+                if (step >= 15) {
+                    clearInterval(chargeTimer);
+                    flashT = 1.5;
+                    shake(1.5, 40);
+                    boom(this.x, this.y, '#ffffff', 250);
+                    boom(this.x, this.y, '#9b59b6', 150);
+                    boom(this.x, this.y, '#fbc531', 100);
+                    
+                    enemies.forEach(e => {
+                        let edx = e.x - this.x, edy = e.y - this.y, ed = Math.hypot(edx, edy) || 1;
+                        e.x += (edx / ed) * 800; // Arremessa pras bordas da sala
+                        e.y += (edy / ed) * 800;
+                        e.takeDamage(60 * this.dmgMult); // Dano apocalíptico
+                        e.stunTimer = 1.5;
+                        boom(e.x, e.y, '#c23616', 40);
+                    });
+                    if (typeof audio !== 'undefined') audio.playShoot();
+                }
+            }, 200);
+
+            this.cosmicCD = 50; // Aumentado pelo poder
             if (typeof audio !== 'undefined') audio.playShoot();
             // Previne travamento de mira/tiro pós-habilidade
             mouse.down = false; this.lastMouseDown = false;
