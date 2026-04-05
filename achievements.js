@@ -228,6 +228,18 @@ function checkAchievements() {
             unlocked.add(ach.id);
             saveUnlocked(unlocked);
             showAchievementToast(ach);
+            
+            // Desbloqueio de personagens secretos atrelados a conquistas
+            let charUnlocked = false;
+            if (ach.id === 'speed_demon') { localStorage.setItem('toca_char20', 'true'); charUnlocked = true; }
+            if (ach.id === 'golden_era') { localStorage.setItem('toca_char21', 'true'); charUnlocked = true; }
+            if (ach.id === 'legend') { localStorage.setItem('toca_char22', 'true'); charUnlocked = true; }
+            if (ach.id === 'ghost_runner') { localStorage.setItem('toca_char23', 'true'); charUnlocked = true; }
+            if (ach.id === 'impossible_clear' || ach.id === 'impossible_clear_old') { localStorage.setItem('toca_char24', 'true'); charUnlocked = true; }
+            
+            if (charUnlocked && typeof initSecretCharacters === 'function') {
+                initSecretCharacters();
+            }
         }
     }
 }
