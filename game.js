@@ -1130,19 +1130,38 @@ class Player extends Actor {
                 // Vai crescendo lentamente até chegar em 1.0 aos 10 segundos
                 this.blackHoleCharge = step / 50; 
                 
-                // Gravidade inexorável puxando para o centro
+                // Calculando o rádio visual do evento atual
+                let bhR = this.blackHoleCharge * 250; 
+                
+                // Gravidade transformando inimigos em um disco de acreção
                 enemies.forEach(e => {
                     let dx = this.x - e.x, dy = this.y - e.y, d = Math.hypot(dx, dy);
-                    // Puxa lentamente de longe, violentamente se estiver perto
-                    if (d > 10) { e.x += dx * 0.06; e.y += dy * 0.06; }
+                    if (d > 0) {
+                        let targetRadius = Math.max(30, bhR + 25);
+                        let distError = d - targetRadius;
+                        
+                        // Força de atração (puxa de longe) ou repulsão (empurra se entrou demais pra mantê-los na borda)
+                        let pullForce = distError > 0 ? (distError * 0.1) : (distError * 0.3);
+                        
+                        // Velocidade angular de órbita (giros violentos rodando na borda)
+                        let orbitSpeed = 15 + (40 * this.blackHoleCharge);
+                        
+                        // Vetor tangencial (-dy, dx)
+                        let tx = -dy / d; 
+                        let ty = dx / d;
+                        
+                        e.x += (dx / d) * pullForce + tx * orbitSpeed;
+                        e.y += (dy / d) * pullForce + ty * orbitSpeed;
+                    }
                     
-                    // Absorvido pelo horizonte de eventos...
-                    if (d < 150 * this.blackHoleCharge) {
-                        boom(e.x, e.y, '#000', 2);
+                    // Força todos a ficarem paralisados no ar enquanto giram
+                    e.stunTimer = 2.0; 
+                    e.levitateT = 2.0;
+
+                    // Partículas escuras gerando rastro na órbita
+                    if (d < bhR + 50) {
+                        boom(e.x, e.y, '#000', 1);
                     } else {
-                        // Força todos a ficarem paralisados no tempo enquanto puxados
-                        e.stunTimer = 2.0; 
-                        e.levitateT = 2.0;
                         boom(e.x, e.y, '#8e44ad', 1);
                     }
                 });
@@ -2190,7 +2209,34 @@ function startGame() {
     lastTime = performance.now();
     requestAnimationFrame(gameLoop);
 }
-function updateHUD() { if (!player) return; let p = Math.max(0, (player.hp / player.maxHp) * 100); healthBar.style.width = p + '%'; healthBar.style.backgroundColor = p < 30 ? '#ff4757' : 'var(--health)'; }
+function updateHUD() { 
+    if (!player) return; 
+    let p = Math.max(0, (player.hp / player.maxHp) * 100); 
+    healthBar.style.width = p + '%'; 
+    healthBar.style.backgroundColor = p < 30 ? '#ff4757' : 'var(--health)'; 
+
+    // Monitor Fantasma (HUD)
+    const ghostEl = document.getElementById('ghost-monitor');
+    const ghostCount = document.getElementById('ghost-kills');
+    if (ghostEl && typeof runStats !== 'undefined') {
+        let k = runStats.kills;
+        ghostCount.innerText = k;
+        if (k >= 20) {
+            ghostEl.style.opacity = '0.3';
+            ghostEl.style.filter = 'grayscale(1) brightness(0.5)';
+            ghostEl.style.textDecoration = 'line-through';
+            ghostEl.style.transform = 'scale(0.8)';
+        } else if (k >= 15) {
+            ghostEl.style.color = '#ff9f43';
+            ghostEl.style.textShadow = '0 0 10px #ff9f43';
+            ghostEl.style.animation = 'blink 0.5s infinite alternate';
+        } else {
+            ghostEl.style.color = '#fff';
+            ghostEl.style.textShadow = '0 0 5px rgba(255,255,255,0.5)';
+            ghostEl.style.animation = 'none';
+        }
+    }
+}
 function updateCooldowns() {
     if (!player) return;
 

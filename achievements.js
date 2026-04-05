@@ -7,6 +7,7 @@ const TIER_COLOR = {
     silver:   { bg: '#1a1e2d', border: '#c0c0c0', label: '#c0c0c0', icon: '🥈' },
     gold:     { bg: '#2d2700', border: '#ffd700', label: '#ffd700', icon: '🥇' },
     platinum: { bg: '#0d1a2d', border: '#a8d8ea', label: '#a8d8ea', icon: '💎' },
+    mythic:   { bg: '#1c0a2b', border: '#9b59b6', label: '#e056fd', icon: '🌌' },
 };
 
 // ─── Definição das 15 Conquistas ─────────────────────────────────────────────
@@ -119,12 +120,12 @@ const ACHIEVEMENTS = [
 
     // ── LOJA ────────────────────────────────────────────────
     {
-        id: 'shopaholic',
-        name: 'Bom Comprador',
-        desc: 'Compre um item na loja',
+        id: 'golden_era',
+        name: 'A Era de Ouro',
+        desc: 'Compre o total de 50 itens na loja (Acumulativo em várias partidas)',
         category: '🏪 Loja',
-        tier: 'bronze',
-        check: s => s.itemsBought >= 1,
+        tier: 'gold',
+        check: (s, gs) => gs && gs.itemsBought >= 50,
     },
 
     // ── VITÓRIA ─────────────────────────────────────────────
@@ -149,8 +150,24 @@ const ACHIEVEMENTS = [
         name: 'Impossível',
         desc: 'Complete o jogo no Pesadelo (Jornada Longa) sem tomar dano',
         category: '🏆 Vitória',
-        tier: 'platinum',
+        tier: 'mythic',
         check: s => s.impossibleWon >= 1,
+    },
+    {
+        id: 'speed_demon',
+        name: 'Velocista Supremo',
+        desc: 'Escape da Toca e vença o jogo em menos de 8 minutos!',
+        category: '🏆 Vitória',
+        tier: 'platinum',
+        check: s => s.gameWon >= 1 && (typeof gameTime !== 'undefined' && gameTime < 480),
+    },
+    {
+        id: 'ghost_runner',
+        name: 'Fantasma',
+        desc: 'Complete o jogo eliminando menos de 20 inimigos totais',
+        category: '🏆 Vitória',
+        tier: 'platinum',
+        check: s => s.gameWon >= 1 && s.kills <= 20,
     },
 ];
 
@@ -167,7 +184,19 @@ let runStats = {
     gameWon: 0,
     nightmareWon: 0,
     impossibleWon: 0,
+    speedWon: 0,
+    pacifistWon: 0,
 };
+
+// ─── Estado: estatísticas globais persistentes ──────────────────────────────
+function getGlobalStats() {
+    try {
+        return JSON.parse(localStorage.getItem('tdc_global_stats') || '{"itemsBought":0}');
+    } catch { return { itemsBought: 0 }; }
+}
+function saveGlobalStats(stats) {
+    localStorage.setItem('tdc_global_stats', JSON.stringify(stats));
+}
 
 // Rastrear flags temporárias
 let _bossStartNoDmg = false;  // true se o jogador não tomou dano desde que entrou na sala do boss
@@ -193,8 +222,9 @@ function saveUnlocked(set) {
 function checkAchievements() {
     if (typeof cheatsUsed !== 'undefined' && cheatsUsed) return;
     const unlocked = getUnlockedSet();
+    const gs = getGlobalStats();
     for (const ach of ACHIEVEMENTS) {
-        if (!unlocked.has(ach.id) && ach.check(runStats)) {
+        if (!unlocked.has(ach.id) && ach.check(runStats, gs)) {
             unlocked.add(ach.id);
             saveUnlocked(unlocked);
             showAchievementToast(ach);
@@ -323,6 +353,9 @@ function onGoldCollected(amount) {
 /** Chamado quando o jogador compra um item na loja */
 function onItemBought() {
     runStats.itemsBought++;
+    let gs = getGlobalStats();
+    gs.itemsBought = (gs.itemsBought || 0) + 1;
+    saveGlobalStats(gs);
     checkAchievements();
 }
 

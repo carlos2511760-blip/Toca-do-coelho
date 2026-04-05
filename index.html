@@ -460,7 +460,10 @@
                         <div class="health-container">
                             <div id="health-bar"></div>
                         </div>
-                        <div class="gold-display">🪙 <span id="gold-counter">0</span></div>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <div class="gold-display" style="margin:0;">🪙 <span id="gold-counter">0</span></div>
+                            <div id="ghost-monitor" style="font-size:1.15rem; color:#fff; display:flex; align-items:center; cursor:help;" title="Missão Fantasma: < 20 abates">👻 <span id="ghost-kills" style="margin-left:4px;">0</span></div>
+                        </div>
                     </div>
                     <div class="hud-center">
                         <div class="room-info">Nív. <span id="floor-counter">1</span> | <span
