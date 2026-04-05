@@ -144,6 +144,14 @@ const ACHIEVEMENTS = [
         tier: 'platinum',
         check: s => s.nightmareWon >= 1,
     },
+    {
+        id: 'impossible_clear',
+        name: 'Impossível',
+        desc: 'Complete o jogo no Pesadelo (Jornada Longa) sem tomar dano',
+        category: '🏆 Vitória',
+        tier: 'platinum',
+        check: s => s.impossibleWon >= 1,
+    },
 ];
 
 // ─── Estado: estatísticas da run atual ───────────────────────────────────────
@@ -158,6 +166,7 @@ let runStats = {
     itemsBought: 0,
     gameWon: 0,
     nightmareWon: 0,
+    impossibleWon: 0,
 };
 
 // Rastrear flags temporárias
@@ -318,9 +327,10 @@ function onItemBought() {
 }
 
 /** Chamado ao vencer o jogo */
-function onGameWon(difficulty) {
+function onGameWon(difficulty, isLong, noDamage) {
     runStats.gameWon++;
     if (difficulty === 'nightmare') runStats.nightmareWon++;
+    if (difficulty === 'nightmare' && isLong && noDamage) runStats.impossibleWon++;
     checkAchievements();
 }
 

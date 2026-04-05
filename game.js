@@ -60,7 +60,7 @@ let screenShakeT = 0, screenShakeM = 0;
 let prevScreenBeforeSettings = 'titleScreen';
 let lightingEnabled = false;
 let goldMult = 1.0;
-let fullBright = false, flyMode = false, cheatsUsed = false, takenBossDamage = false;
+let fullBright = false, flyMode = false, cheatsUsed = false, takenBossDamage = false, takenDamageOverall = false;
 let flashT = 0;
 let joystickPos = { x: 0, y: 0 }, joystickActive = false;
 let gamepadActive = false;
@@ -788,6 +788,20 @@ class Projectile {
     }
     update(dt) {
         this.x += this.vx * (dt * 60); this.y += this.vy * (dt * 60);
+        
+        if (this.weaponType === 'blackhole') {
+            enemies.forEach(e => {
+                let rdx = this.x - e.x, rdy = this.y - e.y;
+                let dd = Math.hypot(rdx, rdy);
+                if (dd > 0 && dd < 250) {
+                    e.x += (rdx / dd) * (250 / dd) * dt * 4; 
+                    e.y += (rdy / dd) * (250 / dd) * dt * 4;
+                }
+            });
+            // Trail
+            if (Math.random() < 0.4) particles.push(new Particle(this.x, this.y, '#9b59b6', 2, 4, 15));
+        }
+
         if (this.x < WALL || this.x > 800 - WALL || this.y < WALL || this.y > 600 - WALL) {
             if (this.bounces > 0) {
                 if (this.x < WALL || this.x > 800 - WALL) this.vx = -this.vx;
@@ -800,7 +814,7 @@ class Projectile {
         }
         for (let ib of icebergs) { if (this.x > ib.x - ib.w / 2 && this.x < ib.x + ib.w / 2 && this.y > ib.y - ib.h / 2 && this.y < ib.y + ib.h / 2) { ib.hp--; this.active = false; } }
     }
-    draw(c) { c.fillStyle = this.color; c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill(); if (this.weaponType === 'fire') { c.fillStyle = 'rgba(255,165,0,0.4)'; c.beginPath(); c.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2); c.fill(); } if (this.weaponType === 'taser') { c.strokeStyle = '#f1c40f'; c.lineWidth = 1; c.beginPath(); c.moveTo(this.x - 5, this.y - 5); c.lineTo(this.x + 5, this.y + 5); c.stroke(); } if (this.weaponType === 'ice') { c.strokeStyle = '#74b9ff'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2); c.stroke(); } if (this.bounces > 0) { c.strokeStyle = '#e056fd'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2); c.stroke(); } if (this.weaponType === 'poison') { c.fillStyle = 'rgba(46, 204, 113, 0.4)'; c.beginPath(); c.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2); c.fill(); } }
+    draw(c) { c.fillStyle = this.color; c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill(); if (this.weaponType === 'blackhole') { c.strokeStyle = 'rgba(155, 89, 182, 0.5)'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, this.y, this.radius + 6 + Math.sin(Date.now() / 100) * 4, 0, Math.PI * 2); c.stroke(); } if (this.weaponType === 'fire') { c.fillStyle = 'rgba(255,165,0,0.4)'; c.beginPath(); c.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2); c.fill(); } if (this.weaponType === 'taser') { c.strokeStyle = '#f1c40f'; c.lineWidth = 1; c.beginPath(); c.moveTo(this.x - 5, this.y - 5); c.lineTo(this.x + 5, this.y + 5); c.stroke(); } if (this.weaponType === 'ice') { c.strokeStyle = '#74b9ff'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2); c.stroke(); } if (this.bounces > 0) { c.strokeStyle = '#e056fd'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2); c.stroke(); } if (this.weaponType === 'poison') { c.fillStyle = 'rgba(46, 204, 113, 0.4)'; c.beginPath(); c.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2); c.fill(); } }
 }
 
 // ACTOR
@@ -892,18 +906,20 @@ class Player extends Actor {
         else if (ct === 19) { hp = 5; spd = 4.5; col = '#fffa65'; } // Radiante
         else if (ct === 20) { hp = 5; spd = 4.5; col = '#f5f6fa'; } // Dimensional
         else if (ct === 21) { hp = 5; spd = 4.2; col = '#e056fd'; } // Colecionador
+        else if (ct === 22) { hp = 4; spd = 4.8; col = '#1e272e'; } // Cósmico
         else { hp = 5; spd = 4.0; col = '#000000'; }
 
         hp = Math.max(1, hp + getDiff().hpBonus);
         super(x, y, 15, col, hp, spd);
         this.charType = ct;
         this.dashCD = 0; this.shieldT = 0; this.shieldCD = 0; this.burstCD = 0; this.fearT = 0; this.fearCD = 0; this.ghostT = 0; this.ghostCD = 0; this.magicCD = 0; this.toxicCD = 0; this.empCD = 0; this.fireCD = 0; this.luckCD = 0;
-        this.ninjaCD = 0; this.chemCD = 0; this.rootCD = 0; this.jetCD = 0; this.cannonCD = 0; this.roarCD = 0; this.laserCD = 0; this.medCD = 0; this.tntCD = 0; this.sunCD = 0; this.dimCD = 0; this.bubbleCD = 0;
+        this.ninjaCD = 0; this.chemCD = 0; this.rootCD = 0; this.jetCD = 0; this.cannonCD = 0; this.roarCD = 0; this.laserCD = 0; this.medCD = 0; this.tntCD = 0; this.sunCD = 0; this.dimCD = 0; this.bubbleCD = 0; this.cosmicCD = 0;
         this.baseFireRate = (ct === 2 || ct === 15) ? 0.12 : 0.25;
         this.weaponCD = 0;
         this.gold = (ct === 5 || ct === 14) ? 50 : 0;
         this.currentWeapon = 'normal'; this.activeSkill = null; this.skillCD = 0; this.dmgMult = 1; this.regenT = 0; this.regenDur = 0; this.flyT = 0; this.noDamageT = 0; this.auraT = 0; this.burnTimer = 0; this.burnTick = 0;
         this.maxJumpTime = (this.charType === 13) ? 1.2 : 0.8;
+        if (ct === 22) this.currentCosmicWeapon = 1;
     }
     jump() {
         if (!this.isJumping && this.flyT <= 0) {
@@ -918,7 +934,7 @@ class Player extends Actor {
             this.magicCD, this.toxicCD, this.empCD, this.fireCD, this.luckCD,
             this.ninjaCD, this.chemCD, this.rootCD, this.jetCD, this.cannonCD,
             this.roarCD, this.laserCD, this.medCD, this.tntCD, this.sunCD,
-            this.dimCD, this.bubbleCD
+            this.dimCD, this.bubbleCD, this.cosmicCD
         ];
         return cds[this.charType] || 0;
     }
@@ -1051,6 +1067,23 @@ class Player extends Actor {
             this.bubbleCD = 35;
             boom(this.x, this.y, '#e056fd', 25);
         }
+        else if (this.charType === 22 && this.cosmicCD <= 0) {
+            boom(this.x, this.y, '#000', 50);
+            boom(this.x, this.y, '#9b59b6', 30);
+            flashT = 1.0;
+            enemies.forEach(e => {
+                let d = dist(this.x, this.y, e.x, e.y);
+                if (d < 400) {
+                    e.stunTimer = 6.0;
+                    e.takeDamage(20 * this.dmgMult);
+                    e.x += (this.x - e.x) * 0.5;
+                    e.y += (this.y - e.y) * 0.5;
+                    boom(e.x, e.y, '#34495e', 10);
+                }
+            });
+            this.cosmicCD = 40;
+            if (typeof audio !== 'undefined') audio.playShoot();
+        }
     }
     useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; if (e.stunImmune <= 0) { e.stunTimer = 1.0; e.stunImmune = 3.0; } } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); if (e.stunImmune <= 0) { e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; e.stunImmune = (e.type === 'boss') ? 3.0 : 5.0; } } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } else if (sk === 'timewarp') { enemies.forEach(e => { e.slowTimer = 6.0; boom(e.x, e.y, '#a29bfe', 5); }); boom(this.x, this.y, '#6c5ce7', 30); this.skillCD = 15; } else if (sk === 'dash') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; this.x += (dx / d) * 200; this.y += (dy / d) * 200; boom(this.x, this.y, '#00d2d3', 20); } else if (sk === 'heal') { this.hp = Math.min(this.maxHp, this.hp + 3); updateHUD(); boom(this.x, this.y, '#2ed573', 25); this.skillCD = 15; } else if (sk === 'shatter') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.takeDamage(12 * this.dmgMult); e.stunTimer = 2.0; } }); boom(this.x, this.y, '#7f8fa6', 40); } else if (sk === 'invis') { this.ghostT = 5.0; this.invTimer = 5.0; boom(this.x, this.y, '#fff', 20); } }
     shoot() {
@@ -1092,6 +1125,30 @@ class Player extends Actor {
             let c1 = wt === 'normal' ? '#f5f6fa' : col;
             let p1 = spawnProj(dx, dy); p1.x += px * 8; p1.y += py * 8; p1.color = c1;
             let p2 = spawnProj(dx, dy); p2.x -= px * 8; p2.y -= py * 8; p2.color = c1;
+        } else if (this.charType === 22) {
+            if (this.currentCosmicWeapon === 2) {
+                let p = spawnProj(dx, dy);
+                p.weaponType = 'blackhole'; p.color = '#1e272e'; p.radius = 12;
+                p.bounces = 0; p.damage = this.dmgMult * 2.0; p.vx = dx * 8; p.vy = dy * 8;
+                cDown = 8;
+                boom(this.x, this.y, '#34495e', 15);
+            } else {
+                this.cosmicShots = (this.cosmicShots || 0) + 1;
+                cDown = 10;
+                if (this.cosmicShots >= 10) {
+                    this.cosmicShots = 0;
+                    boom(400, 300, '#000', 100);
+                    flashT = 1.0;
+                    enemies.forEach(e => {
+                        e.takeDamage(e.maxHp * 10); // Instant kill pretty much
+                        boom(e.x, e.y, '#fff', 30);
+                    });
+                } else {
+                    let p = spawnProj(dx, dy);
+                    p.color = '#fff'; p.weaponType = 'normal'; p.radius = 8;
+                    p.damage = this.dmgMult * 3.0; // Packs a punch
+                }
+            }
         } else {
             spawnProj(dx, dy);
         }
@@ -1116,6 +1173,7 @@ class Player extends Actor {
         a = Math.max(0.5, a - (this.resistBonus || 0));
 
         super.takeDamage(a);
+        takenDamageOverall = true;
         shake(0.2, 5);
         flash();
         this.noDamageT = 0;
@@ -1134,6 +1192,10 @@ class Player extends Actor {
         if (joystickActive) { dx = joystickPos.x; dy = joystickPos.y; }
         else if (dx && dy) { let l = Math.hypot(dx, dy); dx /= l; dy /= l; }
         let spdMod = this.speed;
+        if (this.charType === 22) {
+            if (keys['Digit1']) this.currentCosmicWeapon = 1;
+            if (keys['Digit2']) this.currentCosmicWeapon = 2;
+        }
         // Viking Fúria de Combate: abaixo de 50% HP = +40% speed, +25% dano
         if (this.charType === 15 && this.hp <= this.maxHp * 0.5) {
             spdMod *= 1.4;
@@ -1148,11 +1210,21 @@ class Player extends Actor {
         if (this.charType === 6) { this.auraT += dt; if (this.auraT >= 1.0) { this.auraT = 0; enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 80) { e.takeDamage(2 * this.dmgMult); boom(e.x, e.y, '#2ecc71', 3); } }); } }
         if (this.charType === 7) { this.noDamageT += dt; if (this.noDamageT >= 8 && this.hp < this.maxHp) { this.noDamageT = 0; this.hp++; updateHUD(); boom(this.x, this.y, '#f1c40f', 10); } }
         this.dashCD -= dt; this.shieldCD -= dt; this.burstCD -= dt; this.fearCD -= dt; this.ghostCD -= dt; this.magicCD -= dt; this.toxicCD -= dt; this.empCD -= dt; this.fireCD -= dt; this.luckCD -= dt;
-        this.ninjaCD -= dt; this.chemCD -= dt; this.rootCD -= dt; this.jetCD -= dt; this.cannonCD -= dt; this.roarCD -= dt; this.laserCD -= dt; this.medCD -= dt; this.tntCD -= dt; this.sunCD -= dt; this.dimCD -= dt; this.bubbleCD -= dt;
+        this.ninjaCD -= dt; this.chemCD -= dt; this.rootCD -= dt; this.jetCD -= dt; this.cannonCD -= dt; this.roarCD -= dt; this.laserCD -= dt; this.medCD -= dt; this.tntCD -= dt; this.sunCD -= dt; this.dimCD -= dt; this.bubbleCD -= dt; this.cosmicCD -= dt;
         if (this.shieldT > 0) this.shieldT -= dt; if (this.fearT > 0) this.fearT -= dt; if (this.ghostT > 0) this.ghostT -= dt; if (this.weaponCD > 0) this.weaponCD -= dt; if (this.skillCD > 0) this.skillCD -= dt;
         if (this.regenDur > 0) { this.regenDur -= dt; this.regenT -= dt; if (this.regenT <= 0) { this.hp = Math.min(this.maxHp, this.hp + 1); this.regenT = 5; updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
         if (this.hasPermRegen) { this.permRegenT = (this.permRegenT || 0) + dt; if (this.permRegenT >= 20) { this.permRegenT = 0; this.hp = Math.min(this.maxHp, this.hp + 1); updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
-        if (mouse.down && this.weaponCD <= 0) this.shoot();
+        
+        if (mouse.down) {
+            if (this.charType === 22) {
+                if (!this.lastMouseDown && this.weaponCD <= 0) this.shoot();
+                this.lastMouseDown = true;
+            } else if (this.weaponCD <= 0) {
+                this.shoot();
+            }
+        } else {
+            this.lastMouseDown = false;
+        }
     }
     draw(c) {
         if (this.isJumping) { c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.ellipse(this.x, this.y + 20, this.radius, this.radius / 2, 0, 0, Math.PI * 2); c.fill(); }
@@ -1186,6 +1258,19 @@ class Player extends Actor {
             c.beginPath(); c.arc(this.x, dY, dR + 12 + Math.sin(Date.now() / 150) * 4, 0, Math.PI * 2); c.stroke();
             c.shadowBlur = 0;
         }
+        
+        // Cosmic visual (Character 22)
+        if (this.charType === 22) {
+            c.shadowBlur = 15; c.shadowColor = '#9b59b6';
+            c.strokeStyle = 'rgba(155, 89, 182, 0.8)'; c.lineDashOffset = Date.now() / 50; c.setLineDash([5, 5]); c.lineWidth = 2;
+            c.beginPath(); c.arc(this.x, dY, dR + 6, 0, Math.PI * 2); c.stroke();
+            c.setLineDash([]); c.shadowBlur = 0;
+            // Indicador de modo de tiro
+            c.fillStyle = this.currentCosmicWeapon === 1 ? '#fff' : '#000';
+            c.strokeStyle = '#9b59b6'; c.lineWidth = 1;
+            c.beginPath(); c.arc(this.x, dY - dR - 10, 3, 0, Math.PI * 2); c.fill(); c.stroke();
+        }
+
         let mx = mouse.x - this.x, my = mouse.y - this.y, mg = Math.hypot(mx, my);
         if (mg > 0) { c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(this.x + (mx / mg) * dR, dY + (my / mg) * dR); c.lineTo(this.x + (mx / mg) * (dR + 20), dY + (my / mg) * (dR + 20)); c.stroke(); }
         if (this.burnTimer > 0 && Math.random() < 0.3) { c.fillStyle = '#e74c3c'; c.beginPath(); c.arc(this.x + (Math.random() - 0.5) * 15, dY - 15 + (Math.random() - 0.5) * 15, 4, 0, Math.PI * 2); c.fill(); }
@@ -1676,8 +1761,12 @@ class RoomSystem {
                             localStorage.setItem('toca_char20', 'true');
                             if (typeof initSecretCharacters === 'function') initSecretCharacters();
                         }
+                        if (selectedDiff === 'nightmare' && MAX_LEVELS === 8 && !takenDamageOverall && !cheatsUsed) {
+                            localStorage.setItem('toca_char22', 'true');
+                            if (typeof initSecretCharacters === 'function') initSecretCharacters();
+                        }
                         // Hook conquistas: vitória
-                        if (typeof onGameWon === 'function') onGameWon(selectedDiff);
+                        if (typeof onGameWon === 'function') onGameWon(selectedDiff, MAX_LEVELS === 8, !takenDamageOverall);
                         gameState = 'VICTORY'; switchScreen('victory');
                         if (!cheatsUsed) {
                             let bvt = parseFloat(localStorage.getItem('toca_vic_time') || 999999);
@@ -1958,6 +2047,7 @@ function startGame() {
     gameTime = 0;
     goldMult = 1.0;
     takenBossDamage = false;
+    takenDamageOverall = false;
     window.hasSpawnedArena = false;
     window.hasSpawnedCasino = false;
     player = new Player(400, 300, selectedChar);
@@ -2066,6 +2156,18 @@ function checkCollisions() {
                         }
                         boom(p.x, p.y, '#00d2d3', 35);
                     }
+                    else if (p.weaponType === 'blackhole') {
+                        enemies.forEach(ae => {
+                            if (ae !== e && dist(p.x, p.y, ae.x, ae.y) < 180) {
+                                ae.takeDamage(p.damage * 1.5);
+                                ae.slowTimer = 4.0;
+                                boom(ae.x, ae.y, '#34495e', 8);
+                                particles.push(new Particle(ae.x, ae.y, '#9b59b6', 4, 10, 20));
+                            }
+                        });
+                        e.slowTimer = 5.0;
+                        boom(p.x, p.y, '#000', 40);
+                    }
                     else if (player.charType === 16) {
                         e.slowTimer = Math.min(e.slowTimer + 1.5, 3.0);
                         enemies.forEach(other_e => {
@@ -2161,6 +2263,14 @@ function initSecretCharacters() {
         if (card) {
             card.classList.remove('locked');
             card.innerHTML = '<h4>Coelho Colecionador</h4><p>Passiva: Tiro Ricochete (5x)</p><p>Ativa (Q): Bolha Coletora (Choca ao centro)</p>';
+        }
+    }
+    let char22Unlocked = localStorage.getItem('toca_char22') === 'true';
+    if (char22Unlocked) {
+        let card = document.querySelector('.char-card[data-char="22"]');
+        if (card) {
+            card.classList.remove('locked');
+            card.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem burst auto. [1]/[2] Troca Tiro</p><p>Ativa (Q): Buraco Negro Temporal</p>';
         }
     }
 }
