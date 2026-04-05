@@ -1069,14 +1069,18 @@ class Player extends Actor {
         }
         else if (this.charType === 19 && this.sunCD <= 0) { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 250) { e.takeDamage(2 * this.dmgMult); e.stunTimer = (e.type === 'boss') ? 0.3 : 0.8; } }); this.sunCD = 12; boom(this.x, this.y, '#fffa65', 50); flashT = 0.3; }
         else if (this.charType === 20 && this.dimCD <= 0) {
+            // "Corte Dimensional (-50% HP Máx)"
+            this.takeDamage(this.maxHp * 0.5);
             enemies.forEach(e => {
                 let dmg = Math.min(e.maxHp * 0.10, 15);
                 e.takeDamage(dmg);
                 boom(e.x, e.y, '#f5f6fa', 15);
             });
-            this.dimCD = 50;
+            this.dimCD = 25; // Reduzido também para ficar mais prático
             flashT = 0.5;
             if (typeof audio !== 'undefined') audio.playShoot();
+            // Evita o travamento (reset de input preventivo)
+            mouse.down = false; this.lastMouseDown = false;
         }
         else if (this.charType === 21 && this.bubbleCD <= 0) {
             // Bolha Coletora: encapsula, levita e choca todos no centro
@@ -1116,6 +1120,8 @@ class Player extends Actor {
             });
             this.cosmicCD = 40;
             if (typeof audio !== 'undefined') audio.playShoot();
+            // Previne travamento de mira/tiro pós-habilidade
+            mouse.down = false; this.lastMouseDown = false;
         }
     }
     useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; if (e.stunImmune <= 0) { e.stunTimer = 1.0; e.stunImmune = 3.0; } } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); if (e.stunImmune <= 0) { e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; e.stunImmune = (e.type === 'boss') ? 3.0 : 5.0; } } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } else if (sk === 'timewarp') { enemies.forEach(e => { e.slowTimer = 6.0; boom(e.x, e.y, '#a29bfe', 5); }); boom(this.x, this.y, '#6c5ce7', 30); this.skillCD = 15; } else if (sk === 'dash') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; this.x += (dx / d) * 200; this.y += (dy / d) * 200; boom(this.x, this.y, '#00d2d3', 20); } else if (sk === 'heal') { this.hp = Math.min(this.maxHp, this.hp + 3); updateHUD(); boom(this.x, this.y, '#2ed573', 25); this.skillCD = 15; } else if (sk === 'shatter') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.takeDamage(12 * this.dmgMult); e.stunTimer = 2.0; } }); boom(this.x, this.y, '#7f8fa6', 40); } else if (sk === 'invis') { this.ghostT = 5.0; this.invTimer = 5.0; boom(this.x, this.y, '#fff', 20); } }
@@ -1163,7 +1169,7 @@ class Player extends Actor {
                 let p = spawnProj(dx, dy);
                 p.weaponType = 'blackhole'; p.color = '#1e272e'; p.radius = 12;
                 p.bounces = 0; p.damage = this.dmgMult * 2.0; p.vx = dx * 8; p.vy = dy * 8;
-                cDown = 8;
+                cDown = 5;
                 boom(this.x, this.y, '#34495e', 15);
             } else {
                 this.cosmicShots = (this.cosmicShots || 0) + 1;
