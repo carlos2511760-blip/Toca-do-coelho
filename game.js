@@ -1106,14 +1106,14 @@ class Player extends Actor {
         }
         else if (this.charType === 22 && this.cosmicCD <= 0) {
             // Habilidade Suprema: Gênese e Colapso (Cinema: Hit Kill + Renderização Absoluta)
-            this.invTimer = 7.0;
-            this.flyT = 7.0;
+            this.invTimer = 11.0;
+            this.flyT = 11.0;
             this.blackHoleCharge = 0.01;
             shake(0.8, 40);
             boom(this.x, this.y, '#000', 100);
             
             // O início do Colapso
-            enemies.forEach(e => { e.stunTimer = 6.5; e.levitateT = 6.5; });
+            enemies.forEach(e => { e.stunTimer = 10.5; e.levitateT = 10.5; });
 
             // Transmutação de Matéria Inicial
             projectiles.forEach(p => {
@@ -1127,20 +1127,23 @@ class Player extends Actor {
             let chargeTimer = setInterval(() => {
                 if (gameState !== 'PLAYING' || this.hp <= 0) { clearInterval(chargeTimer); this.blackHoleCharge = 0; return; }
                 step++;
-                // Vai crescendo lentamente até chegar em 1.0 aos 6 segundos
-                this.blackHoleCharge = step / 30; 
+                // Vai crescendo lentamente até chegar em 1.0 aos 10 segundos
+                this.blackHoleCharge = step / 50; 
                 
                 // Gravidade inexorável puxando para o centro
                 enemies.forEach(e => {
                     let dx = this.x - e.x, dy = this.y - e.y, d = Math.hypot(dx, dy);
                     // Puxa lentamente de longe, violentamente se estiver perto
-                    if (d > 10) { e.x += dx * 0.08; e.y += dy * 0.08; }
+                    if (d > 10) { e.x += dx * 0.06; e.y += dy * 0.06; }
                     
                     // Absorvido pelo horizonte de eventos...
                     if (d < 150 * this.blackHoleCharge) {
                         e.takeDamage(5 * this.dmgMult); // Dano de esmagamento contínuo
                         boom(e.x, e.y, '#000', 2);
                     } else {
+                        // Força todos a ficarem paralisados no tempo enquanto puxados
+                        e.stunTimer = 2.0; 
+                        e.levitateT = 2.0;
                         boom(e.x, e.y, '#8e44ad', 1);
                     }
                 });
@@ -1156,8 +1159,8 @@ class Player extends Actor {
                 // Terremotos espaciais crescem conforme expande
                 if (step % 5 === 0) shake(0.2 + this.blackHoleCharge, 15);
 
-                // O BIG BANG (A Gênese - HIT KILL ABSOLUTO após 6 segundos)
-                if (step >= 30) {
+                // O BIG BANG (A Gênese - HIT KILL ABSOLUTO após 10 segundos)
+                if (step >= 50) {
                     clearInterval(chargeTimer);
                     this.blackHoleCharge = 0;
                     flashT = 2.5; // Um clarão ofuscante de 2.5s
@@ -1177,7 +1180,7 @@ class Player extends Actor {
                 }
             }, 200);
 
-            this.cosmicCD = 50; 
+            this.cosmicCD = 65; // Ajustado CD para compensar os 10s de animação
             if (typeof audio !== 'undefined') audio.playShoot();
             mouse.down = false; this.lastMouseDown = false;
         }
