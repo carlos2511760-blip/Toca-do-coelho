@@ -643,7 +643,40 @@ document.querySelectorAll('.reward-card').forEach(card => {
 
 // ===== INPUT (Teclado e Mouse) =====
 let showBigMap = false;
+let secretCodeBuffer = '';
+
+function enableOperatorMode() {
+    if (window.operatorModeActive) return;
+    window.operatorModeActive = true;
+    cheatsUsed = true; // Desabilita conquistas e recordes
+    
+    // Desbloqueia os personagens secretos do 20 ao 24
+    for(let i=20; i<=24; i++) {
+        let card = document.querySelector(`.char-card[data-char="${i}"]`);
+        if (card) card.classList.remove('locked');
+    }
+    
+    let c20 = document.querySelector('.char-card[data-char="20"]');
+    if (c20 && c20.innerHTML.includes('???')) c20.innerHTML = '<h4>Coelho Dimensional</h4><p>Passiva: Tiro Duplo Lâmina</p><p>Ativa (Q): Corte Dimensional (-50% HP Máx)</p>';
+    let c21 = document.querySelector('.char-card[data-char="21"]');
+    if (c21 && c21.innerHTML.includes('???')) c21.innerHTML = '<h4>Coelho Colecionador</h4><p>Passiva: Tiro Ricochete (5x)</p><p>Ativa (Q): Bolha Coletora (Choca ao centro)</p>';
+    let c22 = document.querySelector('.char-card[data-char="22"]');
+    if (c22 && c22.innerHTML.includes('???')) c22.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem burst auto. [1]/[2] Troca Tiro</p><p>Ativa (Q): Buraco Negro Temporal</p>';
+    
+    alert("🔧 MODO OPERADOR ATIVADO!\nTodos os personagens secretos foram liberados temporariamente para teste.\nConquistas e recordes estão desativados nesta sessão.");
+}
+
 window.addEventListener('keydown', e => {
+    // Cheat string tracking
+    if (e.key && e.key.length === 1 && gameState === 'MENU') {
+        secretCodeBuffer += e.key.toLowerCase();
+        if (secretCodeBuffer.length > 10) secretCodeBuffer = secretCodeBuffer.slice(-10);
+        if (secretCodeBuffer.includes('admin')) {
+            secretCodeBuffer = '';
+            enableOperatorMode();
+        }
+    }
+
     // Rebind é tratado pelo listener com capture=true acima — aqui só jogo normal
     if (_rebindingBtn) return;
     keys[e.code] = true;
