@@ -1138,7 +1138,6 @@ class Player extends Actor {
                     
                     // Absorvido pelo horizonte de eventos...
                     if (d < 150 * this.blackHoleCharge) {
-                        e.takeDamage(5 * this.dmgMult); // Dano de esmagamento contínuo
                         boom(e.x, e.y, '#000', 2);
                     } else {
                         // Força todos a ficarem paralisados no tempo enquanto puxados
