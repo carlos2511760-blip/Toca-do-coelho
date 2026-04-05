@@ -657,11 +657,11 @@ function enableOperatorMode() {
     }
     
     let c20 = document.querySelector('.char-card[data-char="20"]');
-    if (c20 && c20.innerHTML.includes('???')) c20.innerHTML = '<h4>Coelho Dimensional</h4><p>Passiva: Tiro Duplo Lâmina</p><p>Ativa (Q): Corte Dimensional (-50% HP Máx)</p>';
+    if (c20 && c20.innerHTML.includes('???')) c20.innerHTML = '<h4>Coelho Dimensional</h4><p>Passiva: Tiro Duplo Lâmina</p><p>Ativa (Q): Corte Dimensional (-50% HP Máx / CD: 25s)</p>';
     let c21 = document.querySelector('.char-card[data-char="21"]');
     if (c21 && c21.innerHTML.includes('???')) c21.innerHTML = '<h4>Coelho Colecionador</h4><p>Passiva: Tiro Ricochete (5x)</p><p>Ativa (Q): Bolha Coletora (Choca ao centro)</p>';
     let c22 = document.querySelector('.char-card[data-char="22"]');
-    if (c22 && c22.innerHTML.includes('???')) c22.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem burst auto. [1]/[2] Troca Tiro</p><p>Ativa (Q): Buraco Negro Temporal</p>';
+    if (c22 && c22.innerHTML.includes('???')) c22.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem burst auto. [1]/[2] Troca Tiro</p><p>Ativa (Q): Buraco Negro Temporal (CD: 40s)</p>';
     
     alert("🔧 MODO OPERADOR ATIVADO!\nTodos os personagens secretos foram liberados temporariamente para teste.\nConquistas e recordes estão desativados nesta sessão.");
 }
