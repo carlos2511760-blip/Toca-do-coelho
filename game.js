@@ -1105,80 +1105,80 @@ class Player extends Actor {
             boom(this.x, this.y, '#e056fd', 25);
         }
         else if (this.charType === 22 && this.cosmicCD <= 0) {
-            // Habilidade Suprema: Gênese e Colapso
-            // 1. Ascensão: Modo "Deus" (Invulnerável e flutuando)
-            this.invTimer = 4.0;
-            this.flyT = 4.0;
-            shake(0.6, 20);
-            boom(this.x, this.y, '#000', 80);
+            // Habilidade Suprema: Gênese e Colapso (Cinema: Hit Kill + Renderização Absoluta)
+            this.invTimer = 7.0;
+            this.flyT = 7.0;
+            this.blackHoleCharge = 0.01;
+            shake(0.8, 40);
+            boom(this.x, this.y, '#000', 100);
             
-            // 2. O Colapso: Puxa TODOS os inimigos do mapa violentamente pro centro e os paralisa no ar
-            enemies.forEach(e => {
-                e.x = this.x + (Math.random() - 0.5) * 80;
-                e.y = this.y + (Math.random() - 0.5) * 80;
-                e.stunTimer = 4.0;
-                e.levitateT = 4.0;
-                e.takeDamage(10 * this.dmgMult);
-            });
+            // O início do Colapso
+            enemies.forEach(e => { e.stunTimer = 6.5; e.levitateT = 6.5; });
 
-            // 3. Transmutação de Matéria: Todo projétil na tela (aliado e inimigo) vira uma estrela veloz sua
+            // Transmutação de Matéria Inicial
             projectiles.forEach(p => {
-                p.isPlayerObj = true;
-                p.color = '#fff';
-                p.weaponType = 'bounce';
-                p.bounces = 5;
-                let ang = Math.random() * Math.PI * 2;
-                p.vx = Math.cos(ang) * 15;
-                p.vy = Math.sin(ang) * 15;
-                p.damage = 15 * this.dmgMult;
-                boom(p.x, p.y, '#9b59b6', 5);
+                p.isPlayerObj = true; p.color = '#fff'; p.weaponType = 'bounce'; p.bounces = 5;
+                let ang = Math.random() * Math.PI * 2; p.vx = Math.cos(ang) * 15; p.vy = Math.sin(ang) * 15;
+                p.damage = 15 * this.dmgMult; boom(p.x, p.y, '#9b59b6', 5);
             });
 
-            // Loop de trituração do buraco negro
+            // Loop cinematográfico lento e destrutivo
             let step = 0;
             let chargeTimer = setInterval(() => {
-                if (gameState !== 'PLAYING' || this.hp <= 0) { clearInterval(chargeTimer); return; }
+                if (gameState !== 'PLAYING' || this.hp <= 0) { clearInterval(chargeTimer); this.blackHoleCharge = 0; return; }
                 step++;
-                // Dano contínuo em quem está preso
+                // Vai crescendo lentamente até chegar em 1.0 aos 6 segundos
+                this.blackHoleCharge = step / 30; 
+                
+                // Gravidade inexorável puxando para o centro
                 enemies.forEach(e => {
                     let dx = this.x - e.x, dy = this.y - e.y, d = Math.hypot(dx, dy);
-                    if (d > 30) { e.x += dx * 0.4; e.y += dy * 0.4; } // Assegura que não escapam
-                    e.takeDamage(2.5 * this.dmgMult);
-                    boom(e.x, e.y, '#1e272e', 2);
+                    // Puxa lentamente de longe, violentamente se estiver perto
+                    if (d > 10) { e.x += dx * 0.08; e.y += dy * 0.08; }
+                    
+                    // Absorvido pelo horizonte de eventos...
+                    if (d < 150 * this.blackHoleCharge) {
+                        e.takeDamage(5 * this.dmgMult); // Dano de esmagamento contínuo
+                        boom(e.x, e.y, '#000', 2);
+                    } else {
+                        boom(e.x, e.y, '#8e44ad', 1);
+                    }
                 });
                 
-                // Emissão de energia da singularidade (dispara estrelas para todos os lados)
-                for(let i = 0; i < 4; i++) {
+                // Emissão de estrelas perdidas
+                for(let i = 0; i < 2; i++) {
                     let a = Math.random() * Math.PI * 2;
-                    let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 12, 5, '#fbc531', true, 'normal');
-                    p.damage = 10 * this.dmgMult;
+                    let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 14, 5, '#fbc531', true, 'normal');
+                    p.damage = 15 * this.dmgMult;
                     projectiles.push(p);
                 }
 
-                // O BIG BANG (A Gênese - após 3 segundos)
-                if (step >= 15) {
+                // Terremotos espaciais crescem conforme expande
+                if (step % 5 === 0) shake(0.2 + this.blackHoleCharge, 15);
+
+                // O BIG BANG (A Gênese - HIT KILL ABSOLUTO após 6 segundos)
+                if (step >= 30) {
                     clearInterval(chargeTimer);
-                    flashT = 1.5;
-                    shake(1.5, 40);
-                    boom(this.x, this.y, '#ffffff', 250);
-                    boom(this.x, this.y, '#9b59b6', 150);
-                    boom(this.x, this.y, '#fbc531', 100);
+                    this.blackHoleCharge = 0;
+                    flashT = 2.5; // Um clarão ofuscante de 2.5s
+                    shake(2.5, 60); // Tremo absurdo
+                    boom(this.x, this.y, '#ffffff', 400);
+                    boom(this.x, this.y, '#9b59b6', 300);
+                    boom(this.x, this.y, '#fbc531', 200);
                     
                     enemies.forEach(e => {
                         let edx = e.x - this.x, edy = e.y - this.y, ed = Math.hypot(edx, edy) || 1;
-                        e.x += (edx / ed) * 800; // Arremessa pras bordas da sala
-                        e.y += (edy / ed) * 800;
-                        e.takeDamage(60 * this.dmgMult); // Dano apocalíptico
-                        e.stunTimer = 1.5;
-                        boom(e.x, e.y, '#c23616', 40);
+                        e.x += (edx / ed) * 2000; // Arremessados para fora da existência
+                        e.y += (edy / ed) * 2000;
+                        e.takeDamage(e.maxHp * 100); // HIT KILL até mesmo em Bosses
+                        boom(e.x, e.y, '#c23616', 50);
                     });
                     if (typeof audio !== 'undefined') audio.playShoot();
                 }
             }, 200);
 
-            this.cosmicCD = 50; // Aumentado pelo poder
+            this.cosmicCD = 50; 
             if (typeof audio !== 'undefined') audio.playShoot();
-            // Previne travamento de mira/tiro pós-habilidade
             mouse.down = false; this.lastMouseDown = false;
         }
     }
@@ -1366,6 +1366,33 @@ class Player extends Actor {
             c.fillStyle = this.currentCosmicWeapon === 1 ? '#fff' : '#000';
             c.strokeStyle = '#9b59b6'; c.lineWidth = 1;
             c.beginPath(); c.arc(this.x, dY - dR - 10, 3, 0, Math.PI * 2); c.fill(); c.stroke();
+
+            // RENDERIZAÇÃO DO BURACO NEGRO DA HABILIDADE
+            if (this.blackHoleCharge > 0) {
+                let bhR = this.blackHoleCharge * 250; 
+                
+                // Aura gravitacional sugando luz (Sombra escura gigante)
+                let grd = c.createRadialGradient(this.x, dY, Math.max(1, bhR * 0.3), this.x, dY, Math.max(2, bhR * 3));
+                grd.addColorStop(0, `rgba(0,0,0,${this.blackHoleCharge})`);
+                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                c.fillStyle = grd;
+                c.beginPath(); c.arc(this.x, dY, bhR * 3, 0, Math.PI * 2); c.fill();
+
+                // Horizonte de eventos
+                c.fillStyle = '#000';
+                c.shadowBlur = 50 * this.blackHoleCharge; c.shadowColor = '#8e44ad';
+                c.beginPath(); c.arc(this.x, dY, bhR, 0, Math.PI * 2); c.fill();
+                c.shadowBlur = 0;
+
+                // Discos de Acreção orbitando em ângulos e velocidades opostas
+                c.lineWidth = 12 * this.blackHoleCharge;
+                c.strokeStyle = 'rgba(155, 89, 182, 0.8)';
+                c.beginPath(); c.ellipse(this.x, dY, bhR * 1.6, bhR * 0.5, Date.now() / 400, 0, Math.PI * 2); c.stroke();
+                
+                c.lineWidth = 6 * this.blackHoleCharge;
+                c.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                c.beginPath(); c.ellipse(this.x, dY, bhR * 1.3, bhR * 0.3, -Date.now() / 250, 0, Math.PI * 2); c.stroke();
+            }
         }
 
         let mx = mouse.x - this.x, my = mouse.y - this.y, mg = Math.hypot(mx, my);
