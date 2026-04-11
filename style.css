@@ -57,7 +57,8 @@ body {
     background-color: var(--bg-color);
     border: 4px solid var(--border);
     border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 71, 87, 0.1);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 50px rgba(255, 71, 87, 0.15);
+    background: linear-gradient(135deg, #1a1a24 0%, #0b0c10 100%);
     image-rendering: auto;
     overflow: hidden;
     object-fit: contain;
@@ -723,6 +724,16 @@ button:hover {
     font-size: 1rem;
     color: #ced6e0;
 }
+
+/* Secret Character Shines */
+.char-card[data-char="20"]:not(.locked) { border-color: #f5f6fa; box-shadow: inset 0 0 10px rgba(245, 246, 250, 0.2); }
+.char-card[data-char="21"]:not(.locked) { border-color: #e056fd; box-shadow: inset 0 0 10px rgba(224, 86, 253, 0.2); }
+.char-card[data-char="22"]:not(.locked) { border-color: #1e272e; box-shadow: inset 0 0 10px rgba(30, 39, 46, 0.5); }
+.char-card[data-char="23"]:not(.locked) { border-color: #fff200; box-shadow: inset 0 0 15px rgba(255, 242, 0, 0.3); }
+.char-card[data-char="24"]:not(.locked) { border-color: #c0392b; box-shadow: inset 0 0 15px rgba(192, 57, 43, 0.3); }
+
+.char-card[data-char="23"].selected { box-shadow: 0 0 25px #fff200; transform: scale(1.05); }
+.char-card[data-char="24"].selected { box-shadow: 0 0 25px #c0392b; transform: scale(1.05); }
 
 .pre-game-buttons {
     display: flex;
@@ -1405,10 +1416,13 @@ button:hover {
     padding: 12px;
     border: 2px solid #576574;
     border-radius: 8px;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.4);
     opacity: 0.5;
     filter: grayscale(100%);
-    transition: all 0.3s;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.ach-card:hover {
+    transform: translateX(10px);
 }
 .ach-card.unlocked {
     opacity: 1;

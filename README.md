@@ -49,31 +49,35 @@
 ### Desbloqueados desde o início (20)
 | # | Nome | Passiva | Habilidade (Q) |
 |---|------|---------|----------------|
-| 0 | Coelho Veloz | +Velocidade | Dash Rápido |
-| 1 | Coelho Tanque | +Vida | Escudo (5s) |
-| 2 | Coelho Atirador | Tiro Rápido | Rajada Dupla |
-| 3 | Coelho Vampiro | Roubo de Vida | Medo em Área |
-| 4 | Coelho Fantasma | Imunidade Estendida | Intangível por 2.5s |
-| 5 | Coelho Mago | Nasce com +50 Ouro | Nova de Gelo em Área |
+| 0 | Estrelar | +Velocidade de Movimento | Chuva de Estrelas Mágicas |
+| 1 | Simbionte | +Resistência Base | Evolução Monstruosa (3x Dano) |
+| 2 | Térmico | Tiro Ultra Rápido | Raio Colossal Acumulado |
+| 3 | Cronos | Projéteis causam Lentidão | Rebobinar Tempo e Repelir |
+| 4 | Espiritual | Imunidade Estendida | Evocar Espíritos Protetores |
+| 5 | Coelho Mago | Nasce com +30 Ouro | Nova de Gelo em Área |
 | 6 | Coelho Tóxico | Aura Tóxica (dano próximo) | Névoa Venenosa Drenante |
 | 7 | Coelho Mecânico | Reparo Autônomo (+1 HP/8s) | Pulso Eletromagnético |
 | 8 | Coelho Infernal | Explosão ao sofrer dano | Tempestade de Fogo |
 | 9 | Coelho Sortudo | Moedas dão +50% Ouro | Criar Ouro Mágico |
 | 10 | Coelho Ninja | +Esquiva (15% chance dodge) | Clonagem de Sombra |
 | 11 | Coelho Alquimista | Poções Rendem +50% | Bomba de Ácido AoE |
-| 12 | Coelho Druida | Toque da Natureza | Raízes Aprisionantes |
+| 12 | Coelho Druida | Toque da Natureza (Heal sala) | Raízes Aprisionantes |
 | 13 | Coelho Astronauta | Gravidade Reduzida (pulo longo) | Propulsão a Jato (voo 6s) |
 | 14 | Coelho Pirata | Pilhagem Extra + 50 Ouro inicial | Salva de Canhões |
 | 15 | Coelho Viking | Fúria (<50% HP = +Vel/Dano) | Grito de Guerra (AoE+2x Dano) |
-| 16 | Coelho Ciborgue | Raio em Cadeia (passiva) | Bola de Energia Paralisante |
+| 16 | Coelho Ciborgue | Raio em Cadeia (Lentidão) | Bola de Energia Paralisante |
 | 17 | Coelho Zen | Mente Serena (−0.5 dano) | Meditação Curativa (+2 HP) |
 | 18 | Coelho Mineiro | Detector de Metais | Dinamite Explosiva (AoE grande) |
 | 19 | Coelho Radiante | Aura de Luz | Feixe Solar Purificador |
 
 ### Secretos (5) — Bloqueados por Desafios
-| # | Status |
-|---|--------|
-| 20–24 | Desbloqueados ao completar desafios secretos |
+| # | Nome | Status |
+|---|---|--------|
+| 20 | Coelho Dimensional | Corte de Realidade (Fatia inimigos) |
+| 21 | Coelho Colecionador | Mestre das Armas (Ricochete insano) |
+| 22 | Coelho Cósmico | Gênese e Colapso (Buraco Negro) |
+| 23 | Coelho Arconte | Poder Divino (Congelamento & Cura) |
+| 24 | Coelho Devorador | Fome Sombria (Hitkill Boomerang) |
 
 ---
 

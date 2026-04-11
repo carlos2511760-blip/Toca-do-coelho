@@ -662,6 +662,10 @@ function enableOperatorMode() {
     if (c21 && c21.innerHTML.includes('???')) c21.innerHTML = '<h4>Coelho Colecionador</h4><p>Passiva: Tiro Ricochete (5x)</p><p>Ativa (Q): Bolha Coletora (Choca ao centro)</p>';
     let c22 = document.querySelector('.char-card[data-char="22"]');
     if (c22 && c22.innerHTML.includes('???')) c22.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem auto burst. [1]/[2] Troca Tiro</p><p>Ativa (Q): Gênese e Colapso (CD: 50s)</p>';
+    let c23 = document.querySelector('.char-card[data-char="23"]');
+    if (c23 && c23.innerHTML.includes('???')) c23.innerHTML = '<h4>Coelho Arconte</h4><p>Passiva: Tiro Duplo Teleguiado</p><p>Ativa (Q): Congelamento Divino & Cura Total</p>';
+    let c24 = document.querySelector('.char-card[data-char="24"]');
+    if (c24 && c24.innerHTML.includes('???')) c24.innerHTML = '<h4>Coelho Devorador</h4><p>Passiva: Bumerangues Sombrios (Hitkill)</p><p>Ativa (Q): Teleporte Devorador (Buff Morte)</p>';
     
     alert("🔧 MODO OPERADOR ATIVADO!\nTodos os personagens secretos foram liberados temporariamente para teste.\nConquistas e recordes estão desativados nesta sessão.");
 }
@@ -874,6 +878,34 @@ class Projectile {
     update(dt) {
         this.x += this.vx * (dt * 60); this.y += this.vy * (dt * 60);
         
+        if (this.homing && enemies.length > 0) {
+            let nearest = enemies.reduce((a, b) => dist(this.x, this.y, a.x, a.y) < dist(this.x, this.y, b.x, b.y) ? a : b);
+            let dx = nearest.x - this.x, dy = nearest.y - this.y, d = Math.hypot(dx, dy);
+            if (d > 0 && d < 400) {
+                let currentSpd = Math.hypot(this.vx, this.vy);
+                this.vx += (dx / d) * 1.5;
+                this.vy += (dy / d) * 1.5;
+                let newSpd = Math.hypot(this.vx, this.vy);
+                this.vx = (this.vx / newSpd) * currentSpd;
+                this.vy = (this.vy / newSpd) * currentSpd;
+            }
+        }
+
+        if (this.weaponType === 'boomerang') {
+            if (this.returnT !== undefined) {
+                this.returnT -= dt;
+                if (this.returnT <= 0 && player) {
+                    let dx = player.x - this.x, dy = player.y - this.y, d = Math.hypot(dx, dy);
+                    if (d < 30) this.active = false;
+                    if (d > 0) {
+                        let spd = 14;
+                        this.vx = (dx / d) * spd;
+                        this.vy = (dy / d) * spd;
+                    }
+                }
+            }
+        }
+
         if (this.weaponType === 'blackhole') {
             enemies.forEach(e => {
                 let rdx = this.x - e.x, rdy = this.y - e.y;
@@ -992,6 +1024,8 @@ class Player extends Actor {
         else if (ct === 20) { hp = 5; spd = 4.5; col = '#f5f6fa'; } // Dimensional
         else if (ct === 21) { hp = 5; spd = 4.2; col = '#e056fd'; } // Colecionador
         else if (ct === 22) { hp = 4; spd = 4.8; col = '#1e272e'; } // Cósmico
+        else if (ct === 23) { hp = 10; spd = 4.0; col = '#fff200'; } // Arconte
+        else if (ct === 24) { hp = 6; spd = 4.6; col = '#2c3e50'; } // Devorador
         else { hp = 5; spd = 4.0; col = '#000000'; }
 
         hp = Math.max(1, hp + getDiff().hpBonus);
@@ -999,6 +1033,7 @@ class Player extends Actor {
         this.charType = ct;
         this.dashCD = 0; this.shieldT = 0; this.shieldCD = 0; this.burstCD = 0; this.fearT = 0; this.fearCD = 0; this.ghostT = 0; this.ghostCD = 0; this.magicCD = 0; this.toxicCD = 0; this.empCD = 0; this.fireCD = 0; this.luckCD = 0;
         this.ninjaCD = 0; this.chemCD = 0; this.rootCD = 0; this.jetCD = 0; this.cannonCD = 0; this.roarCD = 0; this.laserCD = 0; this.medCD = 0; this.tntCD = 0; this.sunCD = 0; this.dimCD = 0; this.bubbleCD = 0; this.cosmicCD = 0;
+        this.archonCD = 0; this.devourCD = 0;
         this.baseFireRate = (ct === 2 || ct === 15) ? 0.12 : 0.25;
         this.weaponCD = 0;
         this.gold = (ct === 5 || ct === 14) ? 50 : 0;
@@ -1019,7 +1054,7 @@ class Player extends Actor {
             this.magicCD, this.toxicCD, this.empCD, this.fireCD, this.luckCD,
             this.ninjaCD, this.chemCD, this.rootCD, this.jetCD, this.cannonCD,
             this.roarCD, this.laserCD, this.medCD, this.tntCD, this.sunCD,
-            this.dimCD, this.bubbleCD, this.cosmicCD
+            this.dimCD, this.bubbleCD, this.cosmicCD, this.archonCD, this.devourCD
         ];
         return cds[this.charType] || 0;
     }
@@ -1289,6 +1324,33 @@ class Player extends Actor {
             if (typeof audio !== 'undefined') audio.playShoot();
             mouse.down = false; this.lastMouseDown = false;
         }
+        else if (this.charType === 23 && this.archonCD <= 0) {
+            // Congelamento Divino & Cura Total
+            this.hp = this.maxHp;
+            updateHUD();
+            enemies.forEach(e => {
+                e.stunTimer = 6.0;
+                e.takeDamage(10 * this.dmgMult);
+                boom(e.x, e.y, '#fff200', 20);
+            });
+            flashT = 0.5;
+            this.archonCD = 40;
+            boom(this.x, this.y, '#fff200', 60);
+        }
+        else if (this.charType === 24 && this.devourCD <= 0) {
+            // Teleporte Devorador (Teleporta no inimigo mais forte e causa dano massivo)
+            if (enemies.length > 0) {
+                let target = enemies.reduce((a, b) => a.maxHp > b.maxHp ? a : b);
+                boom(this.x, this.y, '#2c3e50', 30);
+                this.x = target.x; this.y = target.y;
+                target.takeDamage(50 * this.dmgMult);
+                this.hp = Math.min(this.maxHp, this.hp + 2);
+                updateHUD();
+                this.devourCD = 15;
+                boom(this.x, this.y, '#c0392b', 40);
+                shake(0.3, 10);
+            }
+        }
     }
     useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; if (e.stunImmune <= 0) { e.stunTimer = 1.0; e.stunImmune = 3.0; } } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); if (e.stunImmune <= 0) { e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; e.stunImmune = (e.type === 'boss') ? 3.0 : 5.0; } } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } else if (sk === 'timewarp') { enemies.forEach(e => { e.slowTimer = 6.0; boom(e.x, e.y, '#a29bfe', 5); }); boom(this.x, this.y, '#6c5ce7', 30); this.skillCD = 15; } else if (sk === 'dash') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; this.x += (dx / d) * 200; this.y += (dy / d) * 200; boom(this.x, this.y, '#00d2d3', 20); } else if (sk === 'heal') { this.hp = Math.min(this.maxHp, this.hp + 3); updateHUD(); boom(this.x, this.y, '#2ed573', 25); this.skillCD = 15; } else if (sk === 'shatter') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.takeDamage(12 * this.dmgMult); e.stunTimer = 2.0; } }); boom(this.x, this.y, '#7f8fa6', 40); } else if (sk === 'invis') { this.ghostT = 5.0; this.invTimer = 5.0; boom(this.x, this.y, '#fff', 20); } }
     shoot() {
@@ -1369,6 +1431,22 @@ class Player extends Actor {
                     p.damage = this.dmgMult * 3.0; // Packs a punch
                 }
             }
+        } else if (this.charType === 23) {
+            // Arconte: Tiro Duplo Teleguiado
+            let p1 = spawnProj(dx, dy); 
+            p1.color = '#fff200'; p1.radius = 6;
+            let p2 = spawnProj(dx, dy);
+            p2.color = '#fff200'; p2.radius = 6;
+            // Lógica de tele-guia simples inicial
+            p1.homing = true; p2.homing = true;
+        } else if (this.charType === 24) {
+            // Devorador: Bumerangue Sombrio
+            let p = spawnProj(dx, dy);
+            p.color = '#2c3e50'; p.radius = 10;
+            p.weaponType = 'boomerang';
+            p.isDevourer = true;
+            p.returnT = 0.8;
+            cDown = 0.5;
         } else {
             spawnProj(dx, dy);
         }
@@ -1431,6 +1509,11 @@ class Player extends Actor {
         if (this.charType === 7) { this.noDamageT += dt; if (this.noDamageT >= 8 && this.hp < this.maxHp) { this.noDamageT = 0; this.hp++; updateHUD(); boom(this.x, this.y, '#f1c40f', 10); } }
         this.dashCD -= dt; this.shieldCD -= dt; this.burstCD -= dt; this.fearCD -= dt; this.ghostCD -= dt; this.magicCD -= dt; this.toxicCD -= dt; this.empCD -= dt; this.fireCD -= dt; this.luckCD -= dt;
         this.ninjaCD -= dt; this.chemCD -= dt; this.rootCD -= dt; this.jetCD -= dt; this.cannonCD -= dt; this.roarCD -= dt; this.laserCD -= dt; this.medCD -= dt; this.tntCD -= dt; this.sunCD -= dt; this.dimCD -= dt; this.bubbleCD -= dt; this.cosmicCD -= dt;
+        this.archonCD -= dt; this.devourCD -= dt;
+        if (this.charType === 24) {
+            this.devourKillTimer = (this.devourKillTimer || 0) + dt;
+            if (this.devourKillTimer >= 10) this.devourKillReady = true;
+        }
         if (this.shieldT > 0) this.shieldT -= dt; if (this.fearT > 0) this.fearT -= dt; if (this.ghostT > 0) this.ghostT -= dt; if (this.weaponCD > 0) this.weaponCD -= dt; if (this.skillCD > 0) this.skillCD -= dt;
         if (this.regenDur > 0) { this.regenDur -= dt; this.regenT -= dt; if (this.regenT <= 0) { this.hp = Math.min(this.maxHp, this.hp + 1); this.regenT = 5; updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
         if (this.hasPermRegen) { this.permRegenT = (this.permRegenT || 0) + dt; if (this.permRegenT >= 20) { this.permRegenT = 0; this.hp = Math.min(this.maxHp, this.hp + 1); updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
@@ -1516,6 +1599,32 @@ class Player extends Actor {
                 c.strokeStyle = 'rgba(255, 255, 255, 0.6)';
                 c.beginPath(); c.ellipse(this.x, dY, bhR * 1.3, bhR * 0.3, -Date.now() / 250, 0, Math.PI * 2); c.stroke();
             }
+        }
+        
+        // Arconte visual (Character 23)
+        if (this.charType === 23) {
+            c.shadowBlur = 20; c.shadowColor = '#fff200';
+            c.strokeStyle = 'rgba(255, 242, 0, 0.6)'; c.lineWidth = 3;
+            c.beginPath(); c.arc(this.x, dY, dR + 10 + Math.sin(Date.now() / 200) * 5, 0, Math.PI * 2); c.stroke();
+            c.shadowBlur = 0;
+            // Asas de luz
+            c.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            c.beginPath();
+            c.moveTo(this.x - 10, dY - 5); c.quadraticCurveTo(this.x - 40, dY - 40, this.x - 60, dY + 10); c.lineTo(this.x - 10, dY + 10);
+            c.moveTo(this.x + 10, dY - 5); c.quadraticCurveTo(this.x + 40, dY - 40, this.x + 60, dY + 10); c.lineTo(this.x + 10, dY + 10);
+            c.fill();
+        }
+        
+        // Devourer visual (Character 24)
+        if (this.charType === 24) {
+            if (this.devourKillReady) {
+                c.shadowBlur = 15; c.shadowColor = '#c0392b';
+                c.fillStyle = '#c0392b';
+                c.beginPath(); c.arc(this.x, dY - dR - 15, 4, 0, Math.PI * 2); c.fill();
+                c.shadowBlur = 0;
+            }
+            c.strokeStyle = '#2c3e50'; c.lineWidth = 2;
+            c.beginPath(); c.arc(this.x, dY, dR + 5, 0, Math.PI * 2); c.stroke();
         }
 
         let mx = mouse.x - this.x, my = mouse.y - this.y, mg = Math.hypot(mx, my);
@@ -2462,6 +2571,13 @@ function checkCollisions() {
                                 }
                             }
                         });
+                    }
+                    if (p.isDevourer && player.devourKillReady) {
+                        e.takeDamage(e.maxHp * 10);
+                        player.devourKillReady = false;
+                        player.devourKillTimer = 0;
+                        boom(e.x, e.y, '#000', 40);
+                        flashT = 0.1;
                     }
                     boom(p.x, p.y, p.color, 4);
                     if (e.hp <= 0) {
