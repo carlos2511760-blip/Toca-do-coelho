@@ -3,11 +3,11 @@
 // =============================================
 
 const TIER_COLOR = {
-    bronze:   { bg: '#2d1e0e', border: '#cd7f32', label: '#cd7f32', icon: '🥉' },
-    silver:   { bg: '#1a1e2d', border: '#c0c0c0', label: '#c0c0c0', icon: '🥈' },
-    gold:     { bg: '#2d2700', border: '#ffd700', label: '#ffd700', icon: '🥇' },
+    bronze: { bg: '#2d1e0e', border: '#cd7f32', label: '#cd7f32', icon: '🥉' },
+    silver: { bg: '#1a1e2d', border: '#c0c0c0', label: '#c0c0c0', icon: '🥈' },
+    gold: { bg: '#2d2700', border: '#ffd700', label: '#ffd700', icon: '🥇' },
     platinum: { bg: '#0d1a2d', border: '#a8d8ea', label: '#a8d8ea', icon: '💎' },
-    mythic:   { bg: '#1c0a2b', border: '#9b59b6', label: '#e056fd', icon: '🌌' },
+    mythic: { bg: '#1c0a2b', border: '#9b59b6', label: '#e056fd', icon: '🌌' },
 };
 
 // ─── Definição das 15 Conquistas ─────────────────────────────────────────────
@@ -191,8 +191,12 @@ let runStats = {
 // ─── Estado: estatísticas globais persistentes ──────────────────────────────
 function getGlobalStats() {
     try {
-        return JSON.parse(localStorage.getItem('tdc_global_stats') || '{"itemsBought":0}');
-    } catch { return { itemsBought: 0 }; }
+        let stats = JSON.parse(localStorage.getItem('tdc_global_stats') || '{"itemsBought":0, "totalBossKills":0, "totalGamesWon":0}');
+        // Assegurar que campos novos existam
+        if (stats.totalBossKills === undefined) stats.totalBossKills = 0;
+        if (stats.totalGamesWon === undefined) stats.totalGamesWon = 0;
+        return stats;
+    } catch { return { itemsBought: 0, totalBossKills: 0, totalGamesWon: 0 }; }
 }
 function saveGlobalStats(stats) {
     localStorage.setItem('tdc_global_stats', JSON.stringify(stats));
@@ -228,15 +232,24 @@ function checkAchievements() {
             unlocked.add(ach.id);
             saveUnlocked(unlocked);
             showAchievementToast(ach);
-            
+
             // Desbloqueio de personagens secretos atrelados a conquistas
             let charUnlocked = false;
             if (ach.id === 'speed_demon') { localStorage.setItem('toca_char20', 'true'); charUnlocked = true; }
             if (ach.id === 'golden_era') { localStorage.setItem('toca_char21', 'true'); charUnlocked = true; }
-            if (ach.id === 'nightmare_clear') { localStorage.setItem('toca_char22', 'true'); charUnlocked = true; }
-            if (ach.id === 'ghost_runner') { localStorage.setItem('toca_char23', 'true'); charUnlocked = true; }
-            if (ach.id === 'impossible_clear' || ach.id === 'impossible_clear_old') { localStorage.setItem('toca_char24', 'true'); charUnlocked = true; }
+            if (ach.id === 'impossible_clear') { localStorage.setItem('toca_char22', 'true'); charUnlocked = true; }
             
+            // Personagem 23: 200 chefes e 50 vitórias (Verificação global)
+            let globals = getGlobalStats();
+            if (globals.totalBossKills >= 200 && globals.totalGamesWon >= 50) {
+                if (localStorage.getItem('toca_char23') !== 'true') {
+                    localStorage.setItem('toca_char23', 'true');
+                    charUnlocked = true;
+                }
+            }
+
+            if (ach.id === 'ghost_runner') { localStorage.setItem('toca_char24', 'true'); charUnlocked = true; }
+
             if (charUnlocked && typeof initSecretCharacters === 'function') {
                 initSecretCharacters();
             }
@@ -330,9 +343,21 @@ function onEnemyKilled(enemyType) {
     runStats.kills++;
     if (enemyType === 'boss') {
         runStats.bossKills++;
+        
+        // Tracking global para Personagem 23
+        let gs = getGlobalStats();
+        gs.totalBossKills = (gs.totalBossKills || 0) + 1;
+        saveGlobalStats(gs);
+
         if (_bossStartNoDmg) runStats.bossKillNoDmg++;
         _bossStartNoDmg = true; // reseta para o próximo boss
     }
+
+    // Flag para o Necromante (Personagem 23)
+    if (typeof player !== 'undefined' && player.charType === 23) {
+        player.hasKilledSinceAbility = true;
+    }
+
     checkAchievements();
 }
 
@@ -374,6 +399,12 @@ function onItemBought() {
 /** Chamado ao vencer o jogo */
 function onGameWon(difficulty, isLong, noDamage) {
     runStats.gameWon++;
+    
+    // Tracking global para Personagem 23
+    let gs = getGlobalStats();
+    gs.totalGamesWon = (gs.totalGamesWon || 0) + 1;
+    saveGlobalStats(gs);
+
     if (difficulty === 'nightmare') runStats.nightmareWon++;
     if (difficulty === 'nightmare' && isLong && noDamage) runStats.impossibleWon++;
     checkAchievements();
@@ -384,21 +415,21 @@ function renderAchievements() {
     const listEl = document.getElementById('achievements-list');
     const countEl = document.getElementById('ach-count');
     const progEl = document.getElementById('ach-progress');
-    
+
     if (!listEl) return;
-    
+
     listEl.innerHTML = '';
-    
+
     let unlockedObj = null;
     try {
         unlockedObj = JSON.parse(localStorage.getItem('tdc_achievements') || '[]');
-    } catch(e) {
+    } catch (e) {
         unlockedObj = [];
     }
-    
+
     // Convert to explicit array of unlocked IDs for easier checking
     const unlockedIds = Array.isArray(unlockedObj) ? unlockedObj : Object.keys(unlockedObj).filter(k => unlockedObj[k]);
-    
+
     let unlockedTotal = 0;
 
     // Ordena por tier: bronze → silver → gold → platinum
@@ -408,9 +439,9 @@ function renderAchievements() {
     );
 
     const TIER_LABEL = {
-        bronze:   '🥉 Bronze',
-        silver:   '🥈 Prata',
-        gold:     '🥇 Ouro',
+        bronze: '🥉 Bronze',
+        silver: '🥈 Prata',
+        gold: '🥇 Ouro',
         platinum: '💎 Platina',
     };
 
@@ -434,18 +465,18 @@ function renderAchievements() {
             separator.innerText = TIER_LABEL[currentTier];
             listEl.appendChild(separator);
         }
-        
+
         const tier = TIER_COLOR[ach.tier] || TIER_COLOR.bronze;
-        
+
         const card = document.createElement('div');
         card.className = `ach-card ${isUnlocked ? 'unlocked' : ''}`;
-        
+
         // Aplica cores do tier se desbloqueado
         if (isUnlocked) {
             card.style.borderColor = tier.border;
             card.style.boxShadow = `inset 0 0 10px ${tier.bg}`;
         }
-        
+
         card.innerHTML = `
             <div class="ach-icon-container" style="border-color: ${isUnlocked ? tier.border : '#576574'}; background: ${isUnlocked ? tier.bg : '#2f3542'}">
                 ${isUnlocked ? tier.icon : '🔒'}
@@ -458,7 +489,7 @@ function renderAchievements() {
         `;
         listEl.appendChild(card);
     });
-    
+
     // Update stats
     countEl.innerText = `Desbloqueadas: ${unlockedTotal} / ${ACHIEVEMENTS.length}`;
     progEl.innerText = `${Math.round((unlockedTotal / ACHIEVEMENTS.length) * 100)}%`;

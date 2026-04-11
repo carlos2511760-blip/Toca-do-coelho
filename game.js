@@ -64,6 +64,7 @@ let fullBright = false, flyMode = false, cheatsUsed = false, takenBossDamage = f
 let flashT = 0;
 let joystickPos = { x: 0, y: 0 }, joystickActive = false;
 let gamepadActive = false;
+let lastBossIdx = 0; // Para o Necromante (Personagem 23)
 
 // CUSTOM KEY BINDINGS
 const DEFAULT_BINDINGS = { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', ability: 'KeyQ', skill: 'KeyE', map: 'KeyM' };
@@ -830,6 +831,42 @@ class Summon {
                     boom(this.x, this.y, '#2f3542', 3);
                 }
             }
+        } else if (this.type === 'minion_ally') {
+            if (this.fireCD <= 0 && enemies.length > 0) {
+                let e = enemies.reduce((a, b) => dist(this.x, this.y, a.x, a.y) < dist(this.x, this.y, b.x, b.y) ? a : b);
+                if (dist(this.x, this.y, e.x, e.y) < 300) {
+                    let dx = e.x - this.x, dy = e.y - this.y, m = Math.hypot(dx,dy)||1;
+                    let p = new Projectile(this.x, this.y, dx/m, dy/m, 6, 6, '#2f3542', true, 'normal');
+                    p.damage = (player ? player.dmgMult : 1) * 1.5;
+                    projectiles.push(p);
+                    this.fireCD = 0.8;
+                }
+            }
+        } else if (this.type === 'boss_ally') {
+            if (this.fireCD <= 0 && enemies.length > 0) {
+                let e = enemies.reduce((a, b) => dist(this.x, this.y, a.x, a.y) < dist(this.x, this.y, b.x, b.y) ? a : b);
+                let dx = e.x - this.x, dy = e.y - this.y, m = Math.hypot(dx,dy)||1;
+                let bd = BOSS_DEFS[this.bossIdx || 0];
+                let pat = bd.pattern;
+                
+                // Versão simplificada dos ataques do boss para o aliado
+                if (pat === 'fire' || pat === 'circle') {
+                    for (let i = 0; i < 8; i++) {
+                        let a = (i / 8) * Math.PI * 2 + Date.now()/1000;
+                        let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 10, '#e67e22', true, 'fire');
+                        p.damage = (player ? player.dmgMult : 1) * 3;
+                        projectiles.push(p);
+                    }
+                } else {
+                    for (let i = -1; i <= 1; i++) {
+                        let a = Math.atan2(dy, dx) + i * 0.2;
+                        let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 7, 12, '#3498db', true, 'normal');
+                        p.damage = (player ? player.dmgMult : 1) * 5;
+                        projectiles.push(p);
+                    }
+                }
+                this.fireCD = 2.0;
+            }
         } else if (this.type === 'spirit') {
             if (!player) return false;
             this.angle += dt * 3.0; // orbita rapido
@@ -858,6 +895,17 @@ class Summon {
             c.beginPath(); c.arc(this.x, this.y, 8, 0, Math.PI * 2); c.fill();
             c.shadowBlur = 10; c.shadowColor = '#be2edd';
             c.stroke(); c.shadowBlur = 0;
+        } else if (this.type === 'minion_ally') {
+            c.fillStyle = `rgba(116, 125, 140, ${Math.min(1, this.life)})`; // Cor de minion amigável
+            c.beginPath(); c.arc(this.x, this.y, 14, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = '#fff'; c.lineWidth = 1; c.stroke();
+        } else if (this.type === 'boss_ally') {
+            let bd = BOSS_DEFS[this.bossIdx || 0];
+            c.fillStyle = bd.color;
+            c.globalAlpha = 0.7;
+            c.beginPath(); c.arc(this.x, this.y, 25, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+            c.globalAlpha = 1.0;
         }
     }
 }
@@ -1024,7 +1072,7 @@ class Player extends Actor {
         else if (ct === 20) { hp = 5; spd = 4.5; col = '#f5f6fa'; } // Dimensional
         else if (ct === 21) { hp = 5; spd = 4.2; col = '#e056fd'; } // Colecionador
         else if (ct === 22) { hp = 4; spd = 4.8; col = '#1e272e'; } // Cósmico
-        else if (ct === 23) { hp = 10; spd = 4.0; col = '#fff200'; } // Arconte
+        else if (ct === 23) { hp = 7; spd = 4.2; col = '#7f8fa6'; } // Necromante (Ex-Arconte)
         else if (ct === 24) { hp = 6; spd = 4.6; col = '#2c3e50'; } // Devorador
         else { hp = 5; spd = 4.0; col = '#000000'; }
 
@@ -1034,6 +1082,7 @@ class Player extends Actor {
         this.dashCD = 0; this.shieldT = 0; this.shieldCD = 0; this.burstCD = 0; this.fearT = 0; this.fearCD = 0; this.ghostT = 0; this.ghostCD = 0; this.magicCD = 0; this.toxicCD = 0; this.empCD = 0; this.fireCD = 0; this.luckCD = 0;
         this.ninjaCD = 0; this.chemCD = 0; this.rootCD = 0; this.jetCD = 0; this.cannonCD = 0; this.roarCD = 0; this.laserCD = 0; this.medCD = 0; this.tntCD = 0; this.sunCD = 0; this.dimCD = 0; this.bubbleCD = 0; this.cosmicCD = 0;
         this.archonCD = 0; this.devourCD = 0;
+        this.hasKilledSinceAbility = false; // Flag para o Necromante
         this.baseFireRate = (ct === 2 || ct === 15) ? 0.12 : 0.25;
         this.weaponCD = 0;
         this.gold = (ct === 5 || ct === 14) ? 50 : 0;
@@ -1325,17 +1374,28 @@ class Player extends Actor {
             mouse.down = false; this.lastMouseDown = false;
         }
         else if (this.charType === 23 && this.archonCD <= 0) {
-            // Congelamento Divino & Cura Total
-            this.hp = this.maxHp;
-            updateHUD();
-            enemies.forEach(e => {
-                e.stunTimer = 6.0;
-                e.takeDamage(10 * this.dmgMult);
-                boom(e.x, e.y, '#fff200', 20);
-            });
-            flashT = 0.5;
-            this.archonCD = 40;
-            boom(this.x, this.y, '#fff200', 60);
+            // Necromante: Invoca o último boss derrotado + 5 bichos
+            if (this.hasKilledSinceAbility) {
+                this.hasKilledSinceAbility = false;
+                
+                // Invocar 5 minions (lobisomens aliados)
+                for (let i = 0; i < 5; i++) {
+                    let s = new Summon(this.x + (Math.random() - 0.5) * 100, this.y + (Math.random() - 0.5) * 100, 'minion_ally');
+                    summons.push(s);
+                }
+
+                // Invocar o último boss (versão aliada)
+                let sBoss = new Summon(this.x, this.y, 'boss_ally');
+                sBoss.bossIdx = lastBossIdx;
+                summons.push(sBoss);
+
+                this.archonCD = 30;
+                boom(this.x, this.y, '#2c3e50', 50);
+                if (typeof audio !== 'undefined') audio.playShoot();
+            } else {
+                // Não matou ninguém, nada acontece (talvez um som de falha)
+                boom(this.x, this.y, '#576574', 5);
+            }
         }
         else if (this.charType === 24 && this.devourCD <= 0) {
             // Teleporte Devorador (Teleporta no inimigo mais forte e causa dano massivo)
@@ -1354,7 +1414,7 @@ class Player extends Actor {
     }
     useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; if (e.stunImmune <= 0) { e.stunTimer = 1.0; e.stunImmune = 3.0; } } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); if (e.stunImmune <= 0) { e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; e.stunImmune = (e.type === 'boss') ? 3.0 : 5.0; } } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } else if (sk === 'timewarp') { enemies.forEach(e => { e.slowTimer = 6.0; boom(e.x, e.y, '#a29bfe', 5); }); boom(this.x, this.y, '#6c5ce7', 30); this.skillCD = 15; } else if (sk === 'dash') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; this.x += (dx / d) * 200; this.y += (dy / d) * 200; boom(this.x, this.y, '#00d2d3', 20); } else if (sk === 'heal') { this.hp = Math.min(this.maxHp, this.hp + 3); updateHUD(); boom(this.x, this.y, '#2ed573', 25); this.skillCD = 15; } else if (sk === 'shatter') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.takeDamage(12 * this.dmgMult); e.stunTimer = 2.0; } }); boom(this.x, this.y, '#7f8fa6', 40); } else if (sk === 'invis') { this.ghostT = 5.0; this.invTimer = 5.0; boom(this.x, this.y, '#fff', 20); } }
     shoot() {
-        if (this.weaponCD > 0 || this.isJumping) return;
+        if (this.weaponCD > 0 || this.isJumping || this.stunTimer > 0) return;
         let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy);
         if (!d) return;
         dx /= d; dy /= d;
@@ -1432,13 +1492,10 @@ class Player extends Actor {
                 }
             }
         } else if (this.charType === 23) {
-            // Arconte: Tiro Duplo Teleguiado
-            let p1 = spawnProj(dx, dy); 
-            p1.color = '#fff200'; p1.radius = 6;
-            let p2 = spawnProj(dx, dy);
-            p2.color = '#fff200'; p2.radius = 6;
-            // Lógica de tele-guia simples inicial
-            p1.homing = true; p2.homing = true;
+            // Necromante: Magia Sombria (Tiro com explosão e sangramento visual)
+            let p = spawnProj(dx, dy);
+            p.color = '#2f3542'; p.radius = 8;
+            p.weaponType = 'dark_magic';
         } else if (this.charType === 24) {
             // Devorador: Bumerangue Sombrio
             let p = spawnProj(dx, dy);
@@ -1601,18 +1658,15 @@ class Player extends Actor {
             }
         }
         
-        // Arconte visual (Character 23)
+        // Necromante visual (Character 23)
         if (this.charType === 23) {
-            c.shadowBlur = 20; c.shadowColor = '#fff200';
-            c.strokeStyle = 'rgba(255, 242, 0, 0.6)'; c.lineWidth = 3;
-            c.beginPath(); c.arc(this.x, dY, dR + 10 + Math.sin(Date.now() / 200) * 5, 0, Math.PI * 2); c.stroke();
+            c.shadowBlur = 10; c.shadowColor = '#2d3436';
+            c.strokeStyle = '#2f3542'; c.lineWidth = 2;
+            c.beginPath(); c.arc(this.x, dY, dR + 8, 0, Math.PI * 2); c.stroke();
             c.shadowBlur = 0;
-            // Asas de luz
-            c.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            c.beginPath();
-            c.moveTo(this.x - 10, dY - 5); c.quadraticCurveTo(this.x - 40, dY - 40, this.x - 60, dY + 10); c.lineTo(this.x - 10, dY + 10);
-            c.moveTo(this.x + 10, dY - 5); c.quadraticCurveTo(this.x + 40, dY - 40, this.x + 60, dY + 10); c.lineTo(this.x + 10, dY + 10);
-            c.fill();
+            if (this.hasKilledSinceAbility) {
+                c.fillStyle = '#ff4757'; c.beginPath(); c.arc(this.x, dY - dR - 10, 4, 0, Math.PI * 2); c.fill();
+            }
         }
         
         // Devourer visual (Character 24)
@@ -1672,12 +1726,14 @@ class Enemy extends Actor {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
             if (player.fearT > 0 && d < 150) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
             else {
-                this.fireCD -= dt;
-                if (this.fireCD <= 0 && d < 300) { projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false)); this.fireCD = 1.5 + Math.random(); }
+            if (this.fireCD <= 0 && d < 300 && this.stunTimer <= 0) {
+                projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false));
+                this.fireCD = 1.5 + Math.random();
+            }
             }
         } else if (this.type === 'miniboss') {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
-            if (this.specialCD <= 0) {
+            if (this.specialCD <= 0 && this.stunTimer <= 0) {
                 // ATAQUE ESPECIAL MINIBOSS: Dash Agressivo Elemental (dispara uma vez)
                 boom(this.x, this.y, this.color, 30);
                 shake(0.3, 10);
@@ -1696,7 +1752,7 @@ class Enemy extends Actor {
             }
             if (player.fearT > 0 && d < 200) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
             this.fireCD -= dt;
-            if (this.fireCD <= 0) {
+            if (this.fireCD <= 0 && this.stunTimer <= 0) {
                 if (this.mbType === 0) { for (let i = -2; i <= 2; i++) { let a = Math.atan2(dy, dx) + i * 0.25; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 10, '#ff6348', false, 'fire')); } this.fireCD = 1.5; }
                 else if (this.mbType === 1) { for (let i = 0; i < 5; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, dx, dy, 8, 8, '#1dd1a1', false, 'poison')); }, i * 150); this.fireCD = 1.6; }
                 else { for (let i = 0; i < 12; i++) { let a = (i / 12) * Math.PI * 2 + Date.now() / 1000; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#5f27cd', false, 'taser')); } this.fireCD = 1.8; }
@@ -1706,7 +1762,7 @@ class Enemy extends Actor {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
             let pat = this.bossDef.pattern;
 
-            if (this.specialCD <= 0) {
+            if (this.specialCD <= 0 && this.stunTimer <= 0) {
                 // ATAQUE ESPECIAL BOSS BASEADO NO ELEMENTO
                 shake(0.4, 15);
                 if (pat === 'fire') {
@@ -1760,7 +1816,7 @@ class Enemy extends Actor {
                 this.specialCD = 12 + Math.random() * 6;
             }
 
-            if (this.fireCD <= 0) {
+            if (this.fireCD <= 0 && this.stunTimer <= 0) {
                 if (pat === 'circle') { let b = 16 + mapLevel * 2; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3.5, 12, '#ff4757', false, 'fire')); } this.fireCD = 1.5; }
                 else if (pat === 'fire') { for (let i = 0; i < 8; i++) { let a = Math.atan2(dy, dx) + (i - 3.5) * 0.2 + this.stateT * 0.8; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 9, '#e74c3c', false, 'fire')); } this.fireCD = 1.0; }
                 else if (pat === 'ice') { let b = 12; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2; let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3.5, 12, '#74b9ff', false, 'ice'); projectiles.push(p); } this.fireCD = 2.0; }
@@ -1773,7 +1829,7 @@ class Enemy extends Actor {
                     if (this.shieldTimer === undefined) { this.shieldTimer = 5; this.meteorSeq = 0; this.atkState = 0; }
                     this.shieldTimer -= dt;
                     if (this.shieldTimer <= 0) { let a = Math.atan2(dy, dx); icebergs.push(new Iceberg(this.x + Math.cos(a) * 80, this.y + Math.sin(a) * 80, 'rock')); this.shieldTimer = 25; boom(this.x + Math.cos(a) * 80, this.y + Math.sin(a) * 80, '#7f8fa6', 15); }
-                    if (this.fireCD <= 0) {
+                    if (this.fireCD <= 0 && this.stunTimer <= 0) {
                         if (this.atkState === 0) {
                             let b = 16; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#d35400', false, 'hellfire')); }
                             this.meteorSeq++; this.fireCD = 0.6; if (this.meteorSeq >= 3) { this.atkState = 1; this.meteorSeq = 0; this.fireCD = 2.5; }
@@ -1786,6 +1842,10 @@ class Enemy extends Actor {
             }
             if (this.tpCD > 0) this.tpCD -= dt;
             bossHealthBar.style.width = (this.hp / this.maxHp) * 100 + '%';
+        }
+        if (this.bleeding > 0) {
+            this.bleeding -= dt;
+            if (Math.random() < 0.3) boom(this.x, this.y, '#c0392b', 1);
         }
         this.updatePhysics(dt);
     }
@@ -2067,6 +2127,10 @@ class RoomSystem {
                 pickups.push(new Pickup(400, 300, 'gold', 30 + Math.floor(Math.random() * 20)));
                 // Hook de conquista: boss derrotado
                 if (typeof onEnemyKilled === 'function') onEnemyKilled('boss');
+                
+                // Salvar o index do boss para o Necromante
+                if (enemies[0] && enemies[0].type === 'boss') lastBossIdx = enemies[0].bossIdx;
+
                 // DESBLOQUEAR a sala de saída deste andar
                 for (let key in this.rooms) {
                     if (this.rooms[key].type === 'exit' && this.rooms[key].exitLocked) {
@@ -2588,6 +2652,20 @@ function checkCollisions() {
                             boom(player.x, player.y, '#2ed573', 12);
                         }
                     }
+                    if (p.weaponType === 'dark_magic') {
+                        // Magia Sombria: Explosão e Sangramento visual
+                        boom(p.x, p.y, '#2f3542', 20);
+                        shake(0.2, 5);
+                        enemies.forEach(ae => {
+                            if (dist(p.x, p.y, ae.x, ae.y) < 120) {
+                                ae.takeDamage(p.damage * 0.8);
+                                // Efeito visual de sangramento
+                                ae.bleeding = 3.0; 
+                            }
+                        });
+                        e.takeDamage(p.damage * 0.5); // Dano extra no alvo direto
+                    }
+
                     if (!p.pierce) p.active = false;
                     // Ricochete: se tem bounces, redireciona para próximo inimigo
                     if (p.bounces > 0 && !p.pierce) {
@@ -2674,7 +2752,7 @@ function initSecretCharacters() {
         let card = document.querySelector('.char-card[data-char="23"]');
         if (card) {
             card.classList.remove('locked');
-            card.innerHTML = '<h4>Coelho Arconte</h4><p>Passiva: Tiro Duplo Teleguiado de Luz</p><p>Ativa (Q): Congelamento Divino & Cura Total</p>';
+            card.innerHTML = '<h4>Coelho Necromante</h4><p>Tiro: Magia Sombria (Explosão)</p><p>Ativa (Q): Necromancia (Invoca Boss)</p>';
         }
     }
     let char24Unlocked = localStorage.getItem('toca_char24') === 'true';
