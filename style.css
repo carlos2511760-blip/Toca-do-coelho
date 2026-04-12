@@ -74,7 +74,7 @@ body {
 }
 
 #game-container.menu-mode {
-    background-color: transparent !important;
+    background: transparent !important;
     border-color: transparent !important;
     box-shadow: none !important;
 }

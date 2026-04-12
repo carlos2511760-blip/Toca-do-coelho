@@ -810,18 +810,52 @@ class Warning {
 
 // SUMMONS (Clones, Spirits, etc)
 class Summon {
-    constructor(x, y, type) {
+    constructor(x, y, type, maxHp) {
         this.x = x; this.y = y; this.type = type;
+        this.life = 10.0;
+        this.fireCD = 0.5;
+        this.invTimer = 0;
+        this.hp = Infinity; // Padrao para não ser destruído por HP
+        this.radius = 15;
+        
         if (type === 'ninja_clone') this.life = 6.0;
         else if (type === 'spirit') { this.life = 12.0; this.angle = Math.random() * Math.PI * 2; }
-        else if (type === 'minion_ally') this.life = 15.0;
-        else if (type === 'boss_ally') this.life = 25.0;
-        else this.life = 10.0;
-        this.fireCD = 0.5;
+        else if (['minion_ally', 'boss_ally'].includes(type)) {
+            this.maxHp = maxHp || 20;
+            this.hp = this.maxHp;
+            this.radius = type === 'boss_ally' ? 25 : 14;
+        }
     }
     update(dt) {
         this.life -= dt;
         this.fireCD -= dt;
+        if (this.invTimer > 0) this.invTimer -= dt;
+
+        if (['minion_ally', 'boss_ally'].includes(this.type)) {
+            let target = null, nd = Infinity;
+            if (enemies.length > 0) {
+                target = enemies.reduce((a, b) => dist(this.x, this.y, a.x, a.y) < dist(this.x, this.y, b.x, b.y) ? a : b);
+                nd = dist(this.x, this.y, target.x, target.y);
+            }
+            if (target) {
+                let dx = target.x - this.x, dy = target.y - this.y;
+                let spd = this.type === 'minion_ally' ? 120 : 60;
+                if (nd > 60) {
+                    this.x += (dx / nd) * spd * dt;
+                    this.y += (dy / nd) * spd * dt;
+                } else if (nd < 40) {
+                    this.x -= (dx / nd) * spd * 0.5 * dt;
+                    this.y -= (dy / nd) * spd * 0.5 * dt;
+                }
+            } else if (player) {
+                let dx = player.x - this.x, dy = player.y - this.y, pd = Math.hypot(dx, dy);
+                if (pd > 100) {
+                    this.x += (dx / pd) * 120 * dt;
+                    this.y += (dy / pd) * 120 * dt;
+                }
+            }
+        }
+
         if (this.type === 'ninja_clone') {
             if (this.fireCD <= 0 && enemies.length > 0) {
                 let e = enemies.reduce((a, b) => dist(this.x, this.y, a.x, a.y) < dist(this.x, this.y, b.x, b.y) ? a : b);
@@ -887,6 +921,7 @@ class Summon {
             }
             if (Math.random() < 0.2) particles.push(new Particle(this.x, this.y, '#be2edd', 2, 4, 10));
         }
+        if (['minion_ally', 'boss_ally'].includes(this.type) && this.hp <= 0) return false;
         return this.life > 0;
     }
     draw(c) {
@@ -900,15 +935,24 @@ class Summon {
             c.stroke(); c.shadowBlur = 0;
         } else if (this.type === 'minion_ally') {
             c.fillStyle = `rgba(116, 125, 140, ${Math.min(1, this.life)})`; // Cor de minion amigável
-            c.beginPath(); c.arc(this.x, this.y, 14, 0, Math.PI * 2); c.fill();
-            c.strokeStyle = '#fff'; c.lineWidth = 1; c.stroke();
+            c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = '#2ecc71'; c.lineWidth = 3; c.stroke(); // Halo verde sinalizando
+            // Lifebar de aliado
+            let hpP = Math.max(0, this.hp / this.maxHp);
+            c.fillStyle = '#ff4757'; c.fillRect(this.x - 10, this.y - 20, 20, 4);
+            c.fillStyle = '#2ecc71'; c.fillRect(this.x - 10, this.y - 20, 20 * hpP, 4);
         } else if (this.type === 'boss_ally') {
             let bd = BOSS_DEFS[this.bossIdx || 0];
             c.fillStyle = bd.color;
-            c.globalAlpha = 0.7;
-            c.beginPath(); c.arc(this.x, this.y, 25, 0, Math.PI * 2); c.fill();
-            c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+            c.globalAlpha = Math.min(1, this.life);
+            c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = '#2ecc71'; c.lineWidth = 4; c.stroke(); // Halo verde neon
             c.globalAlpha = 1.0;
+            // Coroa ou icone aliado no Boss
+            c.fillStyle = '#2ecc71'; c.font = '16px Arial'; c.textAlign = 'center'; c.fillText('👑 ALIADO', this.x, this.y - 35);
+            let hpP = Math.max(0, this.hp / this.maxHp);
+            c.fillStyle = '#ff4757'; c.fillRect(this.x - 20, this.y - 30, 40, 6);
+            c.fillStyle = '#2ecc71'; c.fillRect(this.x - 20, this.y - 30, 40 * hpP, 6);
         }
     }
 }
@@ -2219,6 +2263,7 @@ class RoomSystem {
         }
     }
     transition(s) {
+        summons = []; // O jogador muda de sala, as invocações somem
         let cx = 400, cy = 300, tx = this.currentX, ty = this.currentY;
         if (s === 'N') { player.x = cx; player.y = 600 - WALL - player.radius - 20; ty--; }
         else if (s === 'S') { player.x = cx; player.y = WALL + player.radius + 20; ty++; }
@@ -2306,7 +2351,7 @@ class RoomSystem {
             c.fillStyle = '#fff'; c.font = '24px VT323'; c.textAlign = 'center';
             c.fillText('MAPA GLOBAL (Aperte M ou Tab para fechar)', 0, -250);
         } else {
-            c.globalAlpha = 0.5; c.fillStyle = '#000'; c.fillRect(-50, -50, 100, 100); c.globalAlpha = 1;
+            // Fundo cinza removido conforme solicitado
         }
         c.strokeStyle = '#576574'; c.lineWidth = big ? 5 : 2;
         Object.values(this.rooms).forEach(r => {
@@ -2712,7 +2757,17 @@ function checkCollisions() {
                 }
             }
         } else {
-            if (!player.isJumping && player.flyT <= 0) {
+            // Collision with summons (Enemy projectiles hit summons)
+            if (!p.isPlayerObj && p.active) {
+                summons.forEach(s => {
+                    if (s.hp > 0 && ['minion_ally', 'boss_ally'].includes(s.type) && dist(p.x, p.y, s.x, s.y) < p.radius + s.radius) {
+                        s.hp -= (p.damage || 5);
+                        p.active = false;
+                        boom(p.x, p.y, p.color, 4);
+                    }
+                });
+            }
+            if (!player.isJumping && player.flyT <= 0 && p.active) {
                 if (dist(p.x, p.y, player.x, player.y) < p.radius + player.radius * 0.8) {
                     if (currentRoom.type === 'boss' && !(p.radius === 6 && p.color === '#ff4757' && p.weaponType === 'normal')) takenBossDamage = true;
                     if (p.weaponType === 'ice') player.slowTimer = 2.5;
@@ -2729,6 +2784,20 @@ function checkCollisions() {
     }
     if (player && !player.isJumping && player.flyT <= 0) {
         for (let e of enemies) {
+            summons.forEach(s => {
+                if (s.hp > 0 && ['minion_ally', 'boss_ally'].includes(s.type)) {
+                    if (dist(s.x, s.y, e.x, e.y) < s.radius + e.radius) {
+                        if (s.invTimer <= 0) {
+                            let dmg = 1.2 + (mapLevel - 1) * 0.4;
+                            s.hp -= dmg;
+                            s.invTimer = 0.5;
+                            boom(s.x, s.y, '#e74c3c', 3);
+                            if (typeof audio !== 'undefined') audio.playHurt();
+                        }
+                    }
+                }
+            });
+
             if (dist(player.x, player.y, e.x, e.y) < player.radius + e.radius - 6) {
                 if (e.type === 'boss') takenBossDamage = true;
                 player.takeDamage(1.2 + (mapLevel - 1) * 0.4);
