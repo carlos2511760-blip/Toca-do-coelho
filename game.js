@@ -163,48 +163,9 @@ document.getElementById('btn-settings-back').addEventListener('click', () => swi
 document.getElementById('btn-manual-back').addEventListener('click', () => switchScreen('titleScreen'));
 document.getElementById('btn-back-title').addEventListener('click', () => switchScreen('titleScreen'));
 
-// Exportar e Importar Save
-document.getElementById('btn-export-save').addEventListener('click', () => {
-    let saveObj = {};
-    for (let i = 0; i < localStorage.length; i++) {
-        let key = localStorage.key(i);
-        if (key.startsWith('toca_') || key.startsWith('tdc_')) {
-            saveObj[key] = localStorage.getItem(key);
-        }
-    }
-    let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(saveObj));
-    let dlAnchorElem = document.createElement('a');
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", "toca_do_coelho_save.json");
-    dlAnchorElem.click();
-});
 
-document.getElementById('btn-import-save').addEventListener('click', () => {
-    let input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = e => {
-        let file = e.target.files[0];
-        let reader = new FileReader();
-        reader.readAsText(file,'UTF-8');
-        reader.onload = readerEvent => {
-            try {
-                let content = readerEvent.target.result;
-                let saveObj = JSON.parse(content);
-                for (let key in saveObj) {
-                    if (key.startsWith('toca_') || key.startsWith('tdc_')) {
-                        localStorage.setItem(key, saveObj[key]);
-                    }
-                }
-                alert("Save importado com sucesso! O jogo será recarregado para aplicar as mudanças.");
-                window.location.reload();
-            } catch (err) {
-                alert("Erro ao importar o save. Arquivo inválido.");
-            }
-        }
-    }
-    input.click();
-});
+
+
 
 document.getElementById('btn-reset-save').addEventListener('click', () => {
     if (confirm("⚠️ TEM CERTEZA? ⚠️\n\nIsso apagará TODO o seu progresso, incluindo:\n- Todos os recordes de tempo\n- Personagens Desbloqueados\n- Conquistas\n- Ouro e Itens comprados\n\nEssa ação é IRREVERSÍVEL! Deseja continuar?")) {
