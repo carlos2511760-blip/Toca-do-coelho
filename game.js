@@ -664,7 +664,7 @@ function enableOperatorMode() {
     let c22 = document.querySelector('.char-card[data-char="22"]');
     if (c22 && c22.innerHTML.includes('???')) c22.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem auto burst. [1]/[2] Troca Tiro</p><p>Ativa (Q): Gênese e Colapso (CD: 50s)</p>';
     let c23 = document.querySelector('.char-card[data-char="23"]');
-    if (c23 && c23.innerHTML.includes('???')) c23.innerHTML = '<h4>Coelho Arconte</h4><p>Passiva: Tiro Duplo Teleguiado</p><p>Ativa (Q): Congelamento Divino & Cura Total</p>';
+    if (c23 && c23.innerHTML.includes('???')) c23.innerHTML = '<h4>Coelho Necromante</h4><p>Tiro: Magia Sombria (Explosão)</p><p>Ativa (Q): Necromancia (Invoca Boss)</p>';
     let c24 = document.querySelector('.char-card[data-char="24"]');
     if (c24 && c24.innerHTML.includes('???')) c24.innerHTML = '<h4>Coelho Devorador</h4><p>Passiva: Bumerangues Sombrios (Hitkill)</p><p>Ativa (Q): Teleporte Devorador (Buff Morte)</p>';
     
@@ -814,6 +814,9 @@ class Summon {
         this.x = x; this.y = y; this.type = type;
         if (type === 'ninja_clone') this.life = 6.0;
         else if (type === 'spirit') { this.life = 12.0; this.angle = Math.random() * Math.PI * 2; }
+        else if (type === 'minion_ally') this.life = 15.0;
+        else if (type === 'boss_ally') this.life = 25.0;
+        else this.life = 10.0;
         this.fireCD = 0.5;
     }
     update(dt) {
@@ -1726,10 +1729,11 @@ class Enemy extends Actor {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
             if (player.fearT > 0 && d < 150) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
             else {
-            if (this.fireCD <= 0 && d < 300 && this.stunTimer <= 0) {
-                projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false));
-                this.fireCD = 1.5 + Math.random();
-            }
+                this.fireCD -= dt;
+                if (this.fireCD <= 0 && d < 300 && this.stunTimer <= 0) {
+                    projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false));
+                    this.fireCD = 1.5 + Math.random();
+                }
             }
         } else if (this.type === 'miniboss') {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
