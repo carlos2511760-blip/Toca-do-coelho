@@ -24,7 +24,10 @@ const screens = {
     achievements: document.getElementById('achievements-screen'),
     pause: document.getElementById('pause-screen'),
     reward: document.getElementById('reward-screen'),
-    casino: document.getElementById('casino-screen')
+    casino: document.getElementById('casino-screen'),
+    authScreen: document.getElementById('auth-screen'),
+    nicknameScreen: document.getElementById('nickname-screen'),
+    leaderboard: document.getElementById('leaderboard-screen')
 };
 const startBtn = document.getElementById('start-btn');
 const charCards = document.querySelectorAll('.char-card');
@@ -121,6 +124,7 @@ function switchScreen(id) {
         else mCtrls.style.display = 'none';
     }
 }
+window.switchScreen = switchScreen;
 
 function returnToMenu() {
     gameState = 'MENU';

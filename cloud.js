@@ -12,7 +12,7 @@ const firebaseConfig = {
 
 // Inicializando o Firebase (via CDN importado no HTML)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
@@ -24,25 +24,59 @@ let currentUser = null;
 
 // Observador de estado de login
 onAuthStateChanged(auth, async (user) => {
-    const loginBtn = document.getElementById('login-status-btn');
     if (user) {
         currentUser = user;
         console.log("Usuário logado:", user.email);
-        if (loginBtn) loginBtn.innerHTML = `👤 ${user.displayName || user.email.split('@')[0]}`;
         
-        // Quando logar, baixa os dados da nuvem para o PC
+        // Se o usuário não tem um nome público ainda, força ele a criar um
+        if (!user.displayName) {
+            if (window.switchScreen) window.switchScreen('nicknameScreen');
+            return;
+        }
+
+        // Caso já tenha nome, exibe no topo e entra no jogo livremente!
+        const badge = document.getElementById('user-profile-badge');
+        const displayNameEl = document.getElementById('display-name');
+        if (badge && displayNameEl) {
+            badge.style.display = 'block';
+            displayNameEl.innerText = user.displayName;
+        }
+        
+        if (window.switchScreen) window.switchScreen('titleScreen');
         await syncFromCloud();
     } else {
         currentUser = null;
-        if (loginBtn) loginBtn.innerHTML = "☁️ Entrar / Salvar";
+        if (window.switchScreen) window.switchScreen('authScreen');
+        const badge = document.getElementById('user-profile-badge');
+        if (badge) badge.style.display = 'none';
     }
 });
+
+// SET NICKNAME (Após registro)
+window.setNickname = async (name) => {
+    if (!name || name.trim().length < 3) return alert('O nome precisa ter pelo menos 3 caracteres!');
+    if (!currentUser) return;
+    try {
+        await updateProfile(currentUser, { displayName: name.trim().toUpperCase() });
+        
+        const badge = document.getElementById('user-profile-badge');
+        const displayNameEl = document.getElementById('display-name');
+        if (badge && displayNameEl) {
+            badge.style.display = 'block';
+            displayNameEl.innerText = currentUser.displayName;
+        }
+        
+        if (window.switchScreen) window.switchScreen('titleScreen');
+        await syncFromCloud(); // Sincroniza ouro/personagens zerados ou prev
+    } catch(e) {
+        alert('Erro ao definir nome: ' + e.message);
+    }
+};
 
 // LOGIN COM GOOGLE
 window.loginWithGoogle = async () => {
     try {
         await signInWithPopup(auth, googleProvider);
-        closeLoginModal();
     } catch (error) {
         alert("Erro ao entrar com Google: " + error.message);
     }
@@ -52,20 +86,26 @@ window.loginWithGoogle = async () => {
 window.loginWithEmail = async (email, password) => {
     try {
         await signInWithEmailAndPassword(auth, email, password);
-        closeLoginModal();
     } catch (error) {
-        alert("Erro: " + error.message);
+        if(error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+            alert("Email ou Senha incorretos. Tente novamente.");
+        } else {
+            alert("Erro ao entrar: " + error.message);
+        }
     }
 };
 
 // CRIAR CONTA
 window.registerWithEmail = async (email, password) => {
+    if(password.length < 6) return alert("A senha precisa ter pelo menos 6 caracteres.");
     try {
         await createUserWithEmailAndPassword(auth, email, password);
-        alert("Conta criada com sucesso!");
-        closeLoginModal();
     } catch (error) {
-        alert("Erro ao criar conta: " + error.message);
+        if(error.code === 'auth/email-already-in-use') {
+            alert("Esse e-mail JÁ POSSUI UMA CONTA! Use o botão ENTRAR ao lado, em vez do botão Criar.");
+        } else {
+            alert("Erro ao criar conta: " + error.message);
+        }
     }
 };
 
@@ -82,6 +122,8 @@ window.syncToCloud = async () => {
     
     // Pegamos tudo que o jogo salvou no seu PC
     const gameData = {
+        displayName: currentUser.displayName || 'ANON',
+        email: currentUser.email,
         unlockedChars: {},
         totalGold: localStorage.getItem('toca_gold') || "0",
         bestTime: localStorage.getItem('toca_vic_time') || "999999",

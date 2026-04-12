@@ -18,7 +18,11 @@
         <div id="ui-layer">
 
             <!-- TELA TÍTULO -->
-            <div id="title-screen" class="screen active">
+            <div id="title-screen" class="screen">
+                <div id="user-profile-badge" style="position: absolute; top: 15px; left: 20px; font-family: 'VT323'; color: #bdc3c7; font-size: 1.2rem; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; border: 1px solid #34495e; display: none;">
+                    Conectado: <span id="display-name" style="color: #2ecc71;">Carregando...</span>
+                </div>
+                
                 <div class="title-bg">
                     <h1 class="title glow-text">VOIDFALL</h1>
                     <p class="subtitle flicker">Desça até o fundo da toca...</p>
@@ -33,11 +37,14 @@
                         <button id="btn-achievements" class="menu-btn">
                             <span class="btn-icon">🏆</span> Conquistas
                         </button>
+                        <button id="btn-leaderboard" class="menu-btn" style="border-color: #f1c40f; color: #f1c40f;" onclick="switchScreen('leaderboard')">
+                            <span class="btn-icon">🌍</span> Placar Global
+                        </button>
                         <button id="btn-settings" class="menu-btn">
                             <span class="btn-icon">⚙️</span> Configurações
                         </button>
-                        <button id="login-status-btn" class="menu-btn" style="border-color: #3498db; color: #3498db;" onclick="openLoginModal()">
-                            <span class="btn-icon">☁️</span> Entrar / Salvar
+                        <button id="btn-logout" class="menu-btn" style="border-color: #e74c3c; color: #e74c3c;" onclick="logout()">
+                            <span class="btn-icon">👋</span> Sair
                         </button>
                     </div>
 
@@ -45,27 +52,53 @@
                 </div>
             </div>
 
-            <!-- MODAL DE LOGIN (FIREBASE) -->
-            <div id="login-modal" class="screen" style="z-index: 1000; background: rgba(0,0,0,0.85);">
+            <!-- LOGIN OBRIGATÓRIO (AUTH SCREEN) -->
+            <div id="auth-screen" class="screen active" style="background: rgba(0,0,0,0.95); z-index: 2000;">
                 <div class="settings-panel" style="max-width: 400px;">
-                    <h2 class="panel-title">☁️ Área do Jogador</h2>
-                    <p class="hint-text">Crie sua conta para salvar seu progresso na nuvem.</p>
+                    <h1 class="title glow-text" style="font-size: 3rem; margin-bottom: 5px;">VOIDFALL</h1>
+                    <p class="hint-text" style="margin-bottom: 25px;">Faça login para adentrar a masmorra.</p>
                     
                     <div id="auth-form" style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
-                        <input type="email" id="auth-email" placeholder="Seu E-mail" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
-                        <input type="password" id="auth-pass" placeholder="Sua Senha" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
+                        <input type="email" id="auth-email" placeholder="E-mail" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
+                        <input type="password" id="auth-pass" placeholder="Senha" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
                         
-                        <div style="display: flex; gap: 5px;">
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
                             <button onclick="loginWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0;">Entrar</button>
-                            <button onclick="registerWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0; border-color: #2ed573;">Criar</button>
+                            <button onclick="registerWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0; border-color: #2ed573;">Criar Conta</button>
                         </div>
                         
-                        <div style="text-align: center; color: #576574; margin: 5px 0;">OU</div>
+                        <div style="text-align: center; color: #576574; margin: 10px 0;">― OU ―</div>
                         
                         <button onclick="loginWithGoogle()" class="menu-btn primary-btn" style="background: #ea4335; border-color: #fff; font-size: 1.2rem;">Entrar com Google</button>
                     </div>
+                </div>
+            </div>
 
-                    <button onclick="closeLoginModal()" class="back-btn" style="margin-top: 20px;">Voltar</button>
+            <!-- CRIAÇÃO DE NICKNAME (APÓS REGISTRO) -->
+            <div id="nickname-screen" class="screen" style="background: rgba(0,0,0,0.95); z-index: 2000;">
+                <div class="settings-panel" style="max-width: 450px;">
+                    <h2 class="panel-title" style="color: #f1c40f;">Bem-vindo ao Vazio</h2>
+                    <p class="hint-text" style="font-size: 1.2rem; line-height: 1.4;">Para competir no Ranking Global, você precisará de uma identidade.</p>
+                    
+                    <div style="width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                        <input type="text" id="auth-nickname" placeholder="Digite seu Nome Público" maxlength="15" autocomplete="off" style="padding: 15px; background: #000; border: 2px solid #f1c40f; color: #fff; font-family: 'VT323'; font-size: 1.5rem; text-align: center; text-transform: uppercase;">
+                        
+                        <button onclick="setNickname(document.getElementById('auth-nickname').value)" class="menu-btn primary-btn" style="border-color: #f1c40f; color: #f1c40f;">Confirmar Nome</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TELA DE PLACAR GLOBAL -->
+            <div id="leaderboard-screen" class="screen">
+                <div class="settings-panel" style="max-width: 600px; width: 90%;">
+                    <h2 class="panel-title" style="color: #f1c40f;">🌍 Placar Global</h2>
+                    <p class="hint-text">Em Breve: Os maiores desafiantes de Voidfall.</p>
+                    
+                    <div id="leaderboard-list" style="margin: 20px 0; min-height: 200px; border: 2px solid #2f3542; background: rgba(0,0,0,0.5); padding: 10px; text-align: center;">
+                        <p style="color: #7f8fa6; margin-top: 80px;">Sincronizando com os Arcontes...</p>
+                    </div>
+
+                    <button class="back-btn" onclick="switchScreen('titleScreen')">Voltar ao Menu</button>
                 </div>
             </div>
 
@@ -627,18 +660,6 @@
     <script src="audio.js"></script>
     <script src="game.js"></script>
     <script type="module" src="cloud.js"></script>
-    <script>
-        function openLoginModal() { 
-            const m = document.getElementById('login-modal');
-            m.style.display = 'flex';
-            m.classList.add('active');
-        }
-        function closeLoginModal() { 
-            const m = document.getElementById('login-modal');
-            m.style.display = 'none';
-            m.classList.remove('active');
-        }
-    </script>
 </body>
 
 </html>
