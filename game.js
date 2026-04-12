@@ -1007,6 +1007,14 @@ class Actor {
         if (this.hp <= 0 && this instanceof Enemy && !this.isDead) { 
             this.isDead = true; boom(this.x, this.y, this.color, 15); 
             if (typeof audio !== 'undefined') audio.playHit(); 
+            
+            // Cemitério do Necromante
+            if (player && player.charType === 23) {
+                if (!player.graveyard) player.graveyard = [];
+                if (this.type === 'minion') player.graveyard.push('minion_ally');
+                else if (this.type === 'boss') player.graveyard.push({ type: 'boss_ally', bossIdx: this.bossIdx });
+                if (player.graveyard.length > 25) player.graveyard.shift(); // Limite de 25 invocações
+            }
         } 
     } 
     updatePhysics(dt) {
@@ -1085,7 +1093,8 @@ class Player extends Actor {
         this.dashCD = 0; this.shieldT = 0; this.shieldCD = 0; this.burstCD = 0; this.fearT = 0; this.fearCD = 0; this.ghostT = 0; this.ghostCD = 0; this.magicCD = 0; this.toxicCD = 0; this.empCD = 0; this.fireCD = 0; this.luckCD = 0;
         this.ninjaCD = 0; this.chemCD = 0; this.rootCD = 0; this.jetCD = 0; this.cannonCD = 0; this.roarCD = 0; this.laserCD = 0; this.medCD = 0; this.tntCD = 0; this.sunCD = 0; this.dimCD = 0; this.bubbleCD = 0; this.cosmicCD = 0;
         this.archonCD = 0; this.devourCD = 0;
-        this.hasKilledSinceAbility = false; // Flag para o Necromante
+        this.graveyard = [];
+        this.hasKilledSinceAbility = false; // Flag legada
         this.baseFireRate = (ct === 2 || ct === 15) ? 0.12 : 0.25;
         this.weaponCD = 0;
         this.gold = (ct === 5 || ct === 14) ? 50 : 0;
@@ -1376,28 +1385,29 @@ class Player extends Actor {
             if (typeof audio !== 'undefined') audio.playShoot();
             mouse.down = false; this.lastMouseDown = false;
         }
-        else if (this.charType === 23 && this.archonCD <= 0) {
-            // Necromante: Invoca o último boss derrotado + 5 bichos
-            if (this.hasKilledSinceAbility) {
-                this.hasKilledSinceAbility = false;
-                
-                // Invocar 5 minions (lobisomens aliados)
-                for (let i = 0; i < 5; i++) {
-                    let s = new Summon(this.x + (Math.random() - 0.5) * 100, this.y + (Math.random() - 0.5) * 100, 'minion_ally');
-                    summons.push(s);
+        else if (this.charType === 23) {
+            // Necromante: Invoca todos os inimigos acumulados no cemitério
+            if (this.archonCD <= 0) {
+                if (this.graveyard && this.graveyard.length > 0) {
+                    this.graveyard.forEach(g => {
+                        if (g === 'minion_ally') {
+                            summons.push(new Summon(this.x + (Math.random() - 0.5) * 80, this.y + (Math.random() - 0.5) * 80, 'minion_ally'));
+                        } else if (g.type === 'boss_ally') {
+                            let sBoss = new Summon(this.x, this.y, 'boss_ally');
+                            sBoss.bossIdx = g.bossIdx;
+                            summons.push(sBoss);
+                        }
+                    });
+                    this.graveyard = []; // Esvazia a fila
+                    
+                    this.archonCD = 30;
+                    boom(this.x, this.y, '#2c3e50', 50);
+                    if (typeof audio !== 'undefined') audio.playShoot();
+                } else {
+                    // Sem alvos mortos: O poder é utilizado mas nada acontece
+                    this.archonCD = 30;
+                    boom(this.x, this.y, '#576574', 10);
                 }
-
-                // Invocar o último boss (versão aliada)
-                let sBoss = new Summon(this.x, this.y, 'boss_ally');
-                sBoss.bossIdx = lastBossIdx;
-                summons.push(sBoss);
-
-                this.archonCD = 30;
-                boom(this.x, this.y, '#2c3e50', 50);
-                if (typeof audio !== 'undefined') audio.playShoot();
-            } else {
-                // Não matou ninguém, nada acontece (talvez um som de falha)
-                boom(this.x, this.y, '#576574', 5);
             }
         }
         else if (this.charType === 24 && this.devourCD <= 0) {
@@ -1849,7 +1859,7 @@ class Enemy extends Actor {
         }
         if (this.bleeding > 0) {
             this.bleeding -= dt;
-            if (Math.random() < 0.3) boom(this.x, this.y, '#c0392b', 1);
+            if (Math.random() < 0.15) boom(this.x, this.y, '#c0392b', 1);
         }
         this.updatePhysics(dt);
     }
@@ -2658,16 +2668,19 @@ function checkCollisions() {
                     }
                     if (p.weaponType === 'dark_magic') {
                         // Magia Sombria: Explosão e Sangramento visual
-                        boom(p.x, p.y, '#2f3542', 20);
+                        boom(p.x, p.y, '#2f3542', 15);
                         shake(0.2, 5);
                         enemies.forEach(ae => {
                             if (dist(p.x, p.y, ae.x, ae.y) < 120) {
-                                ae.takeDamage(p.damage * 0.8);
-                                // Efeito visual de sangramento
+                                // Aplica dano apenas na área; evita duplicar dano demais num único frame
+                                if (ae === e) {
+                                    ae.takeDamage(p.damage * 1.3); // 0.8 do splash + 0.5 alvo
+                                } else {
+                                    ae.takeDamage(p.damage * 0.8);
+                                }
                                 ae.bleeding = 3.0; 
                             }
                         });
-                        e.takeDamage(p.damage * 0.5); // Dano extra no alvo direto
                     }
 
                     if (!p.pierce) p.active = false;
