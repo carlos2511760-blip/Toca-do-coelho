@@ -19,8 +19,8 @@
 
             <!-- TELA TÍTULO -->
             <div id="title-screen" class="screen">
-                <div id="user-profile-badge" style="position: absolute; top: 15px; left: 20px; font-family: 'VT323'; color: #bdc3c7; font-size: 1.2rem; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; border: 1px solid #34495e; display: none;">
-                    Conectado: <span id="display-name" style="color: #2ecc71;">Carregando...</span>
+                <div id="user-profile-badge" style="position: fixed; top: 10px; left: 10px; font-family: 'VT323'; color: #bdc3c7; font-size: 0.9rem; text-shadow: 1px 1px 0 #000; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 12px; border: 1px solid #34495e; display: none; z-index: 900;">
+                    <span id="display-name" style="color: #2ecc71;"></span>
                 </div>
                 
                 <div class="title-bg">
@@ -326,12 +326,11 @@
                     <h2 class="panel-title">🏆 Conquistas</h2>
                     <div class="achievements-stats">
                         <span id="ach-count">Desbloqueadas: 0 / 15</span>
-                        <span id="ach-progress">0%</span>
                     </div>
                     <div class="achievements-scroll" id="achievements-list">
                         <!-- Conquistas geradas via JS -->
                     </div>
-                    <button id="btn-achievements-back" class="menu-btn back-btn">← Voltar</button>
+                    <button id="btn-achievements-back" class="menu-btn back-btn" style="margin-top: 15px; width: 100%;">← Voltar</button>
                 </div>
             </div>
 

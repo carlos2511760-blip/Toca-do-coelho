@@ -123,6 +123,12 @@ function switchScreen(id) {
         if (id === 'hud' && isTouchDevice()) mCtrls.style.display = 'block';
         else mCtrls.style.display = 'none';
     }
+
+    // Esconde o badge de perfil durante o jogo
+    const badge = document.getElementById('user-profile-badge');
+    if (badge) {
+        badge.style.display = (id === 'titleScreen') ? 'block' : 'none';
+    }
 }
 window.switchScreen = switchScreen;
 

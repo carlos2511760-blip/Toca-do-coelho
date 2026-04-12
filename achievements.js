@@ -492,5 +492,4 @@ function renderAchievements() {
 
     // Update stats
     countEl.innerText = `Desbloqueadas: ${unlockedTotal} / ${ACHIEVEMENTS.length}`;
-    progEl.innerText = `${Math.round((unlockedTotal / ACHIEVEMENTS.length) * 100)}%`;
 }

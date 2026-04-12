@@ -28,7 +28,7 @@ function clearLocalGameData() {
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('toca_')) keysToRemove.push(key);
+        if (key && (key.startsWith('toca_') || key.startsWith('tdc_'))) keysToRemove.push(key);
     }
     keysToRemove.forEach(k => localStorage.removeItem(k));
     console.log('Dados locais limpos para troca de conta.');
@@ -128,8 +128,18 @@ window.registerWithEmail = async (email, password) => {
 // SAIR
 window.logout = () => {
     clearLocalGameData();
+    const wasGuest = isGuest;
     isGuest = false;
-    signOut(auth);
+    currentUser = null;
+    if (wasGuest) {
+        // Convidado: só volta pra tela de login
+        if (window.switchScreen) window.switchScreen('authScreen');
+        const badge = document.getElementById('user-profile-badge');
+        if (badge) badge.style.display = 'none';
+    } else {
+        // Conta real: desloga do Firebase
+        signOut(auth);
+    }
 };
 
 // JOGAR SEM CONTA (Convidado)
@@ -162,6 +172,8 @@ window.syncToCloud = async () => {
         unlockedChars: {},
         totalGold: localStorage.getItem('toca_gold') || "0",
         bestTime: localStorage.getItem('toca_vic_time') || "999999",
+        achievements: localStorage.getItem('tdc_achievements') || "[]",
+        globalStats: localStorage.getItem('tdc_global_stats') || '{"itemsBought":0,"totalBossKills":0,"totalGamesWon":0}',
         lastSync: new Date().toISOString()
     };
     
@@ -192,6 +204,10 @@ async function syncFromCloud() {
         if (data.totalGold) localStorage.setItem('toca_gold', data.totalGold);
         if (data.bestTime) localStorage.setItem('toca_vic_time', data.bestTime);
         
+        // Conquistas e estatísticas globais
+        if (data.achievements) localStorage.setItem('tdc_achievements', data.achievements);
+        if (data.globalStats) localStorage.setItem('tdc_global_stats', data.globalStats);
+        
         if (data.unlockedChars) {
             Object.keys(data.unlockedChars).forEach(key => {
                 const charId = key.replace('char', '');
@@ -199,7 +215,7 @@ async function syncFromCloud() {
             });
         }
         
-        // Notifica o jogo que dados mudaram (se necessário recarregar UI)
+        // Notifica o jogo que dados mudaram
         if (typeof initSecretCharacters === 'function') initSecretCharacters();
         console.log("Dados carregados da nuvem e aplicados localmente!");
     }
