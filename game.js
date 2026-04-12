@@ -117,6 +117,11 @@ function switchScreen(id) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     if (id && screens[id]) screens[id].classList.add('active');
 
+    // Se abrir o placar global, busca os dados
+    if (id === 'leaderboard' && typeof window.fetchLeaderboard === 'function') {
+        window.fetchLeaderboard();
+    }
+
     // Controle de visibilidade dos botões mobile - apenas em dispositivos touch
     const mCtrls = document.getElementById('mobile-controls');
     if (mCtrls) {
@@ -2314,6 +2319,11 @@ class RoomSystem {
                         
                         // Sincroniza progresso na nuvem
                         if (window.syncToCloud) window.syncToCloud();
+
+                        // Envia para o Placar Global (apenas se não usou cheats)
+                        if (!cheatsUsed && typeof window.submitToLeaderboard === 'function') {
+                            window.submitToLeaderboard(gameTime, selectedDiff, selectedChar);
+                        }
 
                         gameState = 'VICTORY'; switchScreen('victory');
                         if (!cheatsUsed) {

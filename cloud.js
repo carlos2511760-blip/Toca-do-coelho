@@ -13,7 +13,7 @@ const firebaseConfig = {
 // Inicializando o Firebase (via CDN importado no HTML)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -22,6 +22,76 @@ const googleProvider = new GoogleAuthProvider();
 
 let currentUser = null;
 let isGuest = false;
+
+// --- LEADERBOARD SYSTEM ---
+
+// Envia um recorde para o placar global
+window.submitToLeaderboard = async (timeInSeconds, difficulty, charId) => {
+    if (!currentUser || isGuest) return;
+    if (typeof cheatsUsed !== 'undefined' && cheatsUsed) return;
+
+    try {
+        await addDoc(collection(db, "leaderboard"), {
+            uid: currentUser.uid,
+            displayName: currentUser.displayName || 'ANON',
+            time: timeInSeconds,
+            difficulty: difficulty,
+            charId: charId,
+            timestamp: serverTimestamp()
+        });
+        console.log("Recorde enviado ao Placar Global!");
+    } catch (e) {
+        console.error("Erro ao enviar para o Placar Global:", e);
+    }
+};
+
+// Busca os top 10 recordes
+window.fetchLeaderboard = async () => {
+    const listEl = document.getElementById('leaderboard-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<p style="color: #7f8fa6; margin-top: 80px;">Buscando campeões...</p>';
+
+    try {
+        const q = query(collection(db, "leaderboard"), orderBy("time", "asc"), limit(10));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            listEl.innerHTML = '<p style="color: #7f8fa6; margin-top: 80px;">Nenhum recorde ainda. Seja o primeiro!</p>';
+            return;
+        }
+
+        let html = '<table style="width: 100%; border-collapse: collapse; font-family: \'VT323\'; font-size: 1.2rem; color: #ced6e0;">';
+        html += '<tr style="border-bottom: 2px solid #2f3542; color: #f1c40f;">' +
+                '<th style="padding: 8px; text-align: left;">#</th>' +
+                '<th style="padding: 8px; text-align: left;">NOME</th>' +
+                '<th style="padding: 8px; text-align: center;">TEMPO</th>' +
+                '<th style="padding: 8px; text-align: right;">DIF.</th>' +
+                '</tr>';
+
+        let rank = 1;
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const timeStr = typeof formatTime === 'function' ? formatTime(data.time) : data.time + 's';
+            const diffLabel = data.difficulty === 'nightmare' ? '💀' : 
+                              data.difficulty === 'hard' ? '🔥' :
+                              data.difficulty === 'normal' ? '⚔️' : '🌿';
+
+            html += `<tr style="border-bottom: 1px solid rgba(47, 53, 66, 0.5); ${data.uid === currentUser?.uid ? 'background: rgba(46, 213, 115, 0.1);' : ''}">` +
+                    `<td style="padding: 10px;">${rank}</td>` +
+                    `<td style="padding: 10px; color: #fff;">${data.displayName}</td>` +
+                    `<td style="padding: 10px; text-align: center; color: #feca57;">${timeStr}</td>` +
+                    `<td style="padding: 10px; text-align: right;">${diffLabel}</td>` +
+                    `</tr>`;
+            rank++;
+        });
+        html += '</table>';
+        listEl.innerHTML = html;
+    } catch (e) {
+        console.error("Erro ao carregar Placar Global:", e);
+        listEl.innerHTML = '<p style="color: #e74c3c; margin-top: 80px;">Erro ao carregar placar.</p>';
+    }
+};
 
 // Limpa TODOS os dados do jogo no localStorage (para isolar contas)
 function clearLocalGameData() {
