@@ -21,11 +21,24 @@ const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 let currentUser = null;
+let isGuest = false;
+
+// Limpa TODOS os dados do jogo no localStorage (para isolar contas)
+function clearLocalGameData() {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('toca_')) keysToRemove.push(key);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    console.log('Dados locais limpos para troca de conta.');
+}
 
 // Observador de estado de login
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
+        isGuest = false;
         console.log("Usuário logado:", user.email);
         
         // Se o usuário não tem um nome público ainda, força ele a criar um
@@ -42,11 +55,14 @@ onAuthStateChanged(auth, async (user) => {
             displayNameEl.innerText = user.displayName;
         }
         
+        // LIMPA dados locais antes de carregar os da conta correta
+        clearLocalGameData();
+        
         if (window.switchScreen) window.switchScreen('titleScreen');
         await syncFromCloud();
     } else {
         currentUser = null;
-        if (window.switchScreen) window.switchScreen('authScreen');
+        if (!isGuest && window.switchScreen) window.switchScreen('authScreen');
         const badge = document.getElementById('user-profile-badge');
         if (badge) badge.style.display = 'none';
     }
@@ -111,7 +127,26 @@ window.registerWithEmail = async (email, password) => {
 
 // SAIR
 window.logout = () => {
+    clearLocalGameData();
+    isGuest = false;
     signOut(auth);
+};
+
+// JOGAR SEM CONTA (Convidado)
+window.playAsGuest = () => {
+    isGuest = true;
+    currentUser = null;
+    clearLocalGameData();
+    
+    const badge = document.getElementById('user-profile-badge');
+    const displayNameEl = document.getElementById('display-name');
+    if (badge && displayNameEl) {
+        badge.style.display = 'block';
+        displayNameEl.innerText = 'CONVIDADO';
+        displayNameEl.style.color = '#576574';
+    }
+    
+    if (window.switchScreen) window.switchScreen('titleScreen');
 };
 
 // --- SINCRONIZAÇÃO DE DADOS ---
