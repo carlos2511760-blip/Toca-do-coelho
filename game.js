@@ -660,7 +660,7 @@ window.addEventListener('keydown', e => {
     // Rebind é tratado pelo listener com capture=true acima — aqui só jogo normal
     if (_rebindingBtn) return;
     keys[e.code] = true;
-    const allBoundKeys = Object.values(keyBindings).concat(['Tab', 'Escape']);
+    const allBoundKeys = Object.values(keyBindings).concat(['Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
     if (allBoundKeys.includes(e.code)) e.preventDefault();
     if (e.code === keyBindings.map || e.code === 'Tab') { if (gameState === 'PLAYING') showBigMap = !showBigMap; }
     if (e.code === keyBindings.jump && gameState === 'PLAYING' && player) player.jump();
@@ -1499,9 +1499,16 @@ class Player extends Actor {
         }
     }
     useSkill() { if (!this.activeSkill || this.skillCD > 0) return; let sk = this.activeSkill; this.skillCD = 10; if (sk === 'gravity') { enemies.forEach(e => { let dx = 400 - e.x, dy = 300 - e.y, d = Math.hypot(dx, dy); if (d > 0) { e.x += dx / d * 180; e.y += dy / d * 180; if (e.stunImmune <= 0) { e.stunTimer = 1.0; e.stunImmune = 3.0; } } }); boom(400, 300, '#9b59b6', 25); } else if (sk === 'fly') { this.flyT = 6; } else if (sk === 'earthquake') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 220) { e.takeDamage(10 * this.dmgMult); if (e.stunImmune <= 0) { e.stunTimer = (e.type === 'boss') ? 0.5 : 2.5; e.stunImmune = (e.type === 'boss') ? 3.0 : 5.0; } } }); boom(this.x, this.y, '#e67e22', 40); for (let i = 0; i < 20; i++)particles.push(new Particle(this.x + (Math.random() - 0.5) * 300, this.y + (Math.random() - 0.5) * 300, '#795548', 3, 6, 30)); } else if (sk === 'iceberg') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; icebergs.push(new Iceberg(this.x + dx / d * 120, this.y + dy / d * 120)); icebergs.push(new Iceberg(this.x + dx / d * 80 + 40, this.y + dy / d * 80)); icebergs.push(new Iceberg(this.x + dx / d * 80 - 40, this.y + dy / d * 80)); } else if (sk === 'explosion') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 300) e.takeDamage(15 * this.dmgMult); }); boom(this.x, this.y, '#e74c3c', 60); boom(this.x, this.y, '#f39c12', 40); } else if (sk === 'timewarp') { enemies.forEach(e => { e.slowTimer = 6.0; boom(e.x, e.y, '#a29bfe', 5); }); boom(this.x, this.y, '#6c5ce7', 30); this.skillCD = 15; } else if (sk === 'dash') { let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy) || 1; this.x += (dx / d) * 200; this.y += (dy / d) * 200; boom(this.x, this.y, '#00d2d3', 20); } else if (sk === 'heal') { this.hp = Math.min(this.maxHp, this.hp + 3); updateHUD(); boom(this.x, this.y, '#2ed573', 25); this.skillCD = 15; } else if (sk === 'shatter') { enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 200) { e.takeDamage(12 * this.dmgMult); e.stunTimer = 2.0; } }); boom(this.x, this.y, '#7f8fa6', 40); } else if (sk === 'invis') { this.ghostT = 5.0; this.invTimer = 5.0; boom(this.x, this.y, '#fff', 20); } }
-    shoot() {
+    shoot(tdx, tdy) {
         if (this.weaponCD > 0 || this.isJumping || this.stunTimer > 0) return;
-        let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.hypot(dx, dy);
+        let dx, dy, d;
+        if (tdx !== undefined && tdy !== undefined) {
+            dx = tdx; dy = tdy;
+            d = Math.hypot(dx, dy);
+        } else {
+            dx = mouse.x - this.x; dy = mouse.y - this.y;
+            d = Math.hypot(dx, dy);
+        }
         if (!d) return;
         dx /= d; dy /= d;
         let col = '#feca57', spd = 10, rad = 5, wt = this.currentWeapon;
@@ -1661,15 +1668,32 @@ class Player extends Actor {
         if (this.regenDur > 0) { this.regenDur -= dt; this.regenT -= dt; if (this.regenT <= 0) { this.hp = Math.min(this.maxHp, this.hp + 1); this.regenT = 5; updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
         if (this.hasPermRegen) { this.permRegenT = (this.permRegenT || 0) + dt; if (this.permRegenT >= 20) { this.permRegenT = 0; this.hp = Math.min(this.maxHp, this.hp + 1); updateHUD(); boom(this.x, this.y, '#2ed573', 5); } }
         
-        if (mouse.down) {
+        // Keyboard shooting (Arrow Keys)
+        let sDx = 0, sDy = 0;
+        if (keys['ArrowUp']) sDy -= 1;
+        if (keys['ArrowDown']) sDy += 1;
+        if (keys['ArrowLeft']) sDx -= 1;
+        if (keys['ArrowRight']) sDx += 1;
+
+        if (sDx !== 0 || sDy !== 0) {
             if (this.charType === 22) {
-                if (!this.lastMouseDown && this.weaponCD <= 0) this.shoot();
-                this.lastMouseDown = true;
+                if (!this.lastDirDown && this.weaponCD <= 0) this.shoot(sDx, sDy);
+                this.lastDirDown = true;
             } else if (this.weaponCD <= 0) {
-                this.shoot();
+                this.shoot(sDx, sDy);
             }
         } else {
-            this.lastMouseDown = false;
+            this.lastDirDown = false;
+            if (mouse.down) {
+                if (this.charType === 22) {
+                    if (!this.lastMouseDown && this.weaponCD <= 0) this.shoot();
+                    this.lastMouseDown = true;
+                } else if (this.weaponCD <= 0) {
+                    this.shoot();
+                }
+            } else {
+                this.lastMouseDown = false;
+            }
         }
     }
     draw(c) {
