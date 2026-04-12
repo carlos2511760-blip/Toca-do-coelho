@@ -676,6 +676,10 @@ function enableOperatorMode() {
 }
 
 window.addEventListener('keydown', e => {
+    // Se um campo de texto está focado, NÃO captura as teclas (permite digitar)
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+
     // Cheat string tracking
     if (e.key && e.key.length === 1 && gameState === 'MENU') {
         secretCodeBuffer += e.key.toLowerCase();
@@ -697,7 +701,11 @@ window.addEventListener('keydown', e => {
     if (e.code === keyBindings.skill && gameState === 'PLAYING' && player) player.useSkill();
     if (e.code === 'Escape') { if (gameState === 'PLAYING') pauseGame(); else if (gameState === 'PAUSED') resumeGame(); }
 });
-window.addEventListener('keyup', e => keys[e.code] = false);
+window.addEventListener('keyup', e => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+    keys[e.code] = false;
+});
 
 document.addEventListener('mousedown', e => {
     const mouseCode = 'Mouse' + e.button;
