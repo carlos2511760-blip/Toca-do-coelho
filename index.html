@@ -20,7 +20,7 @@
             <!-- TELA TÍTULO -->
             <div id="title-screen" class="screen active">
                 <div class="title-bg">
-                    <h1 class="title glow-text">Toca do Coelho</h1>
+                    <h1 class="title glow-text">VOIDFALL</h1>
                     <p class="subtitle flicker">Desça até o fundo da toca...</p>
 
                     <div class="title-buttons">
@@ -36,9 +36,36 @@
                         <button id="btn-settings" class="menu-btn">
                             <span class="btn-icon">⚙️</span> Configurações
                         </button>
+                        <button id="login-status-btn" class="menu-btn" style="border-color: #3498db; color: #3498db;" onclick="openLoginModal()">
+                            <span class="btn-icon">☁️</span> Entrar / Salvar
+                        </button>
                     </div>
 
                     <p class="version-text">v2.0 — Pressione qualquer botão</p>
+                </div>
+            </div>
+
+            <!-- MODAL DE LOGIN (FIREBASE) -->
+            <div id="login-modal" class="screen" style="z-index: 1000; background: rgba(0,0,0,0.85);">
+                <div class="settings-panel" style="max-width: 400px;">
+                    <h2 class="panel-title">☁️ Área do Jogador</h2>
+                    <p class="hint-text">Crie sua conta para salvar seu progresso na nuvem.</p>
+                    
+                    <div id="auth-form" style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
+                        <input type="email" id="auth-email" placeholder="Seu E-mail" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
+                        <input type="password" id="auth-pass" placeholder="Sua Senha" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
+                        
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="loginWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0;">Entrar</button>
+                            <button onclick="registerWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0; border-color: #2ed573;">Criar</button>
+                        </div>
+                        
+                        <div style="text-align: center; color: #576574; margin: 5px 0;">OU</div>
+                        
+                        <button onclick="loginWithGoogle()" class="menu-btn primary-btn" style="background: #ea4335; border-color: #fff; font-size: 1.2rem;">Entrar com Google</button>
+                    </div>
+
+                    <button onclick="closeLoginModal()" class="back-btn" style="margin-top: 20px;">Voltar</button>
                 </div>
             </div>
 
@@ -599,6 +626,19 @@
     <script src="items.js"></script>
     <script src="audio.js"></script>
     <script src="game.js"></script>
+    <script type="module" src="cloud.js"></script>
+    <script>
+        function openLoginModal() { 
+            const m = document.getElementById('login-modal');
+            m.style.display = 'flex';
+            m.classList.add('active');
+        }
+        function closeLoginModal() { 
+            const m = document.getElementById('login-modal');
+            m.style.display = 'none';
+            m.classList.remove('active');
+        }
+    </script>
 </body>
 
 </html>

@@ -818,7 +818,13 @@ class Summon {
         this.hp = Infinity; // Padrao para não ser destruído por HP
         this.radius = 15;
         
-        if (type === 'ninja_clone') this.life = 6.0;
+        if (type === 'ninja_clone') {
+            this.life = 6.0;
+            this.vx = (Math.random() - 0.5) * 2;
+            this.vy = (Math.random() - 0.5) * 2;
+            this.moveTimer = 0;
+            this.radius = 16;
+        }
         else if (type === 'spirit') { this.life = 12.0; this.angle = Math.random() * Math.PI * 2; }
         else if (['minion_ally', 'boss_ally'].includes(type)) {
             this.maxHp = maxHp || 20;
@@ -857,6 +863,26 @@ class Summon {
         }
 
         if (this.type === 'ninja_clone') {
+            // Movimentação: muda direção aleatoriamente e anda pela sala
+            this.moveTimer -= dt;
+            if (this.moveTimer <= 0) {
+                // Escolhe nova direção aleatória
+                let angle = Math.random() * Math.PI * 2;
+                let spd = 1.5 + Math.random() * 1.5;
+                this.vx = Math.cos(angle) * spd;
+                this.vy = Math.sin(angle) * spd;
+                this.moveTimer = 0.8 + Math.random() * 0.8;
+            }
+            // Move o clone e mantém dentro da sala
+            this.x += this.vx * (dt * 60);
+            this.y += this.vy * (dt * 60);
+            const WALL = 40;
+            if (this.x < WALL + 20) { this.x = WALL + 20; this.vx = Math.abs(this.vx); }
+            if (this.x > 800 - WALL - 20) { this.x = 800 - WALL - 20; this.vx = -Math.abs(this.vx); }
+            if (this.y < WALL + 20) { this.y = WALL + 20; this.vy = Math.abs(this.vy); }
+            if (this.y > 600 - WALL - 20) { this.y = 600 - WALL - 20; this.vy = -Math.abs(this.vy); }
+
+            // Atira nos inimigos
             if (this.fireCD <= 0 && enemies.length > 0) {
                 let e = enemies.reduce((a, b) => dist(this.x, this.y, a.x, a.y) < dist(this.x, this.y, b.x, b.y) ? a : b);
                 if (dist(this.x, this.y, e.x, e.y) < 400) {
@@ -926,8 +952,32 @@ class Summon {
     }
     draw(c) {
         if (this.type === 'ninja_clone') {
-            c.fillStyle = `rgba(47, 53, 66, ${Math.min(1, this.life)})`;
-            c.beginPath(); c.arc(this.x, this.y, 15, 0, Math.PI * 2); c.fill();
+            // Desenha como o player (coelho escuro = clone)
+            let dR = this.radius;
+            let alpha = Math.min(1, this.life * 0.8); // Fade quando prestes a sumir
+            c.globalAlpha = alpha;
+            c.fillStyle = '#2c3e50'; // Escuro, diferente do player
+            // Orelhas
+            c.beginPath();
+            c.moveTo(this.x - dR/2, this.y - dR);
+            c.lineTo(this.x - dR/2, this.y - dR - 14);
+            c.lineTo(this.x - dR/4, this.y - dR);
+            c.moveTo(this.x + dR/2, this.y - dR);
+            c.lineTo(this.x + dR/2, this.y - dR - 14);
+            c.lineTo(this.x + dR/4, this.y - dR);
+            c.arc(this.x, this.y, dR, 0, Math.PI * 2);
+            c.fill();
+            // Contorno pulsante p/ identificar como clone
+            c.strokeStyle = `rgba(149, 165, 166, ${alpha * 0.6})`;
+            c.lineWidth = 2;
+            c.setLineDash([4, 4]);
+            c.beginPath(); c.arc(this.x, this.y, dR + 4, 0, Math.PI * 2); c.stroke();
+            c.setLineDash([]);
+            // Texto CLONE acima
+            c.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
+            c.font = '10px VT323'; c.textAlign = 'center';
+            c.fillText('CLONE', this.x, this.y - dR - 18);
+            c.globalAlpha = 1.0;
         } else if (this.type === 'spirit') {
             c.fillStyle = `rgba(190, 46, 221, ${Math.min(1, this.life)})`;
             c.beginPath(); c.arc(this.x, this.y, 8, 0, Math.PI * 2); c.fill();
@@ -1774,14 +1824,27 @@ class Enemy extends Actor {
     }
     update(dt) {
         if (!player) return;
-        let dx = player.x - this.x, dy = player.y - this.y, d = Math.hypot(dx, dy);
+
+        // Verifica se existe um clone do ninja na sala para redirecionar ataque
+        let cloneDecoy = summons.find(s => s.type === 'ninja_clone' && s.life > 0);
+        let targetX, targetY;
+        if (cloneDecoy) {
+            // Inimigos miram no clone em vez do player!
+            targetX = cloneDecoy.x;
+            targetY = cloneDecoy.y;
+        } else {
+            targetX = player.x;
+            targetY = player.y;
+        }
+
+        let dx = targetX - this.x, dy = targetY - this.y, d = Math.hypot(dx, dy);
         if (d > 0) { dx /= d; dy /= d; }
 
         this.specialCD -= dt;
 
         if (this.type === 'minion') {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
-            if (player.fearT > 0 && d < 150) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
+            if (player.fearT > 0 && dist(this.x, this.y, player.x, player.y) < 150) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
             else {
                 this.fireCD -= dt;
                 if (this.fireCD <= 0 && d < 300 && this.stunTimer <= 0) {
@@ -2245,6 +2308,10 @@ class RoomSystem {
                         }
                         // Hook conquistas: vitória
                         if (typeof onGameWon === 'function') onGameWon(selectedDiff, MAX_LEVELS === 8, !takenDamageOverall);
+                        
+                        // Sincroniza progresso na nuvem
+                        if (window.syncToCloud) window.syncToCloud();
+
                         gameState = 'VICTORY'; switchScreen('victory');
                         if (!cheatsUsed) {
                             let bvt = parseFloat(localStorage.getItem('toca_vic_time') || 999999);
