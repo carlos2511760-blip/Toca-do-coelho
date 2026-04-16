@@ -2102,15 +2102,15 @@ class RoomSystem {
         if (this.rooms[`${x},${y + 1}`]) this.doors.push({ x: cx - 40, y: 600 - WALL, w: 80, h: Math.max(30, WALL), side: 'S', toType: this.rooms[`${x},${y + 1}`].type });
         if (this.rooms[`${x - 1},${y}`]) this.doors.push({ x: 0, y: cy - 40, w: WALL, h: 80, side: 'W', toType: this.rooms[`${x - 1},${y}`].type });
         if (this.rooms[`${x + 1},${y}`]) this.doors.push({ x: 800 - WALL, y: cy - 40, w: WALL, h: 80, side: 'E', toType: this.rooms[`${x + 1},${y}`].type });
-        if (this.type === 'spawn') { roomCounter.innerText = `Início`; roomCounter.style.color = '#a4b0be'; }
-        else if (this.type === 'shop') { roomCounter.innerText = 'Loja'; roomCounter.style.color = '#feca57'; if (!rd.shopVisited) { gameState = 'SHOP'; openShop(); } }
+        if (this.type === 'spawn') { roomCounter.innerText = I18N.t('room_spawn'); roomCounter.style.color = '#a4b0be'; }
+        else if (this.type === 'shop') { roomCounter.innerText = I18N.t('room_shop'); roomCounter.style.color = '#feca57'; if (!rd.shopVisited) { gameState = 'SHOP'; openShop(); } }
         else if (this.type === 'exit') {
-            roomCounter.innerText = 'Saída - Próx Andar'; roomCounter.style.color = '#9b59b6'; this.isCleared = true;
+            roomCounter.innerText = I18N.t('room_exit'); roomCounter.style.color = '#9b59b6'; this.isCleared = true;
             if (!rd.looted && !rd.exitLocked) { pickups.push(new Pickup(cx, cy, 'exit', 0)); rd.looted = true; }
-            else if (rd.exitLocked) { roomCounter.innerText = '🔒 Saída Trancada — Derrote o Boss!'; roomCounter.style.color = '#ff4757'; }
+            else if (rd.exitLocked) { roomCounter.innerText = I18N.t('room_exit_locked'); roomCounter.style.color = '#ff4757'; }
         }
         else if (this.type === 'treasure') {
-            roomCounter.innerText = 'Sala do Tesouro'; roomCounter.style.color = '#f1c40f'; this.isCleared = true;
+            roomCounter.innerText = I18N.t('room_treasure'); roomCounter.style.color = '#f1c40f'; this.isCleared = true;
             if (!rd.looted) {
                 let gAmt = 50;
                 if (player && player.charType === 18) gAmt = 80; // Miner bonus
@@ -2122,14 +2122,14 @@ class RoomSystem {
         }
 
         else if (this.type === 'casino') {
-            roomCounter.innerText = 'Cassino'; roomCounter.style.color = '#feca57'; this.isCleared = true;
+            roomCounter.innerText = I18N.t('room_casino'); roomCounter.style.color = '#feca57'; this.isCleared = true;
             if (!rd.casinoVisited) {
                 gameState = 'CASINO';
                 openCasino();
             }
         }
         else if (this.type === 'npc') {
-            roomCounter.innerText = 'Anjo Guardião'; roomCounter.style.color = '#3498db';
+            roomCounter.innerText = I18N.t('room_npc'); roomCounter.style.color = '#3498db';
             if (rd.rewardTaken) {
                 // Already done, just mark cleared
                 this.isCleared = true;
@@ -2166,32 +2166,32 @@ class RoomSystem {
                     let boss2 = new Enemy(440, 300, 'boss', bi2);
                     boss2.x = 440; // posicionar separado
                     this.pendingEnemies.push(boss2);
-                    roomCounter.innerText = '⚠️ CHEFES FINAIS!'; roomCounter.style.color = '#ff4757';
-                    bossHealthContainer.style.display = 'block'; bossNameEl.innerText = `${BOSS_DEFS[bi].name} & ${BOSS_DEFS[bi2].name}`;
+                    roomCounter.innerText = I18N.t('room_final_bosses'); roomCounter.style.color = '#ff4757';
+                    bossHealthContainer.style.display = 'block'; bossNameEl.innerText = `${I18N.t('boss_' + bi)} & ${I18N.t('boss_' + bi2)}`;
                 } else {
-                    roomCounter.innerText = `${BOSS_DEFS[bi].name}`; roomCounter.style.color = '#ff4757';
-                    bossHealthContainer.style.display = 'block'; bossNameEl.innerText = BOSS_DEFS[bi].name;
+                    roomCounter.innerText = I18N.t('boss_' + bi); roomCounter.style.color = '#ff4757';
+                    bossHealthContainer.style.display = 'block'; bossNameEl.innerText = I18N.t('boss_' + bi);
                 }
             }
             else if (this.type === 'arena') {
                 this.pendingEnemies.push(new Enemy(400, 300, 'miniboss'));
                 this._pendingMinibossCount = 0;
                 this._pendingMinionCount = 10 + mapLevel * 2;
-                roomCounter.innerText = `Arena`; roomCounter.style.color = '#c0392b'; this._hadMiniboss = true;
+                roomCounter.innerText = I18N.t('room_arena'); roomCounter.style.color = '#c0392b'; this._hadMiniboss = true;
             }
             else if (this.type === 'miniboss') {
                 this.pendingEnemies.push(new Enemy(400, 300, 'miniboss'), new Enemy(320, 300, 'minion'), new Enemy(480, 300, 'minion'));
                 this._pendingMinibossCount = 0;
                 this._pendingMinionCount = 0;
-                roomCounter.innerText = `Mini-Chefe`; roomCounter.style.color = '#ffa502'; this._hadMiniboss = true;
+                roomCounter.innerText = I18N.t('room_miniboss'); roomCounter.style.color = '#ffa502'; this._hadMiniboss = true;
             }
             else {
                 let mc = 3 + mapLevel + Math.floor(Math.random() * 3);
                 this._pendingMinionCount = mc;
-                roomCounter.innerText = `Lobisomens`;
+                roomCounter.innerText = I18N.t('room_battle');
                 roomCounter.style.color = '#e0e0e0';
             }
-        } else { roomCounter.innerText = `Limpo`; roomCounter.style.color = '#7f8fa6'; }
+        } else { roomCounter.innerText = I18N.t('room_cleared'); roomCounter.style.color = '#7f8fa6'; }
     }
     update(dt) {
         if (this.spawnTimer > 0) {
@@ -2329,9 +2329,9 @@ class RoomSystem {
                         if (!cheatsUsed) {
                             let bvt = parseFloat(localStorage.getItem('toca_vic_time') || 999999);
                             if (gameTime < bvt) { localStorage.setItem('toca_vic_time', gameTime.toString()); bvt = gameTime; }
-                            vicFinalTimeEl.innerText = `Tempo Total: ${formatTime(gameTime)}`; vicBestTimeEl.innerText = `Melhor Tempo: ${formatTime(bvt)}`;
+                            vicFinalTimeEl.innerText = `${I18N.t('victory_time')} ${formatTime(gameTime)}`; vicBestTimeEl.innerText = `${I18N.t('victory_best')} ${formatTime(bvt)}`;
                         } else {
-                            vicFinalTimeEl.innerText = `Tempo Total: ${formatTime(gameTime)} (Cheats)`; vicBestTimeEl.innerText = `Melhor Tempo: N/A`;
+                            vicFinalTimeEl.innerText = `${I18N.t('victory_time')} ${formatTime(gameTime)} ${I18N.t('cheats_suffix')}`; vicBestTimeEl.innerText = `${I18N.t('victory_best')} ${I18N.t('na')}`;
                         }
                         return;
                     } else { floorCounterEl.innerText = mapLevel; currentRoom = new RoomSystem(); return; }
@@ -2378,7 +2378,7 @@ class RoomSystem {
 
             if (this.type === 'shop' && this.isCleared) { 
                 c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; 
-                c.fillText('💰 Portas estão abertas', 400, 300); 
+                c.fillText(I18N.t('room_doors_open'), 400, 300); 
             }
             // Draw NPC cage when mini-boss is alive
             if (this.type === 'npc' && !this.isCleared && this.spawnTimer <= 0 && enemies.length > 0) {
@@ -2394,17 +2394,17 @@ class RoomSystem {
                 c.beginPath(); c.arc(cageX, cageY, cageR, 0, Math.PI * 2); c.stroke();
                 c.fillStyle = 'rgba(52,152,219,0.06)'; c.beginPath(); c.arc(cageX, cageY, cageR, 0, Math.PI * 2); c.fill();
                 c.font = '20px VT323'; c.fillStyle = '#74b9ff'; c.textAlign = 'center';
-                c.fillText('🔒 Derrote o guardião para libertar o Anjo!', 400, WALL + 22);
+                c.fillText(I18N.t('room_npc_cage'), 400, WALL + 22);
             }
             if (this.isCleared) {
                 for (let d of this.doors) {
                     let rClr = this.rooms[d.side === 'N' ? `${this.currentX},${this.currentY - 1}` : d.side === 'S' ? `${this.currentX},${this.currentY + 1}` : d.side === 'E' ? `${this.currentX + 1},${this.currentY}` : `${this.currentX - 1},${this.currentY}`].cleared;
                     c.fillStyle = rClr ? '#2ed573' : d.toType === 'boss' ? '#ff4757' : d.toType === 'exit' ? '#9b59b6' : d.toType === 'miniboss' ? '#ffa502' : d.toType === 'treasure' ? '#f1c40f' : d.toType === 'npc' ? '#3498db' : d.toType === 'arena' ? '#e74c3c' : d.toType === 'casino' ? '#f1c40f' : '#2ed573';
                     c.fillRect(d.x, d.y, d.w, d.h);
-                    if (!rClr && ['boss', 'exit', 'miniboss', 'treasure', 'npc', 'arena', 'casino'].includes(d.toType)) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? 'BOSS' : d.toType === 'exit' ? 'SAIDA' : d.toType === 'treasure' ? 'BAU' : d.toType === 'npc' ? 'NPC' : d.toType === 'arena' ? 'ARENA' : d.toType === 'casino' ? 'CASSINO' : 'MINI'; c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
+                    if (!rClr && ['boss', 'exit', 'miniboss', 'treasure', 'npc', 'arena', 'casino'].includes(d.toType)) { c.font = '14px VT323'; c.fillStyle = '#fff'; c.textAlign = 'center'; let txt = d.toType === 'boss' ? I18N.t('door_boss') : d.toType === 'exit' ? I18N.t('door_exit') : d.toType === 'treasure' ? I18N.t('door_treasure') : d.toType === 'npc' ? I18N.t('door_npc') : d.toType === 'arena' ? I18N.t('door_arena') : d.toType === 'casino' ? I18N.t('door_casino') : I18N.t('door_mini'); c.fillText(txt, d.x + d.w / 2, d.y + d.h / 2 + 5); }
                 }
             } else if (!['spawn', 'shop', 'exit', 'treasure', 'npc', 'casino'].includes(this.type)) {
-                let txt = this.spawnTimer > 0 ? `PREPARE-SE: ${Math.ceil(this.spawnTimer)}s` : 'BLOQUEADO';
+                let txt = this.spawnTimer > 0 ? `${I18N.t('room_prepare')} ${Math.ceil(this.spawnTimer)}s` : I18N.t('room_blocked');
                 let col = this.spawnTimer > 0 ? '#feca57' : '#ff4757';
                 c.fillStyle = col; c.font = '20px VT323'; c.textAlign = 'center'; c.fillText(txt, 400, WALL + 20);
             }
@@ -2429,7 +2429,7 @@ class RoomSystem {
             c.fillStyle = 'rgba(0,0,0,0.85)';
             c.fillRect(-400, -300, 800, 600);
             c.fillStyle = '#fff'; c.font = '24px VT323'; c.textAlign = 'center';
-            c.fillText('MAPA GLOBAL (Aperte M ou Tab para fechar)', 0, -250);
+            c.fillText(I18N.t('map_title'), 0, -250);
         } else {
             // Fundo cinza removido conforme solicitado
         }
@@ -2461,7 +2461,7 @@ class RoomSystem {
 }
 
 // SHOP
-function openShop() { shopGoldEl.innerText = player.gold; shopItemsEl.innerHTML = ''; let items = getRandomShopItems(3); items.forEach(item => { let div = document.createElement('div'); div.className = `shop-item rarity-${item.rarity}`; div.innerHTML = `<div class="item-rarity">${item.rarity.toUpperCase()}</div><h4>${item.emoji} ${item.name}</h4><p class="item-desc">${item.desc}</p><p class="item-price">🪙 ${item.price}</p>`; div.addEventListener('click', () => buyItem(item, div)); shopItemsEl.appendChild(div); }); switchScreen('shop'); }
+function openShop() { shopGoldEl.innerText = player.gold; shopItemsEl.innerHTML = ''; let items = getRandomShopItems(3); items.forEach(item => { let div = document.createElement('div'); div.className = `shop-item rarity-${item.rarity}`; let iName = I18N.t('item_' + item.key) !== 'item_' + item.key ? I18N.t('item_' + item.key) : item.name; let iDesc = I18N.t('item_' + item.key + '_desc') !== 'item_' + item.key + '_desc' ? I18N.t('item_' + item.key + '_desc') : item.desc; div.innerHTML = `<div class="item-rarity">${item.rarity.toUpperCase()}</div><h4>${item.emoji} ${iName}</h4><p class="item-desc">${iDesc}</p><p class="item-price">🪙 ${item.price}</p>`; div.addEventListener('click', () => buyItem(item, div)); shopItemsEl.appendChild(div); }); switchScreen('shop'); }
 function buyItem(item, el) {
     if (!cheatsUsed && player.gold < item.price) return;
     if (!cheatsUsed) player.gold -= item.price;
@@ -2535,7 +2535,7 @@ document.getElementById('btn-spin').addEventListener('click', () => {
     if (casinoSpinning) return;
     if (player.gold < cost) {
         let msg = document.getElementById('casino-result-msg');
-        msg.innerText = 'Sem ouro suficiente! (15 moedas)';
+        msg.innerText = I18N.t('casino_no_gold');
         msg.style.color = '#ff4757';
         return;
     }
@@ -2568,18 +2568,18 @@ document.getElementById('btn-spin').addEventListener('click', () => {
 
         let count1 = results.filter(r => r === '1').length;
         if (count1 === 4) {
-            msg.innerText = 'JACKPOT! 🎉 +250 Ouro!';
+            msg.innerText = I18N.t('casino_jackpot');
             msg.style.color = '#2ed573';
             player.gold += 250;
             if (typeof audio !== 'undefined') { audio.playCoin(); setTimeout(() => audio.playCoin(), 200); setTimeout(() => audio.playCoin(), 400); }
             boom(400, 300, '#feca57', 50);
         } else if (count1 === 3) {
-            msg.innerText = 'VITÓRIA! 💰 +40 Ouro!';
+            msg.innerText = I18N.t('casino_win');
             msg.style.color = '#1dd1a1';
             player.gold += 40;
             if (typeof audio !== 'undefined') audio.playCoin();
         } else {
-            msg.innerText = 'PERDEU! 😢 Tente novamente.';
+            msg.innerText = I18N.t('casino_lose');
             msg.style.color = '#ff4757';
             if (typeof audio !== 'undefined') audio.playHit();
         }
@@ -2614,7 +2614,7 @@ function startGame() {
     currentRoom = new RoomSystem();
     bossHealthContainer.style.display = 'none';
     goldCounter.innerText = '0';
-    weaponNameEl.innerText = 'Padrão';
+    weaponNameEl.innerText = I18N.t('hud_weapon_default');
     abilityNameEl.innerText = '-';
     skillCdEl.innerText = '';
     updateHUD();
@@ -2661,7 +2661,7 @@ function updateCooldowns() {
         charAbilityCdEl.innerText = `${Math.ceil(icd)}s`;
         charAbilityCdEl.style.color = '#ff4757';
     } else {
-        charAbilityCdEl.innerText = 'PRONTO';
+        charAbilityCdEl.innerText = I18N.t('hud_ability_ready');
         charAbilityCdEl.style.color = '#2ed573';
     }
 
@@ -2671,7 +2671,7 @@ function updateCooldowns() {
             skillCdEl.innerText = `(${Math.ceil(player.skillCD)}s)`;
             skillCdEl.style.color = '#ff4757';
         } else {
-            skillCdEl.innerText = 'PRONTO';
+            skillCdEl.innerText = I18N.t('hud_ability_ready');
             skillCdEl.style.color = '#2ed573';
         }
     } else {
@@ -2704,7 +2704,7 @@ function updateCooldowns() {
         }
     }
 }
-function triggerGameOver() { if (flyMode) return; gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; if (typeof audio !== 'undefined') { audio.stopGameMusic(); audio.playTitleMusic(); } if (!cheatsUsed) { let bt = parseFloat(localStorage.getItem('toca_surv_time') || 0); if (gameTime > bt) { localStorage.setItem('toca_surv_time', gameTime.toString()); bt = gameTime; } goFinalTimeEl.innerText = `Tempo Sobrevivido: ${formatTime(gameTime)}`; goBestTimeEl.innerText = `Melhor Sobrevivência: ${formatTime(bt)}`; } else { goFinalTimeEl.innerText = `Survive: ${formatTime(gameTime)} (Cheats)`; goBestTimeEl.innerText = "N/A"; } }
+function triggerGameOver() { if (flyMode) return; gameState = 'GAMEOVER'; switchScreen('gameOver'); bossHealthContainer.style.display = 'none'; if (typeof audio !== 'undefined') { audio.stopGameMusic(); audio.playTitleMusic(); } if (!cheatsUsed) { let bt = parseFloat(localStorage.getItem('toca_surv_time') || 0); if (gameTime > bt) { localStorage.setItem('toca_surv_time', gameTime.toString()); bt = gameTime; } goFinalTimeEl.innerText = `${I18N.t('gameover_time')} ${formatTime(gameTime)}`; goBestTimeEl.innerText = `${I18N.t('gameover_best')} ${formatTime(bt)}`; } else { goFinalTimeEl.innerText = `${I18N.t('gameover_time')} ${formatTime(gameTime)} ${I18N.t('cheats_suffix')}`; goBestTimeEl.innerText = I18N.t('na'); } }
 
 function checkCollisions() {
     for (let i = projectiles.length - 1; i >= 0; i--) {

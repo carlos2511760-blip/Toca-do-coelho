@@ -25,30 +25,30 @@
                 
                 <div class="title-bg">
                     <h1 class="title glow-text">VOIDFALL</h1>
-                    <p class="subtitle flicker">Desça até o fundo da toca...</p>
+                    <p class="subtitle flicker" data-i18n="title_subtitle">Desça até o fundo da toca...</p>
 
                     <div class="title-buttons">
-                        <button id="btn-play" class="menu-btn primary-btn">
-                            <span class="btn-icon">⚔️</span> Jogar
+                        <button id="btn-play" class="menu-btn primary-btn" data-i18n="btn_play">
+                            ⚔️ Jogar
                         </button>
-                        <button id="btn-manual" class="menu-btn">
-                            <span class="btn-icon">📖</span> Manual
+                        <button id="btn-manual" class="menu-btn" data-i18n="btn_manual">
+                            📖 Manual
                         </button>
-                        <button id="btn-achievements" class="menu-btn">
-                            <span class="btn-icon">🏆</span> Conquistas
+                        <button id="btn-achievements" class="menu-btn" data-i18n="btn_achievements">
+                            🏆 Conquistas
                         </button>
-                        <button id="btn-leaderboard" class="menu-btn" style="border-color: #f1c40f; color: #f1c40f;" onclick="switchScreen('leaderboard')">
-                            <span class="btn-icon">🌍</span> Placar Global
+                        <button id="btn-leaderboard" class="menu-btn" style="border-color: #f1c40f; color: #f1c40f;" onclick="switchScreen('leaderboard')" data-i18n="btn_leaderboard">
+                            🌍 Placar Global
                         </button>
-                        <button id="btn-settings" class="menu-btn">
-                            <span class="btn-icon">⚙️</span> Configurações
+                        <button id="btn-settings" class="menu-btn" data-i18n="btn_settings">
+                            ⚙️ Configurações
                         </button>
-                        <button id="btn-logout" class="menu-btn" style="border-color: #e74c3c; color: #e74c3c;" onclick="logout()">
-                            <span class="btn-icon">👋</span> Sair
+                        <button id="btn-logout" class="menu-btn" style="border-color: #e74c3c; color: #e74c3c;" onclick="logout()" data-i18n="btn_logout">
+                            👋 Sair
                         </button>
                     </div>
 
-                    <p class="version-text">v2.0 — Pressione qualquer botão</p>
+                    <p class="version-text" data-i18n="version_text">v2.0 — Pressione qualquer botão</p>
                 </div>
             </div>
 
@@ -56,24 +56,24 @@
             <div id="auth-screen" class="screen active" style="background: rgba(0,0,0,0.95); z-index: 2000;">
                 <div class="settings-panel" style="max-width: 400px;">
                     <h1 class="title glow-text" style="font-size: 3rem; margin-bottom: 5px;">VOIDFALL</h1>
-                    <p class="hint-text" style="margin-bottom: 25px;">Faça login para adentrar a masmorra.</p>
+                    <p class="hint-text" style="margin-bottom: 25px;" data-i18n="auth_hint">Faça login para adentrar a masmorra.</p>
                     
                     <div id="auth-form" style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
-                        <input type="email" id="auth-email" placeholder="E-mail" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
-                        <input type="password" id="auth-pass" placeholder="Senha" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
+                        <input type="email" id="auth-email" placeholder="E-mail" data-i18n="auth_email_placeholder" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
+                        <input type="password" id="auth-pass" placeholder="Senha" data-i18n="auth_pass_placeholder" style="padding: 12px; background: #000; border: 2px solid #2f3542; color: #fff; font-family: 'VT323'; font-size: 1.2rem;">
                         
                         <div style="display: flex; gap: 5px; margin-top: 5px;">
-                            <button onclick="loginWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0;">Entrar</button>
-                            <button onclick="registerWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0; border-color: #2ed573;">Criar Conta</button>
+                            <button onclick="loginWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0;" data-i18n="auth_login">Entrar</button>
+                            <button onclick="registerWithEmail(document.getElementById('auth-email').value, document.getElementById('auth-pass').value)" class="menu-btn" style="flex: 1; font-size: 1.2rem; min-width: 0; border-color: #2ed573;" data-i18n="auth_register">Criar Conta</button>
                         </div>
                         
-                        <div style="text-align: center; color: #576574; margin: 10px 0;">― OU ―</div>
+                        <div style="text-align: center; color: #576574; margin: 10px 0;" data-i18n="auth_or">― OU ―</div>
                         
-                        <button onclick="loginWithGoogle()" class="menu-btn primary-btn" style="background: #ea4335; border-color: #fff; font-size: 1.2rem;">Entrar com Google</button>
+                        <button onclick="loginWithGoogle()" class="menu-btn primary-btn" style="background: #ea4335; border-color: #fff; font-size: 1.2rem;" data-i18n="auth_google">Entrar com Google</button>
                         
                         <div style="text-align: center; color: #576574; margin: 10px 0;">―――――――――</div>
                         
-                        <button onclick="playAsGuest()" class="menu-btn" style="border-color: #576574; color: #576574; font-size: 1rem;">Jogar sem conta (progresso não será salvo)</button>
+                        <button onclick="playAsGuest()" class="menu-btn" style="border-color: #576574; color: #576574; font-size: 1rem;" data-i18n="auth_guest">Jogar sem conta (progresso não será salvo)</button>
                     </div>
                 </div>
             </div>
@@ -81,12 +81,12 @@
             <!-- CRIAÇÃO DE NICKNAME (APÓS REGISTRO) -->
             <div id="nickname-screen" class="screen" style="background: rgba(0,0,0,0.95); z-index: 2000;">
                 <div class="settings-panel" style="max-width: 450px;">
-                    <h2 class="panel-title" style="color: #f1c40f;">Bem-vindo ao Vazio</h2>
+                    <h2 class="panel-title" style="color: #f1c40f;" data-i18n="nickname_title">Bem-vindo ao Vazio</h2>
                     
                     <div style="width: 100%; display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
-                        <input type="text" id="auth-nickname" placeholder="Seu nome" maxlength="15" autocomplete="off" style="padding: 15px; background: #000; border: 2px solid #f1c40f; color: #fff; font-family: 'VT323'; font-size: 1.5rem; text-align: center; text-transform: uppercase;">
+                        <input type="text" id="auth-nickname" placeholder="Seu nome" data-i18n="nickname_placeholder" maxlength="15" autocomplete="off" style="padding: 15px; background: #000; border: 2px solid #f1c40f; color: #fff; font-family: 'VT323'; font-size: 1.5rem; text-align: center; text-transform: uppercase;">
                         
-                        <button onclick="setNickname(document.getElementById('auth-nickname').value)" class="menu-btn primary-btn" style="border-color: #f1c40f; color: #f1c40f;">Confirmar Nome</button>
+                        <button onclick="setNickname(document.getElementById('auth-nickname').value)" class="menu-btn primary-btn" style="border-color: #f1c40f; color: #f1c40f;" data-i18n="nickname_confirm">Confirmar Nome</button>
                     </div>
                 </div>
             </div>
@@ -94,28 +94,28 @@
             <!-- TELA DE PLACAR GLOBAL -->
             <div id="leaderboard-screen" class="screen">
                 <div class="settings-panel" style="max-width: 600px; width: 90%;">
-                    <h2 class="panel-title" style="color: #f1c40f;">🌍 Placar Global</h2>
-                    <p class="hint-text">Em Breve: Os maiores desafiantes de Voidfall.</p>
+                    <h2 class="panel-title" style="color: #f1c40f;" data-i18n="leaderboard_title">🌍 Placar Global</h2>
+                    <p class="hint-text" data-i18n="leaderboard_hint">Em Breve: Os maiores desafiantes de Voidfall.</p>
                     
                     <div id="leaderboard-list" style="margin: 20px 0; min-height: 200px; border: 2px solid #2f3542; background: rgba(0,0,0,0.5); padding: 10px; text-align: center;">
-                        <p style="color: #7f8fa6; margin-top: 80px;">Sincronizando com os Arcontes...</p>
+                        <p style="color: #7f8fa6; margin-top: 80px;" data-i18n="leaderboard_loading">Sincronizando com os Arcontes...</p>
                     </div>
 
-                    <button class="back-btn" onclick="switchScreen('titleScreen')">Voltar ao Menu</button>
+                    <button class="back-btn" onclick="switchScreen('titleScreen')" data-i18n="btn_back_menu">Voltar ao Menu</button>
                 </div>
             </div>
 
             <!-- CONFIGURAÇÕES -->
             <div id="settings-screen" class="screen">
                 <div class="settings-panel">
-                    <h2 class="panel-title">⚙️ Configurações</h2>
+                    <h2 class="panel-title" data-i18n="settings_title">⚙️ Configurações</h2>
 
                     <div class="settings-tabs">
-                        <button class="tab-btn active" data-tab="tab-audio">🔊 Áudio</button>
-                        <button class="tab-btn" data-tab="tab-video">🖥️ Vídeo</button>
-                        <button class="tab-btn" data-tab="tab-controls">🎮 Controles</button>
-                        <button class="tab-btn" data-tab="tab-access">🌐 Acessibilidade</button>
-                        <button class="tab-btn" data-tab="tab-cheats" style="color:#fffa65; border-color:#fffa65;">💀
+                        <button class="tab-btn active" data-tab="tab-audio" data-i18n="tab_audio">🔊 Áudio</button>
+                        <button class="tab-btn" data-tab="tab-video" data-i18n="tab_video">🖥️ Vídeo</button>
+                        <button class="tab-btn" data-tab="tab-controls" data-i18n="tab_controls">🎮 Controles</button>
+                        <button class="tab-btn" data-tab="tab-access" data-i18n="tab_access">🌐 Acessibilidade</button>
+                        <button class="tab-btn" data-tab="tab-cheats" style="color:#fffa65; border-color:#fffa65;" data-i18n="tab_cheats">💀
                             Cheats</button>
                     </div>
 
@@ -123,17 +123,17 @@
                         <!-- ÁUDIO -->
                         <div class="tab-content active" id="tab-audio">
                             <div class="setting-row">
-                                <label>Volume Geral</label>
+                                <label data-i18n="label_vol_master">Volume Geral</label>
                                 <input type="range" id="vol-master" min="0" max="100" value="80">
                                 <span class="range-val" id="vol-master-val">80%</span>
                             </div>
                             <div class="setting-row">
-                                <label>Música</label>
+                                <label data-i18n="label_vol_music">Música</label>
                                 <input type="range" id="vol-music" min="0" max="100" value="60">
                                 <span class="range-val" id="vol-music-val">60%</span>
                             </div>
                             <div class="setting-row">
-                                <label>Efeitos Sonoros</label>
+                                <label data-i18n="label_vol_sfx">Efeitos Sonoros</label>
                                 <input type="range" id="vol-sfx" min="0" max="100" value="80">
                                 <span class="range-val" id="vol-sfx-val">80%</span>
                             </div>
@@ -142,7 +142,7 @@
                         <!-- VÍDEO -->
                         <div class="tab-content" id="tab-video">
                             <div class="setting-row">
-                                <label>Resolução</label>
+                                <label data-i18n="label_resolution">Resolução</label>
                                 <select id="set-resolution">
                                     <option value="800x600">800 × 600</option>
                                     <option value="1024x768">1024 × 768</option>
@@ -150,88 +150,89 @@
                                 </select>
                             </div>
                             <div class="setting-row">
-                                <label>Tela Cheia</label>
-                                <button id="btn-fullscreen" class="toggle-btn">Ativar</button>
+                                <label data-i18n="label_fullscreen">Tela Cheia</label>
+                                <button id="btn-fullscreen" class="toggle-btn" data-i18n="btn_activate">Ativar</button>
                             </div>
                             <div class="setting-row">
-                                <label>Qualidade Gráfica</label>
+                                <label data-i18n="label_quality">Qualidade Gráfica</label>
                                 <select id="set-quality">
-                                    <option value="low">Baixa</option>
-                                    <option value="medium" selected>Média</option>
-                                    <option value="high">Alta</option>
+                                    <option value="low" data-i18n="quality_low">Baixa</option>
+                                    <option value="medium" selected data-i18n="quality_medium">Média</option>
+                                    <option value="high" data-i18n="quality_high">Alta</option>
                                 </select>
                             </div>
                             <div class="setting-row">
-                                <label>Iluminação Dinâmica</label>
-                                <button id="btn-lighting" class="toggle-btn on">Ligado</button>
+                                <label data-i18n="label_lighting">Iluminação Dinâmica</label>
+                                <button id="btn-lighting" class="toggle-btn on" data-i18n="lighting_on">Ligado</button>
                             </div>
                         </div>
 
                         <!-- CONTROLES -->
                         <div class="tab-content" id="tab-controls">
-                            <p class="hint-text" style="margin-bottom:8px;">Clique no botão e pressione uma tecla ou clique com um botão do mouse para remapear.</p>
+                            <p class="hint-text" style="margin-bottom:8px;" data-i18n="controls_hint">Clique no botão e pressione uma tecla ou clique com um botão do mouse para remapear.</p>
                             <div class="controls-grid">
-                                <div class="key-row"><span>Mover Cima</span><button class="keybind-btn" data-action="up">W</button></div>
-                                <div class="key-row"><span>Mover Baixo</span><button class="keybind-btn" data-action="down">S</button></div>
-                                <div class="key-row"><span>Mover Esquerda</span><button class="keybind-btn" data-action="left">A</button></div>
-                                <div class="key-row"><span>Mover Direita</span><button class="keybind-btn" data-action="right">D</button></div>
-                                <div class="key-row"><span>Pular</span><button class="keybind-btn" data-action="jump">Espaço</button></div>
-                                <div class="key-row"><span id="label-ability">Habilidade (Q)</span><button class="keybind-btn" data-action="ability">Q</button></div>
-                                <div class="key-row"><span id="label-skill">Skill Extra (E)</span><button class="keybind-btn" data-action="skill">E</button></div>
-                                <div class="key-row"><span>Mapa</span><button class="keybind-btn" data-action="map">M</button></div>
+                                <div class="key-row"><span data-i18n="label_move_up">Mover Cima</span><button class="keybind-btn" data-action="up">W</button></div>
+                                <div class="key-row"><span data-i18n="label_move_down">Mover Baixo</span><button class="keybind-btn" data-action="down">S</button></div>
+                                <div class="key-row"><span data-i18n="label_move_left">Mover Esquerda</span><button class="keybind-btn" data-action="left">A</button></div>
+                                <div class="key-row"><span data-i18n="label_move_right">Mover Direita</span><button class="keybind-btn" data-action="right">D</button></div>
+                                <div class="key-row"><span data-i18n="label_jump">Pular</span><button class="keybind-btn" data-action="jump">Espaço</button></div>
+                                <div class="key-row"><span id="label-ability" data-i18n="label_ability">Habilidade (Q)</span><button class="keybind-btn" data-action="ability">Q</button></div>
+                                <div class="key-row"><span id="label-skill" data-i18n="label_skill">Skill Extra (E)</span><button class="keybind-btn" data-action="skill">E</button></div>
+                                <div class="key-row"><span data-i18n="label_map">Mapa</span><button class="keybind-btn" data-action="map">M</button></div>
                             </div>
                             <div style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
-                                <button id="btn-reset-keys" class="toggle-btn" style="background:#e17055; border-color:#d63031; width:200px;">🔄 Restaurar Padrão</button>
+                                <button id="btn-reset-keys" class="toggle-btn" style="background:#e17055; border-color:#d63031; width:200px;" data-i18n="btn_reset_keys">🔄 Restaurar Padrão</button>
                             </div>
-                            <p class="hint-text">🎮 Suporte a Gamepad disponível. | Atirar = Clique Esq. | Pausar = Esc</p>
+                            <p class="hint-text" data-i18n="controls_gamepad_hint">🎮 Suporte a Gamepad disponível. | Atirar = Clique Esq. | Pausar = Esc</p>
                         </div>
 
                         <!-- ACESSIBILIDADE -->
                         <div class="tab-content" id="tab-access">
                             <div class="setting-row">
-                                <label>Idioma</label>
+                                <label data-i18n="label_language">Idioma</label>
                                 <select id="set-language">
                                     <option value="pt" selected>Português</option>
                                     <option value="en">English</option>
                                     <option value="es">Español</option>
+                                    <option value="fr">Français</option>
                                 </select>
                             </div>
                             <div class="setting-row">
-                                <label>Filtro Daltonismo</label>
+                                <label data-i18n="label_colorblind">Filtro Daltonismo</label>
                                 <select id="set-colorblind">
-                                    <option value="none" selected>Nenhum</option>
+                                    <option value="none" selected data-i18n="colorblind_none">Nenhum</option>
                                     <option value="protanopia">Protanopia</option>
                                     <option value="deuteranopia">Deuteranopia</option>
                                     <option value="tritanopia">Tritanopia</option>
                                 </select>
                             </div>
                             <div class="setting-row">
-                                <label>Tamanho da HUD</label>
+                                <label data-i18n="label_hud_size">Tamanho da HUD</label>
                                 <input type="range" id="set-hud-size" min="80" max="150" value="100">
                                 <span class="range-val" id="set-hud-size-val">100%</span>
                             </div>
                             <div class="setting-row">
-                                <label>Tamanho Controles Mobile</label>
+                                <label data-i18n="label_mobile_size">Tamanho Controles Mobile</label>
                                 <input type="range" id="set-m-size" min="50" max="150" value="100">
                                 <span class="range-val" id="set-m-size-val">100%</span>
                             </div>
                             <div class="setting-row">
-                                <label>Joystick (X)</label>
+                                <label data-i18n="label_joystick_x">Joystick (X)</label>
                                 <input type="range" id="set-m-joy-x" min="0" max="300" value="40">
                                 <span class="range-val" id="set-m-joy-x-val">40px</span>
                             </div>
                             <div class="setting-row">
-                                <label>Joystick (Y)</label>
+                                <label data-i18n="label_joystick_y">Joystick (Y)</label>
                                 <input type="range" id="set-m-joy-y" min="0" max="300" value="30">
                                 <span class="range-val" id="set-m-joy-y-val">30px</span>
                             </div>
                             <div class="setting-row">
-                                <label>Botões Acão (X)</label>
+                                <label data-i18n="label_btn_action_x">Botões Ação (X)</label>
                                 <input type="range" id="set-m-btn-x" min="0" max="300" value="40">
                                 <span class="range-val" id="set-m-btn-x-val">40px</span>
                             </div>
                             <div class="setting-row">
-                                <label>Botões Acão (Y)</label>
+                                <label data-i18n="label_btn_action_y">Botões Ação (Y)</label>
                                 <input type="range" id="set-m-btn-y" min="0" max="300" value="30">
                                 <span class="range-val" id="set-m-btn-y-val">30px</span>
                             </div>
@@ -240,11 +241,11 @@
                         <!-- CHEATS -->
                         <div class="tab-content" id="tab-cheats">
                             <div class="setting-row" style="background: rgba(255, 71, 87, 0.1); border-color: #fffa65;">
-                                <label style="color: #fffa65; font-weight: bold;">Habilitar Trapaças (Modo Deus)</label>
-                                <button id="btn-cheat-unlock" class="toggle-btn">Ativar</button>
+                                <label style="color: #fffa65; font-weight: bold;" data-i18n="cheat_label">Habilitar Trapaças (Modo Deus)</label>
+                                <button id="btn-cheat-unlock" class="toggle-btn" data-i18n="btn_activate">Ativar</button>
                             </div>
                             <div id="cheats-list" class="cheats-list locked">
-                                <p class="hint-text" style="color:#fffa65;">⚠️ O modo Trapaça ativará:<br>
+                                <p class="hint-text" style="color:#fffa65;" data-i18n="cheat_warning">⚠️ O modo Trapaça ativará:<br>
                                 - 999.999 Ouro Ilimitado<br>
                                 - Vida Infinita (Invencível)<br>
                                 - Voo Livre por paredes<br>
@@ -257,87 +258,85 @@
                     <!-- SISTEMA DE RESET -->
                     <div style="border-top: 2px solid #576574; padding-top: 15px; margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
                         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                            <button id="btn-reset-save" class="toggle-btn" style="background:#c0392b; border-color:#e74c3c; width:180px;">🗑️ Apagar Progresso</button>
+                            <button id="btn-reset-save" class="toggle-btn" style="background:#c0392b; border-color:#e74c3c; width:180px;" data-i18n="btn_reset_save">🗑️ Apagar Progresso</button>
                         </div>
                     </div>
 
-                    <button id="btn-settings-back" class="menu-btn back-btn">← Voltar</button>
+                    <button id="btn-settings-back" class="menu-btn back-btn" data-i18n="btn_back">← Voltar</button>
                 </div>
             </div>
 
             <!-- MANUAL -->
             <div id="manual-screen" class="screen">
                 <div class="manual-panel">
-                    <h2 class="panel-title">📖 Manual do Jogo</h2>
+                    <h2 class="panel-title" data-i18n="manual_title">📖 Manual do Jogo</h2>
                     <div class="manual-scroll">
                         <div class="manual-section">
-                            <h3>🎯 Objetivo</h3>
-                            <p>Explore a toca, derrote inimigos e chefes em cada andar, colete ouro e itens, e sobreviva
-                                até escapar no 5º andar!</p>
+                            <h3 data-i18n="manual_objective_title">🎯 Objetivo</h3>
+                            <p data-i18n="manual_objective">Explore a toca, derrote inimigos e chefes em cada andar, colete ouro e itens, e sobreviva até escapar no 5º andar!</p>
                         </div>
                         <div class="manual-section">
-                            <h3>🕹️ Controles</h3>
-                            <p><strong>WASD</strong> — Mover | <strong>Mouse</strong> — Mirar e Atirar<br>
-                                <strong>Espaço</strong> — Pular (evita dano) | <strong>Q</strong> — Habilidade do
-                                Herói<br>
+                            <h3 data-i18n="manual_controls_title">🕹️ Controles</h3>
+                            <p data-i18n="manual_controls"><strong>WASD</strong> — Mover | <strong>Mouse</strong> — Mirar e Atirar<br>
+                                <strong>Espaço</strong> — Pular (evita dano) | <strong>Q</strong> — Habilidade do Herói<br>
                                 <strong>E</strong> — Skill Extra (comprada na loja) | <strong>ESC</strong> — Pausar
                             </p>
                         </div>
                         <div class="manual-section">
-                            <h3>🗺️ Mapa</h3>
-                            <p>O mapa é gerado aleatoriamente. Cada sala pode ser de batalha, mini-chefe, chefe,
+                            <h3 data-i18n="manual_map_title">🗺️ Mapa</h3>
+                            <p data-i18n="manual_map">O mapa é gerado aleatoriamente. Cada sala pode ser de batalha, mini-chefe, chefe,
                                 tesouro, NPC ou loja. O minimapa no canto inferior direito mostra as salas próximas.</p>
                         </div>
                         <div class="manual-section">
-                            <h3>🏪 Loja</h3>
-                            <p>Após derrotar cada chefe, uma loja aparece com 3 itens aleatórios. Use ouro para comprar
+                            <h3 data-i18n="manual_shop_title">🏪 Loja</h3>
+                            <p data-i18n="manual_shop">Após derrotar cada chefe, uma loja aparece com 3 itens aleatórios. Use ouro para comprar
                                 curas, armas, buffs ou habilidades especiais.</p>
                         </div>
                         <div class="manual-section">
-                            <h3>⚔️ Armas</h3>
-                            <p>🔥 <strong>Cajado de Fogo</strong> — Queima inimigos<br>
+                            <h3 data-i18n="manual_weapons_title">⚔️ Armas</h3>
+                            <p data-i18n="manual_weapons">🔥 <strong>Cajado de Fogo</strong> — Queima inimigos<br>
                                 ⚡ <strong>Arma de Raio</strong> — Paralisa inimigos<br>
                                 ❄️ <strong>Cetro de Gelo</strong> — Desacelera inimigos</p>
                         </div>
                         <div class="manual-section">
-                            <h3>👹 Chefes</h3>
-                            <p>Cada andar tem um chefe com padrão de ataque único. O chefe final do 5º andar é o
+                            <h3 data-i18n="manual_bosses_title">👹 Chefes</h3>
+                            <p data-i18n="manual_bosses">Cada andar tem um chefe com padrão de ataque único. O chefe final do 5º andar é o
                                 <strong>Colosso do Apocalipse</strong>, com chuva de meteoros e barreiras de pedra!</p>
                         </div>
                         <div class="manual-section">
-                            <h3>🎖️ Dificuldades</h3>
-                            <p><strong>Fácil</strong> — Mais vida, inimigos fracos<br>
+                            <h3 data-i18n="manual_difficulty_title">🎖️ Dificuldades</h3>
+                            <p data-i18n="manual_difficulty"><strong>Fácil</strong> — Mais vida, inimigos fracos<br>
                                 <strong>Normal</strong> — Experiência padrão<br>
                                 <strong>Difícil</strong> — Menos vida, inimigos fortes<br>
                                 <strong>Pesadelo</strong> — Para verdadeiros coelhos guerreiros!
                             </p>
                         </div>
                     </div>
-                    <button id="btn-manual-back" class="menu-btn back-btn">← Voltar</button>
+                    <button id="btn-manual-back" class="menu-btn back-btn" data-i18n="btn_back">← Voltar</button>
                 </div>
             </div>
 
             <!-- CONQUISTAS -->
             <div id="achievements-screen" class="screen">
                 <div class="manual-panel achievements-panel">
-                    <h2 class="panel-title">🏆 Conquistas</h2>
+                    <h2 class="panel-title" data-i18n="achievements_title">🏆 Conquistas</h2>
                     <div class="achievements-stats">
                         <span id="ach-count">Desbloqueadas: 0 / 15</span>
                     </div>
                     <div class="achievements-scroll" id="achievements-list">
                         <!-- Conquistas geradas via JS -->
                     </div>
-                    <button id="btn-achievements-back" class="menu-btn back-btn" style="margin-top: 15px; width: 100%;">← Voltar</button>
+                    <button id="btn-achievements-back" class="menu-btn back-btn" style="margin-top: 15px; width: 100%;" data-i18n="btn_back">← Voltar</button>
                 </div>
             </div>
 
 
             <!-- SELEÇÃO DE DIFICULDADE + PERSONAGEM (após clicar Jogar) -->
             <div id="main-menu" class="screen">
-                <h2 class="panel-title">⚔️ Preparar Expedição</h2>
+                <h2 class="panel-title" data-i18n="prep_title">⚔️ Preparar Expedição</h2>
 
                 <div class="difficulty-selection">
-                    <h3>Dificuldade:</h3>
+                    <h3 data-i18n="diff_label">Dificuldade:</h3>
                     <div class="diff-cards">
                         <div class="diff-card" data-diff="easy">
                             <h4>🌿 Fácil</h4>
@@ -507,8 +506,8 @@
                 </div>
 
                 <div class="pre-game-buttons">
-                    <button id="btn-back-title" class="menu-btn back-btn">← Voltar</button>
-                    <button id="start-btn" class="menu-btn primary-btn">🚀 Iniciar Exploração</button>
+                    <button id="btn-back-title" class="menu-btn back-btn" data-i18n="btn_back">← Voltar</button>
+                    <button id="start-btn" class="menu-btn primary-btn" data-i18n="btn_start">🚀 Iniciar Exploração</button>
                 </div>
             </div>
 
@@ -548,15 +547,15 @@
             <!-- PAUSA -->
             <div id="pause-screen" class="screen">
                 <div class="pause-panel">
-                    <h2 class="panel-title">⏸️ Pausado</h2>
+                    <h2 class="panel-title" data-i18n="pause_title">⏸️ Pausado</h2>
                     <div class="pause-info">
                         <p>Nível: <span id="pause-level">1</span> | Tempo: <span id="pause-time">00:00</span></p>
                     </div>
                     <div class="pause-buttons">
-                        <button id="btn-resume" class="menu-btn primary-btn">▶️ Continuar</button>
-                        <button id="btn-pause-settings" class="menu-btn">⚙️ Configurações</button>
-                        <button id="btn-restart" class="menu-btn">🔄 Reiniciar</button>
-                        <button id="btn-quit" class="menu-btn danger-btn">🚪 Menu Principal</button>
+                        <button id="btn-resume" class="menu-btn primary-btn" data-i18n="btn_resume">▶️ Continuar</button>
+                        <button id="btn-pause-settings" class="menu-btn" data-i18n="btn_pause_settings">⚙️ Configurações</button>
+                        <button id="btn-restart" class="menu-btn" data-i18n="btn_restart">🔄 Reiniciar</button>
+                        <button id="btn-quit" class="menu-btn danger-btn" data-i18n="btn_quit">🚪 Menu Principal</button>
                     </div>
                 </div>
             </div>
@@ -564,23 +563,23 @@
             <!-- RECOMPENSA NPC -->
             <div id="reward-screen" class="screen">
                 <div class="reward-panel">
-                    <h2 class="panel-title">🧚 Anjo Libertado!</h2>
-                    <p class="reward-subtitle">O guardião está grato. Escolha sua recompensa:</p>
+                    <h2 class="panel-title" data-i18n="reward_title">🧚 Anjo Libertado!</h2>
+                    <p class="reward-subtitle" data-i18n="reward_subtitle">O guardião está grato. Escolha sua recompensa:</p>
                     <div class="reward-cards">
                         <div class="reward-card" id="reward-damage" data-reward="damage">
                             <div class="reward-icon">⚔️</div>
-                            <h3>Poder Sombrio</h3>
-                            <p>+20% de dano permanente em todos os ataques e habilidades</p>
+                            <h3 data-i18n="reward_damage_title">Poder Sombrio</h3>
+                            <p data-i18n="reward_damage_desc">+20% de dano permanente em todos os ataques e habilidades</p>
                         </div>
                         <div class="reward-card" id="reward-heal" data-reward="heal">
                             <div class="reward-icon">❤️</div>
-                            <h3>Bênção Vital</h3>
-                            <p>Recupera toda a vida e ganha +1 de HP máximo</p>
+                            <h3 data-i18n="reward_heal_title">Bênção Vital</h3>
+                            <p data-i18n="reward_heal_desc">Recupera toda a vida e ganha +1 de HP máximo</p>
                         </div>
                         <div class="reward-card" id="reward-gold" data-reward="gold">
                             <div class="reward-icon">🪙</div>
-                            <h3>Fortuna Celestial</h3>
-                            <p>Recebe 60 de ouro e bônus de +25% em coleta futura</p>
+                            <h3 data-i18n="reward_gold_title">Fortuna Celestial</h3>
+                            <p data-i18n="reward_gold_desc">Recebe 60 de ouro e bônus de +25% em coleta futura</p>
                         </div>
                     </div>
                 </div>
@@ -588,17 +587,17 @@
 
             <!-- LOJA -->
             <div id="shop-screen" class="screen">
-                <h2 class="shop-title">🏪 Loja da Toca</h2>
-                <p class="shop-gold">Seu Ouro: 🪙 <span id="shop-gold-amount">0</span></p>
+                <h2 class="shop-title" data-i18n="shop_title">🏪 Loja da Toca</h2>
+                <p class="shop-gold"><span data-i18n="shop_gold">Seu Ouro:</span> 🪙 <span id="shop-gold-amount">0</span></p>
                 <div class="shop-items" id="shop-items"></div>
-                <button id="shop-close-btn">Continuar Explorando</button>
+                <button id="shop-close-btn" data-i18n="shop_close">Continuar Explorando</button>
             </div>
 
             <!-- CASSINO -->
             <div id="casino-screen" class="screen">
                 <div class="casino-panel">
-                    <h2 class="panel-title" style="color:#feca57; font-size: 2.5rem; text-shadow: 0 0 10px #feca57;">🎰 Sala do Cassino</h2>
-                    <p style="font-size: 1.5rem; color: #ced6e0; margin-bottom: 20px;">Tente a sorte! Consiga três '1' para ganhar, ou quatro '1' para o Jackpot!</p>
+                    <h2 class="panel-title" style="color:#feca57; font-size: 2.5rem; text-shadow: 0 0 10px #feca57;" data-i18n="casino_title">🎰 Sala do Cassino</h2>
+                    <p style="font-size: 1.5rem; color: #ced6e0; margin-bottom: 20px;" data-i18n="casino_desc">Tente a sorte! Consiga três '1' para ganhar, ou quatro '1' para o Jackpot!</p>
                     
                     <div class="slot-machine">
                         <div class="slot" id="slot-1">0</div>
@@ -608,11 +607,11 @@
                     </div>
                     
                     <div class="casino-controls">
-                        <p style="font-size: 1.5rem; margin-bottom: 10px;">Custo: <span style="color:#feca57;">🪙 15 Ouro</span></p>
-                        <p style="font-size: 1.2rem; color: #a4b0be; margin-bottom: 15px;">Seu ouro atual: 🪙 <span id="casino-gold-display">0</span></p>
+                        <p style="font-size: 1.5rem; margin-bottom: 10px;"><span data-i18n="casino_cost">Custo:</span> <span style="color:#feca57;" data-i18n="casino_cost_val">🪙 15 Ouro</span></p>
+                        <p style="font-size: 1.2rem; color: #a4b0be; margin-bottom: 15px;"><span data-i18n="casino_gold_label">Seu ouro atual:</span> 🪙 <span id="casino-gold-display">0</span></p>
                         <div style="display: flex; gap: 15px; justify-content: center;">
-                            <button id="btn-spin" class="menu-btn primary-btn" style="background-color: #feca57; color: #2f3640; border-color: #feca57;">Girar (15G)</button>
-                            <button id="btn-leave-casino" class="menu-btn danger-btn">Sair</button>
+                            <button id="btn-spin" class="menu-btn primary-btn" style="background-color: #feca57; color: #2f3640; border-color: #feca57;" data-i18n="casino_spin">Girar (15G)</button>
+                            <button id="btn-leave-casino" class="menu-btn danger-btn" data-i18n="casino_leave">Sair</button>
                         </div>
                         <p id="casino-result-msg" style="margin-top: 15px; font-size: 1.8rem; height: 30px;"></p>
                     </div>
@@ -621,20 +620,20 @@
 
             <!-- GAME OVER -->
             <div id="game-over" class="screen">
-                <h1 class="title" style="color: #ff3333;">Fim da Linha</h1>
-                <p>Você foi derrotado na masmorra.</p>
+                <h1 class="title" style="color: #ff3333;" data-i18n="gameover_title">Fim da Linha</h1>
+                <p data-i18n="gameover_desc">Você foi derrotado na masmorra.</p>
                 <h3 id="go-final-time">Tempo Sobrevivido: 00:00</h3>
                 <h3 id="go-best-time" style="color:#feca57; font-size:18px;">Melhor Sobrevivência: --</h3>
-                <button id="restart-btn">Tentar Novamente</button>
+                <button id="restart-btn" data-i18n="gameover_retry">Tentar Novamente</button>
             </div>
 
             <!-- VITÓRIA -->
             <div id="victory" class="screen">
-                <h1 class="title" style="color: #33ff33;">Vitória!</h1>
-                <p>Você sobreviveu à Toca do Coelho e escapou!</p>
+                <h1 class="title" style="color: #33ff33;" data-i18n="victory_title">Vitória!</h1>
+                <p data-i18n="victory_desc">Você sobreviveu à Toca do Coelho e escapou!</p>
                 <h3 id="vic-final-time">Tempo Total: 00:00</h3>
                 <h3 id="vic-best-time" style="color:#feca57; font-size:18px;">Melhor Tempo: --</h3>
-                <button id="victory-btn">Jogar Novamente</button>
+                <button id="victory-btn" data-i18n="victory_retry">Jogar Novamente</button>
             </div>
 
             <!-- CONTROLES MOBILE -->
@@ -654,6 +653,7 @@
         </div>
     </div>
 
+    <script src="i18n.js"></script>
     <script src="achievements.js"></script>
     <script src="items.js"></script>
     <script src="audio.js"></script>

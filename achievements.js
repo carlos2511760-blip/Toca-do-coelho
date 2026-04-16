@@ -296,10 +296,10 @@ function processToastQueue() {
 
     el.innerHTML = `
         <div style="font-size:0.85rem; color:${t.label}; letter-spacing:1px; margin-bottom:2px; opacity:0.8;">
-            ${t.icon} CONQUISTA DESBLOQUEADA &bull; <span style="text-transform:uppercase;">${ach.category}</span>
+            ${t.icon} ${typeof I18N !== 'undefined' ? I18N.t('ach_toast_label') : 'CONQUISTA DESBLOQUEADA'} &bull; <span style="text-transform:uppercase;">${typeof I18N !== 'undefined' ? I18N.t('ach_cat_' + ach.category.replace(/[^a-z]/gi, '').toLowerCase()) || ach.category : ach.category}</span>
         </div>
-        <div style="font-size:1.5rem; color:#fff; font-weight:bold; line-height:1.1;">${ach.name}</div>
-        <div style="font-size:1.05rem; color:#b2bec3; margin-top:3px;">${ach.desc}</div>
+        <div style="font-size:1.5rem; color:#fff; font-weight:bold; line-height:1.1;">${typeof I18N !== 'undefined' ? I18N.t('ach_' + ach.id) : ach.name}</div>
+        <div style="font-size:1.05rem; color:#b2bec3; margin-top:3px;">${typeof I18N !== 'undefined' ? I18N.t('ach_' + ach.id + '_desc') : ach.desc}</div>
         <div style="margin-top:6px; height:3px; background:${t.border}44; border-radius:2px; overflow:hidden;">
             <div style="height:100%; background:${t.border}; width:100%; animation: ach-bar 3.5s linear forwards;"></div>
         </div>
@@ -439,10 +439,11 @@ function renderAchievements() {
     );
 
     const TIER_LABEL = {
-        bronze: '🥉 Bronze',
-        silver: '🥈 Prata',
-        gold: '🥇 Ouro',
-        platinum: '💎 Platina',
+        bronze: typeof I18N !== 'undefined' ? I18N.t('tier_bronze') : '🥉 Bronze',
+        silver: typeof I18N !== 'undefined' ? I18N.t('tier_silver') : '🥈 Prata',
+        gold: typeof I18N !== 'undefined' ? I18N.t('tier_gold') : '🥇 Ouro',
+        platinum: typeof I18N !== 'undefined' ? I18N.t('tier_platinum') : '💎 Platina',
+        mythic: typeof I18N !== 'undefined' ? I18N.t('tier_mythic') : '🌌 Mítico',
     };
 
     let currentTier = null;
@@ -482,14 +483,14 @@ function renderAchievements() {
                 ${isUnlocked ? tier.icon : '🔒'}
             </div>
             <div class="ach-details">
-                <h3 class="ach-title">${ach.name}</h3>
-                <p class="ach-desc">${isUnlocked ? ach.desc : '???'}</p>
-                <div class="ach-category">${ach.category}</div>
+                <h3 class="ach-title">${typeof I18N !== 'undefined' ? I18N.t('ach_' + ach.id) : ach.name}</h3>
+                <p class="ach-desc">${isUnlocked ? (typeof I18N !== 'undefined' ? I18N.t('ach_' + ach.id + '_desc') : ach.desc) : '???'}</p>
+                <div class="ach-category">${typeof I18N !== 'undefined' ? (I18N.t('ach_cat_' + ach.category.replace(/[^a-z]/gi, '').toLowerCase()) || ach.category) : ach.category}</div>
             </div>
         `;
         listEl.appendChild(card);
     });
 
     // Update stats
-    countEl.innerText = `Desbloqueadas: ${unlockedTotal} / ${ACHIEVEMENTS.length}`;
+    countEl.innerText = `${typeof I18N !== 'undefined' ? I18N.t('achievements_count') : 'Desbloqueadas'}: ${unlockedTotal} / ${ACHIEVEMENTS.length}`;
 }
