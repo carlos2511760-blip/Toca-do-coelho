@@ -75,10 +75,10 @@ let keyBindings = Object.assign({}, DEFAULT_BINDINGS);
 try { let saved = JSON.parse(localStorage.getItem('toca_keybinds')); if (saved) keyBindings = Object.assign({}, DEFAULT_BINDINGS, saved); } catch(e){}
 function saveBindings() { localStorage.setItem('toca_keybinds', JSON.stringify(keyBindings)); }
 function keyLabel(code) {
-    if (code === 'Space') return 'Espaço';
-    if (code === 'Mouse0') return 'M1 (Esq.)';
-    if (code === 'Mouse1') return 'M3 (Meio)';
-    if (code === 'Mouse2') return 'M2 (Dir.)';
+    if (code === 'Space') return I18N.t('key_space');
+    if (code === 'Mouse0') return I18N.t('key_m1');
+    if (code === 'Mouse1') return I18N.t('key_m3');
+    if (code === 'Mouse2') return I18N.t('key_m2');
     if (code.startsWith('Key')) return code.replace('Key','');
     if (code.startsWith('Digit')) return code.replace('Digit','');
     if (code === 'ArrowUp') return '↑';
@@ -90,10 +90,10 @@ function keyLabel(code) {
 
 // DIFFICULTY MODIFIERS
 const DIFF_MODS = {
-    easy: { hpBonus: 3, enemyHpMult: 0.7, enemySpdMult: 0.85, enemyDmgMult: 0.7, label: '🌿 Fácil', rewardMult: 0.7 },
-    normal: { hpBonus: 0, enemyHpMult: 1.0, enemySpdMult: 1.0, enemyDmgMult: 1.0, label: '⚔️ Normal', rewardMult: 0.45 },
-    hard: { hpBonus: -1, enemyHpMult: 1.5, enemySpdMult: 1.15, enemyDmgMult: 1.3, label: '🔥 Difícil', rewardMult: 0.25 },
-    nightmare: { hpBonus: -2, enemyHpMult: 2.0, enemySpdMult: 1.3, enemyDmgMult: 1.4, label: '💀 Pesadelo', rewardMult: 0.12 }
+    easy: { hpBonus: 3, enemyHpMult: 0.7, enemySpdMult: 0.85, enemyDmgMult: 0.7, label: I18N.t('diff_easy'), rewardMult: 0.7 },
+    normal: { hpBonus: 0, enemyHpMult: 1.0, enemySpdMult: 1.0, enemyDmgMult: 1.0, label: I18N.t('diff_normal'), rewardMult: 0.45 },
+    hard: { hpBonus: -1, enemyHpMult: 1.5, enemySpdMult: 1.15, enemyDmgMult: 1.3, label: I18N.t('diff_hard'), rewardMult: 0.25 },
+    nightmare: { hpBonus: -2, enemyHpMult: 2.0, enemySpdMult: 1.3, enemyDmgMult: 1.4, label: I18N.t('diff_nightmare'), rewardMult: 0.12 }
 };
 
 function getDiff() { return DIFF_MODS[selectedDiff] || DIFF_MODS.normal; }
@@ -173,7 +173,7 @@ document.getElementById('btn-back-title').addEventListener('click', () => switch
 
 
 document.getElementById('btn-reset-save').addEventListener('click', () => {
-    if (confirm("⚠️ TEM CERTEZA? ⚠️\n\nIsso apagará TODO o seu progresso, incluindo:\n- Todos os recordes de tempo\n- Personagens Desbloqueados\n- Conquistas\n- Ouro e Itens comprados\n\nEssa ação é IRREVERSÍVEL! Deseja continuar?")) {
+    if (confirm(I18N.t('reset_confirm'))) {
         let keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
             let key = localStorage.key(i);
@@ -182,7 +182,7 @@ document.getElementById('btn-reset-save').addEventListener('click', () => {
             }
         }
         keysToRemove.forEach(k => localStorage.removeItem(k));
-        alert("O seu progresso foi totalmente apagado. O jogo será reiniciado.");
+        alert(I18N.t('reset_done'));
         window.location.reload();
     }
 });
@@ -2484,7 +2484,7 @@ function buyItem(item, el) {
     if (item.type === 'heal') { player.hp = Math.min(player.maxHp, player.hp + player.maxHp * item.value); updateHUD(); boom(player.x, player.y, '#2ed573', 15); }
     else if (item.type === 'heal_regen') { player.hp = Math.min(player.maxHp, player.hp + player.maxHp * item.value); player.regenDur = 45; player.regenT = 5; updateHUD(); }
     else if (item.type === 'heal_speed') { player.hp = Math.min(player.maxHp, player.hp + player.maxHp * item.value); updateHUD(); player.speed *= 1.3; setTimeout(() => { if (player) player.speed /= 1.3 }, 5000); boom(player.x, player.y, '#ff4757', 15); }
-    else if (item.type === 'weapon') { player.currentWeapon = item.weaponId; weaponNameEl.innerText = item.name; }
+    else if (item.type === 'weapon') { player.currentWeapon = item.weaponId; weaponNameEl.innerText = I18N.t('item_' + item.key) !== 'item_' + item.key ? I18N.t('item_' + item.key) : item.name; }
     else if (item.type === 'buff') {
         if (item.buffId === 'strength') player.dmgMult += 0.25;
         if (item.buffId === 'speed') player.speed *= 1.15;
@@ -2500,7 +2500,7 @@ function buyItem(item, el) {
     else if (item.type === 'skill') {
         player.activeSkill = item.skillId;
         player.skillCD = 0; // Reseta recarga para poder usar a nova imediatamente
-        abilityNameEl.innerText = item.name;
+        abilityNameEl.innerText = I18N.t('item_' + item.key) !== 'item_' + item.key ? I18N.t('item_' + item.key) : item.name;
         boom(player.x, player.y, '#3498db', 20);
     }
 }
@@ -2894,7 +2894,7 @@ function initSecretCharacters() {
         let card = document.querySelector('.char-card[data-char="20"]');
         if (card) {
             card.classList.remove('locked');
-            card.innerHTML = '<h4>Coelho Dimensional</h4><p>Passiva: Tiro Duplo Lâmina</p><p>Ativa (Q): Corte Dimensional (-50% HP Máx)</p>';
+            card.innerHTML = `<h4 data-i18n="char_20_name">${I18N.t('char_20_name')}</h4><p data-i18n="char_20_passive">${I18N.t('char_20_passive')}</p><p data-i18n="char_20_active">${I18N.t('char_20_active')}</p>`;
         }
     }
     let char21Unlocked = localStorage.getItem('toca_char21') === 'true';
@@ -2902,7 +2902,7 @@ function initSecretCharacters() {
         let card = document.querySelector('.char-card[data-char="21"]');
         if (card) {
             card.classList.remove('locked');
-            card.innerHTML = '<h4>Coelho Colecionador</h4><p>Passiva: Tiro Ricochete (5x)</p><p>Ativa (Q): Bolha Coletora (Choca ao centro)</p>';
+            card.innerHTML = `<h4 data-i18n="char_21_name">${I18N.t('char_21_name')}</h4><p data-i18n="char_21_passive">${I18N.t('char_21_passive')}</p><p data-i18n="char_21_active">${I18N.t('char_21_active')}</p>`;
         }
     }
     let char22Unlocked = localStorage.getItem('toca_char22') === 'true';
@@ -2910,7 +2910,7 @@ function initSecretCharacters() {
         let card = document.querySelector('.char-card[data-char="22"]');
         if (card) {
             card.classList.remove('locked');
-            card.innerHTML = '<h4>Coelho Cósmico</h4><p>Passiva: Sem burst auto. [1]/[2] Troca Tiro</p><p>Ativa (Q): Buraco Negro Temporal</p>';
+            card.innerHTML = `<h4 data-i18n="char_22_name">${I18N.t('char_22_name')}</h4><p data-i18n="char_22_passive">${I18N.t('char_22_passive')}</p><p data-i18n="char_22_active">${I18N.t('char_22_active')}</p>`;
         }
     }
     let char23Unlocked = localStorage.getItem('toca_char23') === 'true';
@@ -2918,7 +2918,7 @@ function initSecretCharacters() {
         let card = document.querySelector('.char-card[data-char="23"]');
         if (card) {
             card.classList.remove('locked');
-            card.innerHTML = '<h4>Coelho Necromante</h4><p>Tiro: Magia Sombria (Explosão)</p><p>Ativa (Q): Necromancia (Invoca Boss)</p>';
+            card.innerHTML = `<h4 data-i18n="char_23_name">${I18N.t('char_23_name')}</h4><p data-i18n="char_23_passive">${I18N.t('char_23_passive')}</p><p data-i18n="char_23_active">${I18N.t('char_23_active')}</p>`;
         }
     }
     let char24Unlocked = localStorage.getItem('toca_char24') === 'true';
@@ -2926,7 +2926,7 @@ function initSecretCharacters() {
         let card = document.querySelector('.char-card[data-char="24"]');
         if (card) {
             card.classList.remove('locked');
-            card.innerHTML = '<h4>Coelho Devorador</h4><p>Passiva: Bumerangues Sombrios (Hitkill a cada 10s)</p><p>Ativa (Q): Teleporte Devorador (Ganha Buff Baseado na Morte)</p>';
+            card.innerHTML = `<h4 data-i18n="char_24_name">${I18N.t('char_24_name')}</h4><p data-i18n="char_24_passive">${I18N.t('char_24_passive')}</p><p data-i18n="char_24_active">${I18N.t('char_24_active')}</p>`;
         }
     }
 }
