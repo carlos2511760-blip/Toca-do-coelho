@@ -26,7 +26,7 @@ let isGuest = false;
 // --- LEADERBOARD SYSTEM ---
 
 // Envia um recorde para o placar global
-window.submitToLeaderboard = async (timeInSeconds, difficulty, charId) => {
+window.submitToLeaderboard = async (timeInSeconds, difficulty, charId, kills = 0, mode = 'normal') => {
     if (!currentUser || isGuest) return;
     if (typeof cheatsUsed !== 'undefined' && cheatsUsed) return;
 
@@ -37,6 +37,8 @@ window.submitToLeaderboard = async (timeInSeconds, difficulty, charId) => {
             time: timeInSeconds,
             difficulty: difficulty,
             charId: charId,
+            kills: kills,
+            mode: mode,
             timestamp: serverTimestamp()
         });
         console.log("Recorde enviado ao Placar Global!");
@@ -45,15 +47,23 @@ window.submitToLeaderboard = async (timeInSeconds, difficulty, charId) => {
     }
 };
 
-// Busca os top 10 recordes
-window.fetchLeaderboard = async () => {
+// Busca os recordes por categoria
+window.fetchLeaderboard = async (category = 'time', filterDiff = 'all', filterMode = 'all') => {
     const listEl = document.getElementById('leaderboard-list');
     if (!listEl) return;
 
     listEl.innerHTML = '<p style="color: #7f8fa6; margin-top: 80px;">Buscando campeões...</p>';
 
     try {
-        const q = query(collection(db, "leaderboard"), orderBy("time", "asc"), limit(10));
+        let q;
+        const colRef = collection(db, "leaderboard");
+        
+        if (category === 'kills') {
+            q = query(colRef, orderBy("kills", "desc"), limit(20));
+        } else {
+            q = query(colRef, orderBy("time", "asc"), limit(30)); 
+        }
+        
         const querySnapshot = await getDocs(q);
         
         if (querySnapshot.empty) {
@@ -65,14 +75,21 @@ window.fetchLeaderboard = async () => {
         html += '<tr style="border-bottom: 2px solid #2f3542; color: #f1c40f;">' +
                 '<th style="padding: 8px; text-align: left;">#</th>' +
                 '<th style="padding: 8px; text-align: left;">NOME</th>' +
-                '<th style="padding: 8px; text-align: center;">TEMPO</th>' +
+                `<th style="padding: 8px; text-align: center;">${category === 'kills' ? 'MORTES' : 'TEMPO'}</th>` +
                 '<th style="padding: 8px; text-align: right;">DIF.</th>' +
                 '</tr>';
 
         let rank = 1;
         querySnapshot.forEach((doc) => {
             const data = doc.data();
+            
+            // Filtros locais
+            if (category === 'time' && filterDiff !== 'all' && data.difficulty !== filterDiff) return;
+            if (filterMode !== 'all' && data.mode !== filterMode) return;
+            if (rank > 10) return;
+
             const timeStr = typeof formatTime === 'function' ? formatTime(data.time) : data.time + 's';
+            const valueStr = category === 'kills' ? data.kills : timeStr;
             const diffLabel = data.difficulty === 'nightmare' ? '💀' : 
                               data.difficulty === 'hard' ? '🔥' :
                               data.difficulty === 'normal' ? '⚔️' : '🌿';
@@ -80,7 +97,7 @@ window.fetchLeaderboard = async () => {
             html += `<tr style="border-bottom: 1px solid rgba(47, 53, 66, 0.5); ${data.uid === currentUser?.uid ? 'background: rgba(46, 213, 115, 0.1);' : ''}">` +
                     `<td style="padding: 10px;">${rank}</td>` +
                     `<td style="padding: 10px; color: #fff;">${data.displayName}</td>` +
-                    `<td style="padding: 10px; text-align: center; color: #feca57;">${timeStr}</td>` +
+                    `<td style="padding: 10px; text-align: center; color: #feca57;">${valueStr}</td>` +
                     `<td style="padding: 10px; text-align: right;">${diffLabel}</td>` +
                     `</tr>`;
             rank++;
@@ -89,7 +106,7 @@ window.fetchLeaderboard = async () => {
         listEl.innerHTML = html;
     } catch (e) {
         console.error("Erro ao carregar Placar Global:", e);
-        listEl.innerHTML = '<p style="color: #e74c3c; margin-top: 80px;">Erro ao carregar placar.</p>';
+        listEl.innerHTML = '<p style="color: #e74c3c; margin-top: 80px;">Erro ao carregar placar. Verifique os índices do Firestore.</p>';
     }
 };
 
