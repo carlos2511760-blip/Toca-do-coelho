@@ -334,13 +334,13 @@ const I18N = {
             key_m3: 'M3 (Meio)',
 
             // — Boss Names —
-            boss_0: 'Olho Sombrio',
+            boss_0: 'Fênix Renegada',
             boss_1: 'Dragão de Fogo',
             boss_2: 'Golem de Gelo',
             boss_3: 'Fantasma Elétrico',
             boss_4: 'Rei das Sombras',
             boss_5: 'Vento Cortante',
-            boss_6: 'Colmeia Tóxica',
+            boss_6: 'Senhor dos Terremotos',
             boss_7: 'Núcleo Gravitacional',
             boss_8: 'Colosso do Apocalipse',
 
@@ -675,8 +675,8 @@ const I18N = {
 
             key_space: 'Space', key_m1: 'M1 (Left)', key_m2: 'M2 (Right)', key_m3: 'M3 (Middle)',
 
-            boss_0: 'Shadow Eye', boss_1: 'Fire Dragon', boss_2: 'Ice Golem', boss_3: 'Electric Ghost',
-            boss_4: 'Shadow King', boss_5: 'Cutting Wind', boss_6: 'Toxic Hive', boss_7: 'Gravitational Core', boss_8: 'Apocalypse Colossus',
+            boss_0: 'Renegade Phoenix', boss_1: 'Fire Dragon', boss_2: 'Ice Golem', boss_3: 'Electric Ghost',
+            boss_4: 'Shadow King', boss_5: 'Cutting Wind', boss_6: 'Lord of Earthquakes', boss_7: 'Gravitational Core', boss_8: 'Apocalypse Colossus',
 
             item_heal_10: 'Minor Drop', item_heal_10_desc: 'Heals 10% health',
             item_heal_25: 'Minor Potion', item_heal_25_desc: 'Heals 25% health',
@@ -922,8 +922,8 @@ const I18N = {
 
             key_space: 'Espacio', key_m1: 'M1 (Izq.)', key_m2: 'M2 (Der.)', key_m3: 'M3 (Centro)',
 
-            boss_0: 'Ojo Sombrío', boss_1: 'Dragón de Fuego', boss_2: 'Gólem de Hielo', boss_3: 'Fantasma Eléctrico',
-            boss_4: 'Rey de las Sombras', boss_5: 'Viento Cortante', boss_6: 'Colmena Tóxica', boss_7: 'Núcleo Gravitacional', boss_8: 'Coloso del Apocalipsis',
+            boss_0: 'Fénix Renegada', boss_1: 'Dragón de Fuego', boss_2: 'Gólem de Hielo', boss_3: 'Fantasma Eléctrico',
+            boss_4: 'Rey de las Sombras', boss_5: 'Viento Cortante', boss_6: 'Señor de los Terremotos', boss_7: 'Núcleo Gravitacional', boss_8: 'Coloso del Apocalipsis',
 
             item_heal_10: 'Gota Menor', item_heal_10_desc: 'Cura 10% de vida',
             item_heal_25: 'Poción Menor', item_heal_25_desc: 'Cura 25% de vida',
@@ -1169,8 +1169,8 @@ const I18N = {
 
             key_space: 'Espace', key_m1: 'M1 (Gauche)', key_m2: 'M2 (Droit)', key_m3: 'M3 (Milieu)',
 
-            boss_0: 'Œil de l\'Ombre', boss_1: 'Dragon de Feu', boss_2: 'Golem de Glace', boss_3: 'Fantôme Électrique',
-            boss_4: 'Roi des Ombres', boss_5: 'Vent Tranchant', boss_6: 'Ruche Toxique', boss_7: 'Noyau Gravitationnel', boss_8: 'Colosse de l\'Apocalypse',
+            boss_0: 'Phénix Renégat', boss_1: 'Dragon de Feu', boss_2: 'Golem de Glace', boss_3: 'Fantôme Électrique',
+            boss_4: 'Roi des Ombres', boss_5: 'Vent Tranchant', boss_6: 'Seigneur des Tremblements de Terre', boss_7: 'Noyau Gravitationnel', boss_8: 'Colosse de l\'Apocalypse',
 
             item_heal_10: 'Goutte Mineure', item_heal_10_desc: 'Soigne 10% de vie',
             item_heal_25: 'Potion Mineure', item_heal_25_desc: 'Soigne 25% de vie',

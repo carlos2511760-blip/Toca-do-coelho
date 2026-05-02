@@ -1919,45 +1919,78 @@ class Enemy extends Actor {
             let pat = this.bossDef.pattern;
 
             if (pat === 'phoenix') {
-                if (this.state === 'reborn') {
+                if (!this.hasReborn && this.hp <= this.maxHp * 0.7 && this.state !== 'transforming' && this.state !== 'cocoon') {
+                    this.state = 'transforming';
+                    this.stateT = 0;
+                    this.specialCD = 999; this.fireCD = 999;
+                    this.invTimer = 3.0; // Invulnerável enquanto transforma
+                }
+
+                if (this.state === 'transforming') {
+                    this.vx = Math.cos(this.stateT * 10) * 300;
+                    this.vy = Math.sin(this.stateT * 10) * 300;
+                    if (Math.random() < 0.3) projectiles.push(new Projectile(this.x, this.y, Math.cos(this.stateT*15), Math.sin(this.stateT*15), 5, 8, '#e74c3c', false, 'fire'));
+                    
+                    if (this.stateT > 2.0) {
+                        this.x = 400; this.y = 300;
+                        boom(400, 300, '#e67e22', 150);
+                        shake(1.5, 30);
+                        if (dist(player.x, player.y, 400, 300) < 250) player.takeDamage(20 * getDiff().enemyDmgMult);
+                        this.hasReborn = true;
+                        this.state = 'cocoon';
+                        this.cocoonTimer = 4.0;
+                    }
+                    this.updatePhysics(dt);
+                    bossHealthBar.style.width = (this.hp / this.maxHp) * 100 + '%';
+                    return;
+                } else if (this.state === 'reborn') {
                     this.fireCD -= dt;
                     if (this.fireCD <= 0) {
                         let rx = player.x - this.x, ry = player.y - this.y, rd = Math.hypot(rx,ry)||1;
-                        this.vx = (rx/rd) * 400; this.vy = (ry/rd) * 400;
+                        this.vx = (rx/rd) * 500; this.vy = (ry/rd) * 500;
                         this.isDashing = true;
-                        this.fireCD = 2.0;
+                        this.fireCD = 1.5;
                         boom(this.x, this.y, '#f1c40f', 15);
                     }
                     if (this.isDashing) {
                         summons.push(new Hazard(this.x, this.y, 'fire_trail', 3.0, this));
                         if (this.x <= WALL+this.radius+5 || this.x >= 800-WALL-this.radius-5 || this.y <= WALL+this.radius+5 || this.y >= 600-WALL-this.radius-5) {
                             boom(this.x, this.y, '#e74c3c', 40);
-                            for(let i=0; i<8; i++) {
-                                let a = (i/8)*Math.PI*2;
-                                projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 8, '#f1c40f', false, 'fire'));
+                            for(let i=0; i<12; i++) {
+                                let a = (i/12)*Math.PI*2;
+                                projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 8, 8, '#f1c40f', false, 'fire'));
                             }
                             this.isDashing = false;
                             this.vx = 0; this.vy = 0;
                             shake(0.5, 10);
                         }
                     } else {
-                        this.vx = dx * this.speed * 2; this.vy = dy * this.speed * 2;
+                        this.vx = dx * this.speed * 2.5; this.vy = dy * this.speed * 2.5;
                     }
                     this.updatePhysics(dt);
                     bossHealthBar.style.width = (this.hp / this.maxHp) * 100 + '%';
-                    return; // Skip rest of boss logic
+                    return;
                 } else if (this.state === 'cocoon') {
                     this.vx = 0; this.vy = 0;
                     this.cocoonTimer -= dt;
                     if (this.cocoonTimer <= 0) {
                         this.state = 'reborn';
-                        this.hp = this.maxHp * 0.75;
+                        this.hp = this.maxHp * 0.75; // Renasce com 75%
                         this.speed *= 1.5;
                         boom(this.x, this.y, '#f1c40f', 100);
                         shake(1.0, 20);
                     }
                     bossHealthBar.style.width = (this.hp / this.maxHp) * 100 + '%';
-                    return; // Skip rest
+                    return;
+                } else {
+                    // Phase 1 Logic
+                    if (this.swooping > 0) {
+                        this.swooping -= dt;
+                        this.vx = this.swoopVx; this.vy = this.swoopVy;
+                        summons.push(new Hazard(this.x, this.y, 'fire_trail', 2.0, this));
+                    } else {
+                        this.vx = dx * this.speed; this.vy = dy * this.speed;
+                    }
                 }
             }
 
@@ -2021,14 +2054,12 @@ class Enemy extends Actor {
                         warnings.push(new Warning(tx, ty, 50, 1.5, 'meteor', false));
                     }
                 } else if (pat === 'phoenix') {
-                    // Espiral da Morte e Renascimento (Casulo)
-                    this.hp = 1; this.hasReborn = true;
-                    this.state = 'cocoon'; this.cocoonTimer = 4.0;
-                    this.specialCD = 999; this.fireCD = 999;
-                    this.x = 400; this.y = 300;
-                    boom(400, 300, '#e67e22', 150);
-                    shake(1.5, 30);
-                    if (dist(player.x, player.y, 400, 300) < 250) player.takeDamage(20 * getDiff().enemyDmgMult);
+                    // Voos flambados
+                    this.swooping = 1.0;
+                    let angle = Math.atan2(dy, dx);
+                    this.swoopVx = Math.cos(angle) * 500;
+                    this.swoopVy = Math.sin(angle) * 500;
+                    boom(this.x, this.y, '#e74c3c', 30);
                 } else {
                     for (let i = 0; i < 24; i++) {
                         let a = (i / 24) * Math.PI * 2;
@@ -2055,9 +2086,11 @@ class Enemy extends Actor {
                     this.fireCD = 1.0; 
                 }
                 else if (pat === 'earth') { 
-                    // Lançar pedras
+                    // Lançar pedras múltiplas (espingarda de pedras)
                     let a = Math.atan2(dy, dx); 
-                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 15, '#5d4037', false, 'rock')); 
+                    for(let i=-2; i<=2; i++) {
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a+i*0.15), Math.sin(a+i*0.15), 8, 12, '#5d4037', false, 'rock')); 
+                    }
                     this.fireCD = 1.5; 
                 }
                 else if (pat === 'gravity') { 
@@ -2120,27 +2153,68 @@ class Enemy extends Actor {
                     c.beginPath(); c.ellipse(0, 0, this.radius, this.radius*1.3, 0, 0, Math.PI*2); c.fill();
                     c.strokeStyle = '#f1c40f'; c.lineWidth = 3;
                     c.beginPath(); c.moveTo(-15, -10); c.lineTo(15, 10); c.stroke();
-                } else {
+                } else if (this.state === 'reborn') {
+                    // Fênix Renascida (Skin diferente, mais agressiva/espectral)
                     c.rotate(ang);
+                    c.fillStyle = '#00cec9'; // Fogo azul celeste
+                    c.beginPath(); c.moveTo(-10, 0); c.lineTo(-20, -35); c.lineTo(10, -5); c.fill();
+                    c.beginPath(); c.moveTo(-10, 0); c.lineTo(-20, 35); c.lineTo(10, 5); c.fill();
+                    
+                    c.fillStyle = '#81ecec';
+                    c.beginPath(); c.ellipse(0, 0, this.radius*0.8, this.radius*0.4, 0, 0, Math.PI*2); c.fill();
+                    
+                    c.fillStyle = '#f1c40f';
+                    c.beginPath(); c.moveTo(this.radius*0.8, -3); c.lineTo(this.radius*0.8+15, 0); c.lineTo(this.radius*0.8, 3); c.fill();
+                    c.fillStyle = '#000';
+                    c.beginPath(); c.arc(5, -4, 2, 0, Math.PI*2); c.arc(5, 4, 2, 0, Math.PI*2); c.fill();
+                } else {
+                    // Fênix Majestosa (Fase 1)
+                    c.rotate(ang);
+                    // Asas curvas
                     c.fillStyle = '#e74c3c';
-                    c.beginPath(); c.moveTo(0, 0); c.lineTo(-30, -40); c.lineTo(-10, -10); c.fill();
-                    c.beginPath(); c.moveTo(0, 0); c.lineTo(-30, 40); c.lineTo(-10, 10); c.fill();
+                    c.beginPath(); c.moveTo(-10, 0); c.bezierCurveTo(-20, -50, 15, -70, -5, -15); c.fill();
+                    c.beginPath(); c.moveTo(-10, 0); c.bezierCurveTo(-20, 50, 15, 70, -5, 15); c.fill();
+                    
+                    // Detalhe de fogo interno
+                    c.fillStyle = '#f1c40f';
+                    c.beginPath(); c.moveTo(-5, 0); c.bezierCurveTo(-15, -40, 5, -50, -5, -15); c.fill();
+                    c.beginPath(); c.moveTo(-5, 0); c.bezierCurveTo(-15, 40, 5, 50, -5, 15); c.fill();
+                    
+                    // Cauda de fogo
+                    c.fillStyle = '#e67e22';
+                    c.beginPath(); c.moveTo(-this.radius, 0); c.lineTo(-this.radius-40, -15); c.lineTo(-this.radius-25, 0); c.lineTo(-this.radius-40, 15); c.fill();
+                    
                     c.fillStyle = this.color;
                     c.beginPath(); c.ellipse(0, 0, this.radius, this.radius*0.6, 0, 0, Math.PI*2); c.fill();
+                    
+                    c.beginPath(); c.arc(this.radius-5, 0, 12, 0, Math.PI*2); c.fill();
                     c.fillStyle = '#f1c40f';
-                    c.beginPath(); c.moveTo(-this.radius, 0); c.lineTo(-this.radius-30, -10); c.lineTo(-this.radius-20, 0); c.lineTo(-this.radius-30, 10); c.fill();
-                    c.beginPath(); c.arc(this.radius, 0, 15, 0, Math.PI*2); c.fill();
-                    c.fillStyle = '#000'; c.beginPath(); c.arc(this.radius+5, -5, 3, 0, Math.PI*2); c.arc(this.radius+5, 5, 3, 0, Math.PI*2); c.fill();
-                    c.fillStyle = '#e67e22'; c.beginPath(); c.moveTo(this.radius+10, -5); c.lineTo(this.radius+25, 0); c.lineTo(this.radius+10, 5); c.fill();
+                    c.beginPath(); c.moveTo(this.radius+5, -5); c.lineTo(this.radius+25, 5); c.lineTo(this.radius+5, 10); c.fill();
+                    
+                    c.fillStyle = '#000';
+                    c.beginPath(); c.moveTo(this.radius, -8); c.lineTo(this.radius+6, -2); c.lineTo(this.radius-2, -2); c.fill();
+                    c.beginPath(); c.moveTo(this.radius, 8); c.lineTo(this.radius+6, 2); c.lineTo(this.radius-2, 2); c.fill();
                 }
             } else if (pat === 'earth') {
-                c.fillStyle = this.color;
-                c.fillRect(-25, -25, 50, 50);
-                c.fillStyle = '#795548';
-                c.beginPath(); c.arc(-30, -20, 20, 0, Math.PI*2); c.arc(30, -20, 20, 0, Math.PI*2); c.fill();
-                c.fillRect(-15, -45, 30, 25);
+                c.rotate(ang);
+                c.fillStyle = '#4e342e';
+                c.beginPath();
+                c.moveTo(-25, -25); c.lineTo(5, -35); c.lineTo(30, -15);
+                c.lineTo(35, 15); c.lineTo(5, 35); c.lineTo(-25, 25);
+                c.fill();
+                
+                c.strokeStyle = '#ff7043'; c.lineWidth = 3;
+                c.beginPath(); c.moveTo(-10, -20); c.lineTo(5, -5); c.lineTo(-5, 15);
+                c.moveTo(5, -5); c.lineTo(20, 10); c.stroke();
+                
+                c.fillStyle = '#5d4037';
+                c.beginPath(); c.arc(-10, -35, 18, 0, Math.PI*2); c.fill();
+                c.beginPath(); c.arc(-10, 35, 18, 0, Math.PI*2); c.fill();
+                c.beginPath(); c.arc(20, -30, 12, 0, Math.PI*2); c.fill();
+                c.beginPath(); c.arc(20, 30, 12, 0, Math.PI*2); c.fill();
+                
                 c.fillStyle = this.bossDef.eyeColor;
-                c.fillRect(-8, -35, 16, 5);
+                c.fillRect(15, -8, 10, 16);
             } else if (pat === 'wind') {
                 c.rotate(this.stateT * 10);
                 c.strokeStyle = this.color; c.lineWidth = 5;
@@ -2725,12 +2799,23 @@ class RoomSystem {
             let size = isCurrent ? s * 1.8 + Math.sin(Date.now() / 150) * 3 : s;
             if (r.type === 'exit' || Math.hypot(r.x - this.currentX, r.y - this.currentY) < 3 || isCurrent) {
                 if (isCurrent) {
-                    // Sombra/Brilho para o jogador no mapa
                     c.shadowColor = '#fff'; c.shadowBlur = 10;
                     c.beginPath(); c.arc(cx, cy, size / 2, 0, Math.PI * 2); c.fill();
                     c.shadowBlur = 0;
                 } else {
                     c.fillRect(cx - size / 2, cy - size / 2, size, size);
+                    if (r.type !== 'normal' && r.type !== 'spawn') {
+                        c.fillStyle = '#fff';
+                        c.font = (size * 0.9) + 'px sans-serif';
+                        c.textAlign = 'center'; c.textBaseline = 'middle';
+                        if (r.type === 'boss') c.fillText('💀', cx, cy+1);
+                        else if (r.type === 'shop') c.fillText('💰', cx, cy+1);
+                        else if (r.type === 'exit') c.fillText('🚪', cx, cy+1);
+                        else if (r.type === 'treasure') c.fillText('💎', cx, cy+1);
+                        else if (r.type === 'npc') c.fillText('👤', cx, cy+1);
+                        else if (r.type === 'miniboss' || r.type === 'arena') c.fillText('⚔', cx, cy+1);
+                        else if (r.type === 'casino') c.fillText('🎰', cx, cy+1);
+                    }
                 }
             }
         });
@@ -3062,22 +3147,11 @@ function checkCollisions() {
                     }
                     boom(p.x, p.y, p.color, 4);
                     if (e.hp <= 0) {
-                        if (e.type === 'boss' && e.bossDef.pattern === 'phoenix' && !e.hasReborn) {
-                            e.hp = 1;
-                            e.hasReborn = true;
-                            e.state = 'cocoon';
-                            e.cocoonTimer = 3.0;
-                            e.specialCD = 999; e.fireCD = 999;
-                            e.x = 400; e.y = 300;
-                            boom(400, 300, '#e67e22', 100);
-                            shake(1.5, 30);
-                        } else {
-                            enemies.splice(j, 1);
-                            if (player.charType === 3 && Math.random() < 0.20) {
-                                player.hp = Math.min(player.maxHp, player.hp + 1);
-                                updateHUD();
-                                boom(player.x, player.y, '#2ed573', 12);
-                            }
+                        enemies.splice(j, 1);
+                        if (player.charType === 3 && Math.random() < 0.20) {
+                            player.hp = Math.min(player.maxHp, player.hp + 1);
+                            updateHUD();
+                            boom(player.x, player.y, '#2ed573', 12);
                         }
                     }
 
