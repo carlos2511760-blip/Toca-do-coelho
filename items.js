@@ -44,14 +44,14 @@ const ITEM_CATALOG = {
 
 // --- BOSSES (9 diferentes) ---
 const BOSS_DEFS = [
-    { name: 'Olho Sombrio', color: '#1e272e', eyeColor: '#ff4757', pattern: 'circle', desc: 'Dispara círculos de projéteis' },
+    { name: 'Fênix Renegada', color: '#e67e22', eyeColor: '#f1c40f', pattern: 'phoenix', desc: 'Renasce das cinzas mais forte' },
     { name: 'Dragão de Fogo', color: '#c0392b', eyeColor: '#f39c12', pattern: 'fire', desc: 'Rajadas de fogo em espiral' },
     { name: 'Golem de Gelo', color: '#2980b9', eyeColor: '#ecf0f1', pattern: 'ice', desc: 'Projéteis que desaceleram' },
     { name: 'Fantasma Elétrico', color: '#8e44ad', eyeColor: '#f1c40f', pattern: 'thunder', desc: 'Raios rápidos e teletransporte' },
-    { name: 'Rei das Sombras', color: '#2c3e50', eyeColor: '#e74c3c', pattern: 'shadow', desc: 'Invoca capangas e ataca' },
-    { name: 'Vento Cortante', color: '#ecf0f1', eyeColor: '#3498db', pattern: 'wind', desc: 'Rajadas de vento ultra velozes' },
-    { name: 'Colmeia Tóxica', color: '#55efc4', eyeColor: '#00b894', pattern: 'toxic', desc: 'Névoa ácida e disparos lentos' },
-    { name: 'Núcleo Gravitacional', color: '#6c5ce7', eyeColor: '#a29bfe', pattern: 'gravity', desc: 'Puxa o jogador e distorce disparos' },
+    { name: 'Rei das Sombras', color: '#2c3e50', eyeColor: '#e74c3c', pattern: 'shadow', desc: 'Invoca horda de lobisomens e toxinas' },
+    { name: 'Vento Cortante', color: '#ecf0f1', eyeColor: '#3498db', pattern: 'wind', desc: 'Rajadas de vento e tornados massivos' },
+    { name: 'Senhor dos Terremotos', color: '#8d6e63', eyeColor: '#d35400', pattern: 'earth', desc: 'Lança pedras e causa tremores' },
+    { name: 'Núcleo Gravitacional', color: '#6c5ce7', eyeColor: '#a29bfe', pattern: 'gravity', desc: 'Cria buracos negros no campo de batalha' },
     { name: 'Colosso do Apocalipse', color: '#c23616', eyeColor: '#fbc531', pattern: 'final_meteor', desc: 'Chuva de meteoros e barreiras' },
 ];
 

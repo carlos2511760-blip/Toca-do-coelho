@@ -1854,11 +1854,18 @@ class Enemy extends Actor {
         if (this.type === 'minion') {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
             if (player.fearT > 0 && dist(this.x, this.y, player.x, player.y) < 150) { this.vx = -dx * this.speed * 1.5; this.vy = -dy * this.speed * 1.5; }
-            else {
+            else if (!this.isToxic) {
                 this.fireCD -= dt;
                 if (this.fireCD <= 0 && d < 300 && this.stunTimer <= 0) {
                     projectiles.push(new Projectile(this.x, this.y, dx, dy, 4, 6, '#ff4757', false));
                     this.fireCD = 1.5 + Math.random();
+                }
+            }
+            if (this.isToxic) {
+                this.toxicCD = (this.toxicCD || 0) - dt;
+                if (this.toxicCD <= 0) {
+                    summons.push(new Hazard(this.x, this.y, 'toxic_puddle', 4.0, this));
+                    this.toxicCD = 0.5;
                 }
             }
         } else if (this.type === 'miniboss') {
@@ -1911,6 +1918,49 @@ class Enemy extends Actor {
             this.vx = dx * this.speed; this.vy = dy * this.speed;
             let pat = this.bossDef.pattern;
 
+            if (pat === 'phoenix') {
+                if (this.state === 'reborn') {
+                    this.fireCD -= dt;
+                    if (this.fireCD <= 0) {
+                        let rx = player.x - this.x, ry = player.y - this.y, rd = Math.hypot(rx,ry)||1;
+                        this.vx = (rx/rd) * 400; this.vy = (ry/rd) * 400;
+                        this.isDashing = true;
+                        this.fireCD = 2.0;
+                        boom(this.x, this.y, '#f1c40f', 15);
+                    }
+                    if (this.isDashing) {
+                        summons.push(new Hazard(this.x, this.y, 'fire_trail', 3.0, this));
+                        if (this.x <= WALL+this.radius+5 || this.x >= 800-WALL-this.radius-5 || this.y <= WALL+this.radius+5 || this.y >= 600-WALL-this.radius-5) {
+                            boom(this.x, this.y, '#e74c3c', 40);
+                            for(let i=0; i<8; i++) {
+                                let a = (i/8)*Math.PI*2;
+                                projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 8, '#f1c40f', false, 'fire'));
+                            }
+                            this.isDashing = false;
+                            this.vx = 0; this.vy = 0;
+                            shake(0.5, 10);
+                        }
+                    } else {
+                        this.vx = dx * this.speed * 2; this.vy = dy * this.speed * 2;
+                    }
+                    this.updatePhysics(dt);
+                    bossHealthBar.style.width = (this.hp / this.maxHp) * 100 + '%';
+                    return; // Skip rest of boss logic
+                } else if (this.state === 'cocoon') {
+                    this.vx = 0; this.vy = 0;
+                    this.cocoonTimer -= dt;
+                    if (this.cocoonTimer <= 0) {
+                        this.state = 'reborn';
+                        this.hp = this.maxHp * 0.75;
+                        this.speed *= 1.5;
+                        boom(this.x, this.y, '#f1c40f', 100);
+                        shake(1.0, 20);
+                    }
+                    bossHealthBar.style.width = (this.hp / this.maxHp) * 100 + '%';
+                    return; // Skip rest
+                }
+            }
+
             if (this.specialCD <= 0 && this.stunTimer <= 0) {
                 // ATAQUE ESPECIAL BOSS BASEADO NO ELEMENTO
                 shake(0.4, 15);
@@ -1941,53 +1991,45 @@ class Enemy extends Actor {
                             }
                         }, i * 300);
                     }
-                } else if (pat === 'toxic') {
-                    for (let i = 0; i < 10; i++) {
-                        let tx = WALL + 60 + Math.random() * (800 - WALL * 2 - 120);
-                        let ty = WALL + 60 + Math.random() * (600 - WALL * 2 - 120);
-                        warnings.push(new Warning(tx, ty, 80, 1.5, 'meteor', false));
-                        setTimeout(() => {
-                            if (gameState === 'PLAYING') {
-                                for (let j = 0; j < 8; j++) {
-                                    let a = (j / 8) * Math.PI * 2;
-                                    projectiles.push(new Projectile(tx, ty, Math.cos(a), Math.sin(a), 2, 7, '#55efc4', false, 'poison'));
-                                }
-                            }
-                        }, 1500);
-                    }
                 } else if (pat === 'gravity') {
-                    // Núcleo Gravitacional: Puxão intenso e buracos negros
-                    if (d < 500) { player.x -= dx * 10; player.y -= dy * 10; }
-                    for(let i=0; i<6; i++) {
-                        let a = (i/6)*Math.PI*2;
-                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 15, '#1e272e', false, 'blackhole'));
-                    }
+                    // Buraco negro massivo no centro do mapa
+                    summons.push(new Hazard(400, 300, 'blackhole', 5.0, this));
                     boom(this.x, this.y, '#6c5ce7', 40);
                 } else if (pat === 'shadow') {
-                    // Rei das Sombras: Escuridão, invocações e veneno
+                    // Invoca lobisomens tóxicos (não atira enquanto isso)
                     flashT = 1.0; boom(this.x, this.y, '#2d3436', 50);
-                    for (let i = 0; i < 3; i++) enemies.push(new Enemy(this.x + (Math.random()-0.5)*100, this.y + (Math.random()-0.5)*100, 'minion'));
-                    for(let i=0; i<16; i++) {
-                        let a = (i/16)*Math.PI*2;
-                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 10, '#636e72', false, 'poison'));
+                    for (let i = 0; i < 8; i++) {
+                        let tx = WALL + 50 + Math.random()*(800-WALL*2-100);
+                        let ty = WALL + 50 + Math.random()*(600-WALL*2-100);
+                        let m = new Enemy(tx, ty, 'minion');
+                        m.isToxic = true;
+                        m.color = '#1dd1a1'; // verde pra indicar toxico
+                        enemies.push(m);
+                        boom(tx, ty, '#1dd1a1', 15);
                     }
                 } else if (pat === 'wind') {
-                    // Vento Cortante: Empurrão forte e lâminas perfurantes
-                    if (d < 500) { player.x += dx * 12; player.y += dy * 12; }
-                    for(let i=0; i<10; i++) {
-                        let a = (i/10)*Math.PI*2;
-                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 12, 14, '#ecf0f1', false, 'pierce'));
-                    }
+                    // Invoca tornado destrutivo
+                    summons.push(new Hazard(this.x, this.y, 'tornado', 6.0, this));
                     boom(this.x, this.y, '#bdc3c7', 30);
-                } else if (pat === 'circle') {
-                    // Olho Sombrio: Anel massivo de fogo
-                    for (let i = 0; i < 36; i++) {
-                        let a = (i / 36) * Math.PI * 2;
-                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 8, this.bossDef.eyeColor, false, 'fire'));
+                } else if (pat === 'earth') {
+                    // Senhor dos Terremotos: Tremor massivo e pedras caindo
+                    shake(1.5, 40);
+                    boom(this.x, this.y, '#795548', 60);
+                    for(let i=0; i<15; i++) {
+                        let tx = WALL + 50 + Math.random()*(800-WALL*2-100);
+                        let ty = WALL + 50 + Math.random()*(600-WALL*2-100);
+                        warnings.push(new Warning(tx, ty, 50, 1.5, 'meteor', false));
                     }
-                    boom(this.x, this.y, this.bossDef.eyeColor, 40);
+                } else if (pat === 'phoenix') {
+                    // Espiral da Morte e Renascimento (Casulo)
+                    this.hp = 1; this.hasReborn = true;
+                    this.state = 'cocoon'; this.cocoonTimer = 4.0;
+                    this.specialCD = 999; this.fireCD = 999;
+                    this.x = 400; this.y = 300;
+                    boom(400, 300, '#e67e22', 150);
+                    shake(1.5, 30);
+                    if (dist(player.x, player.y, 400, 300) < 250) player.takeDamage(20 * getDiff().enemyDmgMult);
                 } else {
-                    // Explosão genérica para os outros (fallback)
                     for (let i = 0; i < 24; i++) {
                         let a = (i / 24) * Math.PI * 2;
                         projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 12, this.bossDef.eyeColor, false));
@@ -1997,14 +2039,41 @@ class Enemy extends Actor {
             }
 
             if (this.fireCD <= 0 && this.stunTimer <= 0) {
-                if (pat === 'circle') { let b = 16 + mapLevel * 2; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3.5, 12, '#ff4757', false, 'fire')); } this.fireCD = 1.5; }
-                else if (pat === 'fire') { for (let i = 0; i < 8; i++) { let a = Math.atan2(dy, dx) + (i - 3.5) * 0.2 + this.stateT * 0.8; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 9, '#e74c3c', false, 'fire')); } this.fireCD = 1.0; }
+                if (pat === 'fire') { for (let i = 0; i < 8; i++) { let a = Math.atan2(dy, dx) + (i - 3.5) * 0.2 + this.stateT * 0.8; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 9, '#e74c3c', false, 'fire')); } this.fireCD = 1.0; }
                 else if (pat === 'ice') { let b = 12; for (let i = 0; i < b; i++) { let a = (i / b) * Math.PI * 2; let p = new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3.5, 12, '#74b9ff', false, 'ice'); projectiles.push(p); } this.fireCD = 2.0; }
                 else if (pat === 'thunder') { if (this.tpCD <= 0 && Math.random() < 0.4) { this.x = WALL + 60 + Math.random() * (800 - WALL * 2 - 120); this.y = WALL + 60 + Math.random() * (600 - WALL * 2 - 120); boom(this.x, this.y, '#f1c40f', 20); this.tpCD = 2; } let a = Math.atan2(dy, dx); for (let i = -2; i <= 2; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a + i * 0.15), Math.sin(a + i * 0.15), 9, 6, '#f1c40f', false, 'taser')); this.fireCD = 0.6; }
-                else if (pat === 'shadow') { if (Math.random() < 0.5 && enemies.length < 10) { enemies.push(new Enemy(this.x + 50, this.y, 'minion')); enemies.push(new Enemy(this.x - 50, this.y, 'minion')); } let a = Math.atan2(dy, dx); for (let i=-1; i<=1; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a+i*0.2), Math.sin(a+i*0.2), 7, 12, '#636e72', false, 'poison')); this.fireCD = 1.2; }
-                else if (pat === 'wind') { let a = Math.atan2(dy, dx); for (let i = 0; i < 5; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 14, 5, '#ecf0f1', false, 'ice')); }, i * 60); this.fireCD = 0.7; }
-                else if (pat === 'toxic') { for (let i = 0; i < 10; i++) { let a = (i / 10) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 10, '#55efc4', false, 'poison')); } this.fireCD = 1.6; }
-                else if (pat === 'gravity') { if (d < 400) { player.x -= dx * 2.5; player.y -= dy * 2.5; } for (let i = 0; i < 8; i++) { let a = (i / 8) * Math.PI * 2 - this.stateT * 1.5; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4.5, 12, '#6c5ce7', false, 'dark_magic')); } this.fireCD = 1.1; }
+                else if (pat === 'shadow') { 
+                    // Novo ataque básico pro Sombra (mais impactante)
+                    let a = Math.atan2(dy, dx); 
+                    for (let i=-2; i<=2; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a+i*0.3), Math.sin(a+i*0.3), 5, 10, '#636e72', false, 'poison')); 
+                    this.fireCD = 1.8; 
+                }
+                else if (pat === 'wind') { 
+                    // Mais devagar que antes
+                    let a = Math.atan2(dy, dx); 
+                    for (let i = 0; i < 5; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 9, 8, '#ecf0f1', false, 'ice')); }, i * 80); 
+                    this.fireCD = 1.0; 
+                }
+                else if (pat === 'earth') { 
+                    // Lançar pedras
+                    let a = Math.atan2(dy, dx); 
+                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 15, '#5d4037', false, 'rock')); 
+                    this.fireCD = 1.5; 
+                }
+                else if (pat === 'gravity') { 
+                    // Ataque visualmente melhor e mais efetivo (ondas mágicas)
+                    let a = Math.atan2(dy, dx);
+                    for (let i = -1; i <= 1; i++) { 
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a+i*0.1), Math.sin(a+i*0.1), 5.5, 10, '#6c5ce7', false, 'dark_magic')); 
+                    } 
+                    this.fireCD = 1.1; 
+                }
+                else if (pat === 'phoenix') { 
+                    // Voo de fogo no normal
+                    let a = Math.atan2(dy, dx);
+                    for(let i=-1; i<=1; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a+i*0.2), Math.sin(a+i*0.2), 6, 8, '#e67e22', false, 'fire'));
+                    this.fireCD = 1.0;
+                }
                 else if (pat === 'final_meteor') {
                     if (this.shieldTimer === undefined) { this.shieldTimer = 5; this.meteorSeq = 0; this.atkState = 0; }
                     this.shieldTimer -= dt;
@@ -2038,27 +2107,181 @@ class Enemy extends Actor {
         let dY = this.y;
         if (this.levitateT > 0) { dY -= 20 + Math.sin(Date.now() / 150) * 10; }
         if (this.slowTimer > 0) { c.strokeStyle = '#74b9ff'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, this.radius + 5, 0, Math.PI * 2); c.stroke(); }
-        c.beginPath();
+        
+        c.save();
+        c.translate(this.x, dY);
+        let ang = Math.atan2(this.vy, this.vx);
+        
         if (this.type === 'boss') {
-            let sp = 8;
-            for (let i = 0; i < sp * 2; i++) {
-                let r2 = (i % 2 === 0) ? this.radius : this.radius + 15;
-                let a = (i / (sp * 2)) * Math.PI * 2 + this.stateT;
-                c.lineTo(this.x + Math.cos(a) * r2, dY + Math.sin(a) * r2);
+            let pat = this.bossDef.pattern;
+            if (pat === 'phoenix') {
+                if (this.state === 'cocoon') {
+                    c.fillStyle = '#e67e22'; c.shadowBlur = 20; c.shadowColor = '#e74c3c';
+                    c.beginPath(); c.ellipse(0, 0, this.radius, this.radius*1.3, 0, 0, Math.PI*2); c.fill();
+                    c.strokeStyle = '#f1c40f'; c.lineWidth = 3;
+                    c.beginPath(); c.moveTo(-15, -10); c.lineTo(15, 10); c.stroke();
+                } else {
+                    c.rotate(ang);
+                    c.fillStyle = '#e74c3c';
+                    c.beginPath(); c.moveTo(0, 0); c.lineTo(-30, -40); c.lineTo(-10, -10); c.fill();
+                    c.beginPath(); c.moveTo(0, 0); c.lineTo(-30, 40); c.lineTo(-10, 10); c.fill();
+                    c.fillStyle = this.color;
+                    c.beginPath(); c.ellipse(0, 0, this.radius, this.radius*0.6, 0, 0, Math.PI*2); c.fill();
+                    c.fillStyle = '#f1c40f';
+                    c.beginPath(); c.moveTo(-this.radius, 0); c.lineTo(-this.radius-30, -10); c.lineTo(-this.radius-20, 0); c.lineTo(-this.radius-30, 10); c.fill();
+                    c.beginPath(); c.arc(this.radius, 0, 15, 0, Math.PI*2); c.fill();
+                    c.fillStyle = '#000'; c.beginPath(); c.arc(this.radius+5, -5, 3, 0, Math.PI*2); c.arc(this.radius+5, 5, 3, 0, Math.PI*2); c.fill();
+                    c.fillStyle = '#e67e22'; c.beginPath(); c.moveTo(this.radius+10, -5); c.lineTo(this.radius+25, 0); c.lineTo(this.radius+10, 5); c.fill();
+                }
+            } else if (pat === 'earth') {
+                c.fillStyle = this.color;
+                c.fillRect(-25, -25, 50, 50);
+                c.fillStyle = '#795548';
+                c.beginPath(); c.arc(-30, -20, 20, 0, Math.PI*2); c.arc(30, -20, 20, 0, Math.PI*2); c.fill();
+                c.fillRect(-15, -45, 30, 25);
+                c.fillStyle = this.bossDef.eyeColor;
+                c.fillRect(-8, -35, 16, 5);
+            } else if (pat === 'wind') {
+                c.rotate(this.stateT * 10);
+                c.strokeStyle = this.color; c.lineWidth = 5;
+                c.beginPath(); c.moveTo(-20, -20); c.lineTo(20, 20); c.moveTo(20, -20); c.lineTo(-20, 20); c.stroke();
+                c.fillStyle = '#ecf0f1';
+                c.beginPath(); c.ellipse(0, 0, this.radius, this.radius*0.5, 0, 0, Math.PI*2); c.fill();
+            } else if (pat === 'shadow') {
+                c.fillStyle = this.color;
+                c.beginPath(); c.moveTo(0, -this.radius); c.lineTo(-this.radius, this.radius); c.lineTo(this.radius, this.radius); c.fill();
+                c.beginPath(); c.arc(0, -this.radius*0.5, 20, 0, Math.PI*2); c.fill();
+                c.fillStyle = this.bossDef.eyeColor;
+                c.beginPath(); c.arc(-8, -this.radius*0.5 - 5, 4, 0, Math.PI*2); c.arc(8, -this.radius*0.5 - 5, 4, 0, Math.PI*2); c.fill();
+            } else if (pat === 'gravity') {
+                c.rotate(this.stateT * 5);
+                c.fillStyle = this.color;
+                c.beginPath(); c.moveTo(0, -this.radius); c.lineTo(this.radius, 0); c.lineTo(0, this.radius); c.lineTo(-this.radius, 0); c.fill();
+                c.fillStyle = '#1e272e';
+                c.beginPath(); c.arc(0, 0, 15, 0, Math.PI*2); c.fill();
+                c.strokeStyle = '#a29bfe'; c.lineWidth = 2;
+                c.beginPath(); c.ellipse(0, 0, this.radius+10, 10, this.stateT, 0, Math.PI*2); c.stroke();
+                c.beginPath(); c.ellipse(0, 0, 10, this.radius+10, this.stateT, 0, Math.PI*2); c.stroke();
+            } else {
+                let sp = 8;
+                c.beginPath();
+                for (let i = 0; i < sp * 2; i++) {
+                    let r2 = (i % 2 === 0) ? this.radius : this.radius + 15;
+                    let a = (i / (sp * 2)) * Math.PI * 2 + this.stateT;
+                    c.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+                }
+                c.fill();
+                c.fillStyle = this.bossDef.eyeColor; c.beginPath(); c.arc(0, 0, this.radius / 2, 0, Math.PI * 2); c.fill();
             }
-            c.fill();
-            c.fillStyle = this.bossDef.eyeColor; c.beginPath(); c.arc(this.x, dY, this.radius / 2, 0, Math.PI * 2); c.fill();
-        } else { // LOBISOMEM / MINION
-            c.beginPath(); c.arc(this.x, dY, this.radius, 0, Math.PI * 2); c.fill(); // Cabeça
-            c.fillStyle = '#fff'; c.beginPath(); c.arc(this.x - 5, dY - 3, 2, 0, Math.PI * 2); c.arc(this.x + 5, dY - 3, 2, 0, Math.PI * 2); c.fill(); // Olhos
-            c.strokeStyle = '#2f3542'; c.lineWidth = 2; c.beginPath(); c.moveTo(this.x - this.radius, dY); c.lineTo(this.x - this.radius - 8, dY - 15); c.lineTo(this.x - this.radius + 5, dY - 8); c.moveTo(this.x + this.radius, dY); c.lineTo(this.x + this.radius + 8, dY - 15); c.lineTo(this.x + this.radius - 5, dY - 8); c.stroke(); // Orelhas
+        } else if (this.type === 'npc_boss') {
+            c.rotate(ang);
+            c.fillStyle = this.color;
+            c.beginPath(); c.moveTo(0, -this.radius); c.lineTo(this.radius, -this.radius/2); c.lineTo(this.radius, this.radius/2); c.lineTo(0, this.radius); c.lineTo(-this.radius, this.radius/2); c.lineTo(-this.radius, -this.radius/2); c.fill();
+            c.fillStyle = '#fff'; c.fillRect(-5, -5, 10, 10);
+        } else { 
+            // Minions / Lobisomens
+            c.rotate(ang);
+            c.fillStyle = this.color;
+            c.beginPath(); c.ellipse(-5, 0, this.radius*1.2, this.radius*0.8, 0, 0, Math.PI*2); c.fill();
+            c.fillStyle = '#576574';
+            c.beginPath(); c.ellipse(this.radius, 0, 10, 6, 0, 0, Math.PI*2); c.fill();
+            c.fillStyle = '#000';
+            c.beginPath(); c.arc(this.radius+6, 0, 3, 0, Math.PI*2); c.fill();
+            c.fillStyle = '#2f3542';
+            c.beginPath(); c.moveTo(-5, -this.radius*0.5); c.lineTo(-15, -this.radius-10); c.lineTo(5, -this.radius*0.5); c.fill();
+            c.beginPath(); c.moveTo(-5, this.radius*0.5); c.lineTo(-15, this.radius+10); c.lineTo(5, this.radius*0.5); c.fill();
+            c.fillStyle = '#ff4757';
+            c.beginPath(); c.arc(5, -6, 3, 0, Math.PI*2); c.arc(5, 6, 3, 0, Math.PI*2); c.fill();
         }
+        c.restore();
         c.shadowBlur = 0;
         if (this.levitateT > 0) {
             c.strokeStyle = 'rgba(255, 255, 255, 0.4)'; c.lineWidth = 2; c.beginPath(); c.arc(this.x, dY, this.radius + 6, 0, Math.PI * 2); c.stroke();
             let grad = c.createRadialGradient(this.x - 5, dY - 5, 0, this.x, dY, this.radius + 6);
             grad.addColorStop(0, 'rgba(255, 255, 255, 0.3)'); grad.addColorStop(1, 'rgba(224, 86, 253, 0.1)');
             c.fillStyle = grad; c.fill();
+        }
+    }
+}
+
+class Hazard {
+    constructor(x, y, type, duration, owner) {
+        this.x = x; this.y = y; this.type = type; this.duration = duration; this.maxDuration = duration; this.owner = owner;
+        this.radius = type === 'blackhole' ? 10 : type === 'tornado' ? 40 : type === 'toxic_puddle' ? 30 : type === 'fire_trail' ? 20 : 15;
+        this.stateT = 0;
+        this.hp = 9999;
+    }
+    update(dt) {
+        this.duration -= dt;
+        this.stateT += dt;
+        if (this.duration <= 0) {
+            if (this.type === 'blackhole') {
+                boom(this.x, this.y, '#1e272e', 100);
+                shake(1.5, 30);
+                if (dist(player.x, player.y, this.x, this.y) < 250) {
+                    player.takeDamage(15 * getDiff().enemyDmgMult);
+                }
+            }
+            if (this.type === 'tornado') {
+                let dx = player.x - this.x, dy = player.y - this.y, d = Math.hypot(dx,dy)||1;
+                player.x += (dx/d)*250; player.y += (dy/d)*250;
+                player.takeDamage(8 * getDiff().enemyDmgMult);
+                shake(1.0, 15);
+            }
+            return false;
+        }
+        
+        if (this.type === 'blackhole') {
+            this.radius = 10 + (this.maxDuration - this.duration) * 12;
+            let dx = this.x - player.x, dy = this.y - player.y, d = Math.hypot(dx, dy) || 1;
+            let force = (450 / Math.max(d, 50)) * getDiff().enemySpdMult;
+            player.x += (dx / d) * force * dt * 60;
+            player.y += (dy / d) * force * dt * 60;
+        } else if (this.type === 'toxic_puddle') {
+            if (dist(player.x, player.y, this.x, this.y) < this.radius + player.radius) {
+                player.poisonTimer = 3.0;
+                if (Math.random() < 0.1) player.takeDamage(0.5);
+            }
+        } else if (this.type === 'fire_trail') {
+            if (dist(player.x, player.y, this.x, this.y) < this.radius + player.radius) {
+                player.burnTimer = 3.0;
+                if (Math.random() < 0.1) player.takeDamage(0.5);
+            }
+        } else if (this.type === 'tornado') {
+            this.x += (Math.random()-0.5)*15;
+            this.y += (Math.random()-0.5)*15;
+            this.x = Math.max(WALL+this.radius, Math.min(800-WALL-this.radius, this.x));
+            this.y = Math.max(WALL+this.radius, Math.min(600-WALL-this.radius, this.y));
+            let dx = this.x - player.x, dy = this.y - player.y, d = Math.hypot(dx, dy) || 1;
+            let force = (300 / Math.max(d, 50));
+            player.x += (dx / d) * force * dt * 60;
+            player.y += (dy / d) * force * dt * 60;
+            if (d < this.radius + player.radius) {
+                player.takeDamage(0.3);
+                player.flyT = 0.5;
+            }
+        }
+        return true;
+    }
+    draw(c) {
+        if (this.type === 'blackhole') {
+            c.fillStyle = '#000'; c.shadowBlur = 30; c.shadowColor = '#6c5ce7';
+            c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI*2); c.fill();
+            c.strokeStyle = '#a29bfe'; c.lineWidth = 3; c.setLineDash([10, 10]); c.lineDashOffset = -this.stateT*60;
+            c.beginPath(); c.arc(this.x, this.y, this.radius + 30, 0, Math.PI*2); c.stroke();
+            c.setLineDash([]); c.shadowBlur = 0;
+        } else if (this.type === 'toxic_puddle') {
+            c.fillStyle = `rgba(85, 239, 196, ${this.duration / this.maxDuration * 0.7})`;
+            c.beginPath(); c.ellipse(this.x, this.y, this.radius, this.radius*0.6, 0, 0, Math.PI*2); c.fill();
+        } else if (this.type === 'fire_trail') {
+            c.fillStyle = `rgba(231, 76, 60, ${this.duration / this.maxDuration * 0.8})`;
+            c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI*2); c.fill();
+            if(Math.random()<0.3) { c.fillStyle='#f1c40f'; c.fillRect(this.x+(Math.random()-0.5)*20, this.y-this.radius+(Math.random()-0.5)*20, 5, 5); }
+        } else if (this.type === 'tornado') {
+            c.strokeStyle = '#ecf0f1'; c.lineWidth = 4;
+            for(let i=0; i<5; i++) {
+                c.beginPath(); c.ellipse(this.x, this.y - i*18 + Math.sin(this.stateT*12+i)*8, this.radius - i*6, (this.radius - i*6)*0.3, this.stateT*6 + i, 0, Math.PI*2); c.stroke();
+            }
         }
     }
 }
@@ -2839,13 +3062,25 @@ function checkCollisions() {
                     }
                     boom(p.x, p.y, p.color, 4);
                     if (e.hp <= 0) {
-                        enemies.splice(j, 1);
-                        if (player.charType === 3 && Math.random() < 0.20) {
-                            player.hp = Math.min(player.maxHp, player.hp + 1);
-                            updateHUD();
-                            boom(player.x, player.y, '#2ed573', 12);
+                        if (e.type === 'boss' && e.bossDef.pattern === 'phoenix' && !e.hasReborn) {
+                            e.hp = 1;
+                            e.hasReborn = true;
+                            e.state = 'cocoon';
+                            e.cocoonTimer = 3.0;
+                            e.specialCD = 999; e.fireCD = 999;
+                            e.x = 400; e.y = 300;
+                            boom(400, 300, '#e67e22', 100);
+                            shake(1.5, 30);
+                        } else {
+                            enemies.splice(j, 1);
+                            if (player.charType === 3 && Math.random() < 0.20) {
+                                player.hp = Math.min(player.maxHp, player.hp + 1);
+                                updateHUD();
+                                boom(player.x, player.y, '#2ed573', 12);
+                            }
                         }
                     }
+
                     if (p.weaponType === 'dark_magic') {
                         // Magia Sombria: Explosão e Sangramento visual
                         boom(p.x, p.y, '#2f3542', 15);
