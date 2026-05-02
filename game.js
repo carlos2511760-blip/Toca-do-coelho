@@ -1809,6 +1809,7 @@ class Enemy extends Actor {
         let mbTypeLocal = 0;
         if (type === 'minion') { hp = 2 + (mapLevel - 1) * 1.5; spd = 2 + (mapLevel - 1) * 0.2; col = '#747d8c'; r = 16; } // Lobisomem Grey
         else if (type === 'miniboss') { hp = 15 + (mapLevel - 1) * 10; spd = 2.5 + (mapLevel - 1) * 0.3; mbTypeLocal = Math.floor(Math.random() * 3); col = ['#ff6348', '#1dd1a1', '#5f27cd'][mbTypeLocal]; r = 25; }
+        else if (type === 'npc_boss') { hp = 40 + mapLevel * 15; spd = 2.0 + (mapLevel - 1) * 0.2; col = '#f368e0'; r = 30; }
         else if (type === 'boss') {
             bd = BOSS_DEFS[bossIdx || 0];
             hp = 80 + mapLevel * 20;
@@ -1886,6 +1887,25 @@ class Enemy extends Actor {
                 else if (this.mbType === 1) { for (let i = 0; i < 5; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, dx, dy, 8, 8, '#1dd1a1', false, 'poison')); }, i * 150); this.fireCD = 1.6; }
                 else { for (let i = 0; i < 12; i++) { let a = (i / 12) * Math.PI * 2 + Date.now() / 1000; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4, 10, '#5f27cd', false, 'taser')); } this.fireCD = 1.8; }
             }
+        } else if (this.type === 'npc_boss') {
+            this.vx = dx * this.speed; this.vy = dy * this.speed;
+            if (this.specialCD <= 0 && this.stunTimer <= 0) {
+                shake(0.3, 10);
+                boom(this.x, this.y, this.color, 30);
+                for (let i = 0; i < 16; i++) {
+                    let a = (i / 16) * Math.PI * 2;
+                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 8, '#f368e0', false, 'bounce'));
+                }
+                this.specialCD = 6 + Math.random() * 2;
+            }
+            this.fireCD -= dt;
+            if (this.fireCD <= 0 && this.stunTimer <= 0) {
+                let a = Math.atan2(dy, dx);
+                for (let i = -1; i <= 1; i++) {
+                    projectiles.push(new Projectile(this.x, this.y, Math.cos(a + i*0.2), Math.sin(a + i*0.2), 7, 8, '#be2edd', false, 'poison'));
+                }
+                this.fireCD = 1.2;
+            }
         } else if (this.type === 'boss') {
             this.stateT += dt; this.fireCD -= dt;
             this.vx = dx * this.speed; this.vy = dy * this.speed;
@@ -1935,8 +1955,39 @@ class Enemy extends Actor {
                             }
                         }, 1500);
                     }
+                } else if (pat === 'gravity') {
+                    // Núcleo Gravitacional: Puxão intenso e buracos negros
+                    if (d < 500) { player.x -= dx * 10; player.y -= dy * 10; }
+                    for(let i=0; i<6; i++) {
+                        let a = (i/6)*Math.PI*2;
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 15, '#1e272e', false, 'blackhole'));
+                    }
+                    boom(this.x, this.y, '#6c5ce7', 40);
+                } else if (pat === 'shadow') {
+                    // Rei das Sombras: Escuridão, invocações e veneno
+                    flashT = 1.0; boom(this.x, this.y, '#2d3436', 50);
+                    for (let i = 0; i < 3; i++) enemies.push(new Enemy(this.x + (Math.random()-0.5)*100, this.y + (Math.random()-0.5)*100, 'minion'));
+                    for(let i=0; i<16; i++) {
+                        let a = (i/16)*Math.PI*2;
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 10, '#636e72', false, 'poison'));
+                    }
+                } else if (pat === 'wind') {
+                    // Vento Cortante: Empurrão forte e lâminas perfurantes
+                    if (d < 500) { player.x += dx * 12; player.y += dy * 12; }
+                    for(let i=0; i<10; i++) {
+                        let a = (i/10)*Math.PI*2;
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 12, 14, '#ecf0f1', false, 'pierce'));
+                    }
+                    boom(this.x, this.y, '#bdc3c7', 30);
+                } else if (pat === 'circle') {
+                    // Olho Sombrio: Anel massivo de fogo
+                    for (let i = 0; i < 36; i++) {
+                        let a = (i / 36) * Math.PI * 2;
+                        projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 6, 8, this.bossDef.eyeColor, false, 'fire'));
+                    }
+                    boom(this.x, this.y, this.bossDef.eyeColor, 40);
                 } else {
-                    // Explosão genérica para os outros
+                    // Explosão genérica para os outros (fallback)
                     for (let i = 0; i < 24; i++) {
                         let a = (i / 24) * Math.PI * 2;
                         projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 5, 12, this.bossDef.eyeColor, false));
@@ -1953,7 +2004,7 @@ class Enemy extends Actor {
                 else if (pat === 'shadow') { if (Math.random() < 0.5 && enemies.length < 10) { enemies.push(new Enemy(this.x + 50, this.y, 'minion')); enemies.push(new Enemy(this.x - 50, this.y, 'minion')); } let a = Math.atan2(dy, dx); for (let i=-1; i<=1; i++) projectiles.push(new Projectile(this.x, this.y, Math.cos(a+i*0.2), Math.sin(a+i*0.2), 7, 12, '#636e72', false, 'poison')); this.fireCD = 1.2; }
                 else if (pat === 'wind') { let a = Math.atan2(dy, dx); for (let i = 0; i < 5; i++) setTimeout(() => { if (this.hp > 0) projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 14, 5, '#ecf0f1', false, 'ice')); }, i * 60); this.fireCD = 0.7; }
                 else if (pat === 'toxic') { for (let i = 0; i < 10; i++) { let a = (i / 10) * Math.PI * 2 + this.stateT; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 3, 10, '#55efc4', false, 'poison')); } this.fireCD = 1.6; }
-                else if (pat === 'gravity') { if (d < 400) { player.x -= dx * 2.5; player.y -= dy * 2.5; } for (let i = 0; i < 8; i++) { let a = (i / 8) * Math.PI * 2 - this.stateT * 1.5; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4.5, 12, '#6c5ce7', false, 'ice')); } this.fireCD = 1.1; }
+                else if (pat === 'gravity') { if (d < 400) { player.x -= dx * 2.5; player.y -= dy * 2.5; } for (let i = 0; i < 8; i++) { let a = (i / 8) * Math.PI * 2 - this.stateT * 1.5; projectiles.push(new Projectile(this.x, this.y, Math.cos(a), Math.sin(a), 4.5, 12, '#6c5ce7', false, 'dark_magic')); } this.fireCD = 1.1; }
                 else if (pat === 'final_meteor') {
                     if (this.shieldTimer === undefined) { this.shieldTimer = 5; this.meteorSeq = 0; this.atkState = 0; }
                     this.shieldTimer -= dt;
@@ -2139,7 +2190,7 @@ class RoomSystem {
                 rd.cleared = false;
                 this.isCleared = false;
                 this.spawnTimer = 2;
-                this.pendingEnemies = [new Enemy(400, 300, 'miniboss')];
+                this.pendingEnemies = [new Enemy(400, 300, 'npc_boss')];
                 this._pendingMinibossCount = 0;
                 this._pendingMinionCount = 0;
                 this._isNpcRoom = true;
@@ -2353,9 +2404,13 @@ class RoomSystem {
     }
     drawBase(c) {
         try {
+            let themeWall = ['#3a4254', '#8e44ad', '#2c3e50', '#d35400', '#009432'][mapLevel % 5];
+            
             // Cores base ligeiramente mais claras para garantir visibilidade
             if (!['boss','shop','exit','treasure','npc','arena','casino','spawn'].includes(this.type)) {
-                let h = (this.currentX * 137 + this.currentY * 57) % 360;
+                let floorHues = [220, 280, 210, 15, 130];
+                let baseHue = floorHues[mapLevel % 5];
+                let h = (baseHue + (this.currentX * 7 + this.currentY * 13) % 20);
                 c.fillStyle = `hsl(${h}, 20%, 25%)`;
             } else {
                 c.fillStyle = this.type === 'boss' ? '#3d050a' : 
@@ -2370,7 +2425,7 @@ class RoomSystem {
             c.fillRect(0, 0, 800, 600); 
 
             // Paredes
-            c.fillStyle = '#3a4254'; 
+            c.fillStyle = themeWall; 
             c.fillRect(0, 0, 800, WALL); 
             c.fillRect(0, 600 - WALL, 800, WALL); 
             c.fillRect(0, 0, WALL, 600); 
