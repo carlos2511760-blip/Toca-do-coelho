@@ -102,6 +102,10 @@ function shake(t, m) { screenShakeT = t; screenShakeM = m; }
 function flash() { flashT = 0.2; }
 function formatTime(s) { let m = Math.floor(s / 60); let sm = Math.floor(s % 60); return `${m < 10 ? '0' : ''}${m}:${sm < 10 ? '0' : ''}${sm}`; }
 let player, enemies = [], projectiles = [], particles = [], pickups = [], icebergs = [], warnings = [], summons = [];
+let damageNumbers = [];
+let floorBiomes = {};
+const BIOME_LIST = ['cave', 'ice', 'swamp', 'volcano', 'void'];
+function getBiome() { return floorBiomes[mapLevel] || 'cave'; }
 let currentRoom, mapLevel = 1;
 let MAX_LEVELS = 5;
 const WALL = 40;
@@ -743,6 +747,34 @@ function boom(x, y, col, n) {
     for (let i = 0; i < n; i++) particles.push(new Particle(x, y, col, 8, Math.random() * 4 + 2, Math.random() * 20 + 10));
 }
 
+// DAMAGE NUMBERS (números flutuantes de dano)
+class DamageNumber {
+    constructor(x, y, value, isCrit) {
+        this.x = x + (Math.random() - 0.5) * 24;
+        this.y = y - 10;
+        this.value = Math.round(value * 10) / 10;
+        this.isCrit = isCrit;
+        this.life = 1.0;
+        this.vy = -1.5;
+    }
+    update(dt) {
+        this.y += this.vy;
+        this.vy *= 0.94;
+        this.life -= dt * 1.6;
+        return this.life > 0;
+    }
+    draw(c) {
+        c.globalAlpha = Math.max(0, this.life);
+        c.font = this.isCrit ? 'bold 20px VT323' : '15px VT323';
+        c.fillStyle = this.isCrit ? '#ff4757' : '#feca57';
+        c.textAlign = 'center';
+        if (this.isCrit) { c.shadowBlur = 8; c.shadowColor = '#ff4757'; }
+        c.fillText(this.value % 1 === 0 ? this.value : this.value.toFixed(1), this.x, this.y);
+        c.shadowBlur = 0;
+        c.globalAlpha = 1;
+    }
+}
+
 // PICKUP (gold bag, exit, etc)
 class Pickup { constructor(x, y, type, value) { this.x = x; this.y = y; this.type = type; this.value = value; this.radius = type === 'exit' ? 20 : 12; this.bobT = 0; } update(dt) { this.bobT += dt * 3; } draw(c) { let by = this.y + Math.sin(this.bobT) * 5; c.font = '22px VT323'; c.textAlign = 'center'; if (this.type === 'gold') c.fillText('💰', this.x, by); else if (this.type === 'exit') { c.fillStyle = '#9b59b6'; c.fillRect(this.x - 15, by - 15, 30, 30); c.fillStyle = '#fff'; c.fillText('SAÍDA', this.x, by + 7); } else if (this.type === 'heart') c.fillText('❤️', this.x, by); else if (this.type === 'buff') c.fillText('🧚', this.x, by); } }
 
@@ -1020,6 +1052,17 @@ class Projectile {
             }
         }
 
+        // Trail de partículas para projéteis do jogador
+        if (this.isPlayerObj && Math.random() < 0.55) {
+            let tc = this.weaponType === 'fire' ? '#e67e22' :
+                     this.weaponType === 'ice'  ? '#74b9ff' :
+                     this.weaponType === 'taser' ? '#f1c40f' :
+                     this.weaponType === 'poison' ? '#2ecc71' :
+                     this.weaponType === 'blackhole' ? '#9b59b6' :
+                     this.weaponType === 'boomerang' ? '#636e72' : 'rgba(255,255,255,0.25)';
+            particles.push(new Particle(this.x, this.y, tc, 1.2, Math.random() * 3 + 1, 7));
+        }
+
         if (this.weaponType === 'boomerang') {
             if (this.returnT !== undefined) {
                 this.returnT -= dt;
@@ -1082,6 +1125,10 @@ class Actor {
         } 
         this.hp -= amt; this.invTimer = 0.5; 
         if (this instanceof Player && typeof audio !== 'undefined') audio.playHurt(); 
+        // Números de dano flutuantes (apenas em inimigos)
+        if (this instanceof Enemy && typeof damageNumbers !== 'undefined') {
+            damageNumbers.push(new DamageNumber(this.x, this.y, amt, amt >= 5));
+        }
         if (this.hp <= 0 && this instanceof Enemy && !this.isDead) { 
             this.isDead = true; boom(this.x, this.y, this.color, 15); 
             if (typeof audio !== 'undefined') audio.playHit(); 
@@ -1657,9 +1704,23 @@ class Player extends Actor {
             this._vikingRage = false; this.dmgMult /= 1.25;
         }
         this.vx = dx * spdMod; this.vy = dy * spdMod;
+        // Bioma Gelo: movimento escorregadio (inércia)
+        if (typeof getBiome === 'function' && getBiome() === 'ice' && !this.isJumping && this.flyT <= 0) {
+            let targetVx = dx * spdMod, targetVy = dy * spdMod;
+            this.vx = this.vx * 0.82 + targetVx * 0.18;
+            this.vy = this.vy * 0.82 + targetVy * 0.18;
+        }
         if (this.flyT > 0 && !flyMode) { this.isJumping = false; this.flyT -= dt; }
         else if (flyMode) this.isJumping = false;
         this.updatePhysics(dt);
+        // Poeira ao se mover
+        if ((dx !== 0 || dy !== 0) && !this.isJumping && this.flyT <= 0 && Math.random() < 0.28) {
+            particles.push(new Particle(this.x, this.y, 'rgba(180,180,180,0.35)', 1.2, Math.random() * 2.5 + 1, 9));
+        }
+        // Bioma Pântano: velocidade reduzida (aplicado via slowTimer)
+        if (typeof getBiome === 'function' && getBiome() === 'swamp' && this.slowTimer <= 0) {
+            this.slowTimer = 0.5; // reaplica continuamente para dar efeito de lama
+        }
         if (this.charType === 6) { this.auraT += dt; if (this.auraT >= 1.0) { this.auraT = 0; enemies.forEach(e => { if (dist(this.x, this.y, e.x, e.y) < 80) { e.takeDamage(2 * this.dmgMult); boom(e.x, e.y, '#2ecc71', 3); } }); } }
         if (this.charType === 7) { this.noDamageT += dt; if (this.noDamageT >= 8 && this.hp < this.maxHp) { this.noDamageT = 0; this.hp++; updateHUD(); boom(this.x, this.y, '#f1c40f', 10); } }
         this.dashCD -= dt; this.shieldCD -= dt; this.burstCD -= dt; this.fearCD -= dt; this.ghostCD -= dt; this.magicCD -= dt; this.toxicCD -= dt; this.empCD -= dt; this.fireCD -= dt; this.luckCD -= dt;
@@ -2727,6 +2788,21 @@ class RoomSystem {
             c.fillRect(0, 600 - WALL, 800, WALL); 
             c.fillRect(0, 0, WALL, 600); 
             c.fillRect(800 - WALL, 0, WALL, 600);
+            // Tint de bioma no ch\u00e3o
+            try {
+                let bm = getBiome();
+                let biomeTint = bm === 'ice' ? 'rgba(140,190,240,0.09)' : bm === 'swamp' ? 'rgba(30,80,30,0.13)' : bm === 'volcano' ? 'rgba(200,50,0,0.09)' : bm === 'void' ? 'rgba(60,0,80,0.13)' : null;
+                if (biomeTint) { c.fillStyle = biomeTint; c.fillRect(WALL, WALL, 800-WALL*2, 600-WALL*2); }
+                // Indicador de bioma (canto superior esquerdo)
+                const biomeEmoji = { cave:'', ice:'❄️', swamp:'🌿', volcano:'🌋', void:'🌑' };
+                const biomeName  = { cave:'', ice:'GELO', swamp:'PÂNTANO', volcano:'VULCÃO', void:'VAZIO' };
+                if (bm !== 'cave') {
+                    c.font = '16px VT323'; c.textAlign = 'left';
+                    c.fillStyle = 'rgba(255,255,255,0.7)';
+                    c.fillText(`${biomeEmoji[bm]} ${biomeName[bm]}`, WALL + 6, WALL - 8);
+                }
+            } catch(e) {}
+
 
             if (this.type === 'shop' && this.isCleared) { 
                 c.font = '28px VT323'; c.fillStyle = '#feca57'; c.textAlign = 'center'; 
@@ -2823,12 +2899,42 @@ class RoomSystem {
     }
 }
 
+// ===== SISTEMA DE SINERGIAS =====
+function showSynergyToast(title, desc) {
+    if (typeof showAchievementToast === 'function') { showAchievementToast(title, desc); return; }
+    let t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;right:20px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;padding:12px 20px;border-radius:10px;font-family:VT323;font-size:20px;z-index:9999;box-shadow:0 4px 20px rgba(108,92,231,0.6);pointer-events:none;opacity:1;transition:opacity 0.3s;';
+    t.innerHTML = `<div style="font-size:22px;">${title}</div><div style="font-size:15px;opacity:0.9;">${desc}</div>`;
+    document.body.appendChild(t);
+    let op = 1;
+    let fade = setInterval(() => { op -= 0.025; t.style.opacity = op; if (op <= 0) { clearInterval(fade); t.remove(); } }, 80);
+}
+function checkSynergies(p) {
+    if (!p.boughtItems) return;
+    const it = p.boughtItems;
+    if (it.has('weapon_fire') && it.has('buff_strength') && !p.synergy_inferno) {
+        p.synergy_inferno = true;
+        showSynergyToast('🔥 INFERNO!', 'Projéteis de fogo explodem em área!');
+    }
+    if (it.has('weapon_ice') && it.has('heal_regen2') && !p.synergy_ice_vamp) {
+        p.synergy_ice_vamp = true;
+        showSynergyToast('❄️ VAMPIRO GELADO!', 'Golpes de gelo drenam vida!');
+    }
+    if (it.has('weapon_taser') && it.has('skill_timewarp') && !p.synergy_arcane_storm) {
+        p.synergy_arcane_storm = true;
+        showSynergyToast('⚡ TEMPESTADE ARCANA!', 'Inimigos paralisados tomam +50% de dano!');
+    }
+}
+
 // SHOP
 function openShop() { shopGoldEl.innerText = player.gold; shopItemsEl.innerHTML = ''; let items = getRandomShopItems(3); items.forEach(item => { let div = document.createElement('div'); div.className = `shop-item rarity-${item.rarity}`; let iName = I18N.t('item_' + item.key) !== 'item_' + item.key ? I18N.t('item_' + item.key) : item.name; let iDesc = I18N.t('item_' + item.key + '_desc') !== 'item_' + item.key + '_desc' ? I18N.t('item_' + item.key + '_desc') : item.desc; div.innerHTML = `<div class="item-rarity">${item.rarity.toUpperCase()}</div><h4>${item.emoji} ${iName}</h4><p class="item-desc">${iDesc}</p><p class="item-price">🪙 ${item.price}</p>`; div.addEventListener('click', () => buyItem(item, div)); shopItemsEl.appendChild(div); }); switchScreen('shop'); }
 function buyItem(item, el) {
     if (!cheatsUsed && player.gold < item.price) return;
     if (!cheatsUsed) player.gold -= item.price;
     goldCounter.innerText = player.gold; shopGoldEl.innerText = player.gold; el.style.opacity = '0.3'; el.style.pointerEvents = 'none';
+    // Rastreia itens para sinergias
+    if (!player.boughtItems) player.boughtItems = new Set();
+    if (item.key) { player.boughtItems.add(item.key); checkSynergies(player); }
     // Hook conquista: item comprado
     if (typeof onItemBought === 'function') onItemBought();
     // Rastrear compra para desbloqueio do Colecionador (apenas sem cheats)
@@ -2973,6 +3079,12 @@ function startGame() {
     window.hasSpawnedArena = false;
     window.hasSpawnedCasino = false;
     summons = [];
+    damageNumbers = [];
+    // Gerar biomas aleatórios para cada andar desta run
+    floorBiomes = { 1: 'cave' }; // Andar 1 sempre neutro
+    for (let i = 2; i <= MAX_LEVELS; i++) {
+        floorBiomes[i] = BIOME_LIST[Math.floor(Math.random() * BIOME_LIST.length)];
+    }
     player = new Player(400, 300, selectedChar);
     currentRoom = new RoomSystem();
     bossHealthContainer.style.display = 'none';
@@ -3079,6 +3191,18 @@ function checkCollisions() {
                 if (dist(p.x, p.y, e.x, e.y) < p.radius + e.radius) {
                     if (p.hitIds) p.hitIds.add(e);
                     e.takeDamage(p.damage);
+                    // Efeitos de Sinergia
+                    if (player) {
+                        if (p.weaponType === 'fire' && player.synergy_inferno) {
+                            enemies.forEach(ae => { if (ae !== e && dist(p.x, p.y, ae.x, ae.y) < 75) { ae.takeDamage(p.damage * 0.4); boom(p.x, p.y, '#e74c3c', 5); } });
+                        }
+                        if (p.weaponType === 'ice' && player.synergy_ice_vamp) {
+                            player.hp = Math.min(player.maxHp, player.hp + 0.5); updateHUD(); boom(player.x, player.y, '#74b9ff', 2);
+                        }
+                        if (p.weaponType === 'taser' && e.stunTimer > 0 && player.synergy_arcane_storm) {
+                            e.takeDamage(p.damage * 0.5);
+                        }
+                    }
                     if (p.weaponType === 'fire') { e.burnTimer = 3.5; e.takeDamage(0.5); boom(p.x, p.y, '#e74c3c', 5); }
                     if (p.weaponType === 'taser') {
                         if (e.stunTimer <= 0 && e.stunImmune <= 0) {
@@ -3322,6 +3446,22 @@ function gameLoop(ts) {
         icebergs = icebergs.filter(ib => { try { return ib.update(dt); } catch(e){ return false; } });
         warnings = warnings.filter(w => { try { return w.update(dt); } catch(e){ return false; } });
         summons = summons.filter(s => { try { return s.update(dt); } catch(e){ return false; } });
+        damageNumbers = damageNumbers.filter(d => { try { return d.update(dt); } catch(e){ return false; } });
+        // Particulas ambiente de bioma
+        if (currentRoom && gameState === 'PLAYING') {
+            let bm = getBiome();
+            if (bm === 'ice' && Math.random() < 0.35) {
+                let sp = new Particle(WALL + Math.random() * (760-WALL*2), WALL, 'rgba(180,220,255,0.75)', 0.4, Math.random()*2.5+1, 110);
+                sp.vy = Math.abs(sp.vy) * 0.6; sp.vx *= 0.2;
+                particles.push(sp);
+            }
+            if (bm === 'volcano' && Math.random() < 0.28) {
+                particles.push(new Particle(WALL+Math.random()*(760-WALL*2), WALL+Math.random()*(560-WALL*2), '#e67e22', 2.5, Math.random()*3+1, 28));
+            }
+            if (bm === 'void' && Math.random() < 0.18) {
+                particles.push(new Particle(WALL+Math.random()*(760-WALL*2), WALL+Math.random()*(560-WALL*2), '#9b59b6', 1.5, Math.random()*2+1, 45));
+            }
+        }
         
         checkCollisions();
         
@@ -3348,6 +3488,23 @@ function gameLoop(ts) {
         if (currentRoom && typeof currentRoom.drawBase === 'function') {
             currentRoom.drawBase(ctx);
         }
+        // Overlay de bioma (pântano = névoa; gelo = tint azul leve; vulcão = calor vermelho; vazio = escuridão)
+        try {
+            let bm = getBiome();
+            if (bm === 'swamp') {
+                let fg = ctx.createRadialGradient(400,300,130,400,300,440);
+                fg.addColorStop(0,'rgba(0,0,0,0)'); fg.addColorStop(1,'rgba(15,35,15,0.62)');
+                ctx.fillStyle = fg; ctx.fillRect(0,0,800,600);
+            } else if (bm === 'ice') {
+                ctx.fillStyle = 'rgba(100,160,220,0.08)'; ctx.fillRect(0,0,800,600);
+            } else if (bm === 'volcano') {
+                ctx.fillStyle = 'rgba(180,40,0,0.07)'; ctx.fillRect(0,0,800,600);
+            } else if (bm === 'void') {
+                let vg = ctx.createRadialGradient(400,300,100,400,300,460);
+                vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)');
+                ctx.fillStyle = vg; ctx.fillRect(0,0,800,600);
+            }
+        } catch(e) {}
 
         // Desenho de Entidades com Try-Catch individual
         try { warnings.forEach(w => w.draw(ctx)); } catch(e){}
@@ -3357,6 +3514,8 @@ function gameLoop(ts) {
         try { enemies.forEach(e => e.draw(ctx)); } catch(e){}
         try { projectiles.forEach(p => p.draw(ctx)); } catch(e){}
         try { particles.forEach(p => p.draw(ctx)); } catch(e){}
+        // Números de dano flutuantes
+        try { damageNumbers.forEach(d => d.draw(ctx)); } catch(e){}
         
         // Desenho do Jogador
         if (player && typeof player.draw === 'function') {
